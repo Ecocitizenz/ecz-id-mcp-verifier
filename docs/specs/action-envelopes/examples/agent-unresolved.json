@@ -1,0 +1,26 @@
+{
+  "_comment": "Example only. Agent Action Envelope for an agent manifest with no public resolver proof yet. Mock data. Route-only. ECZ-ID does not decide external authorisation.",
+  "type": "ecz.agent_action_envelope",
+  "version": "1.0",
+  "subject": { "target": "https://agent.example.com/.well-known/ecz-agent.json", "target_type": "agent_manifest" },
+  "posture": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+  "result": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+  "missing_evidence": ["AGENT_CREDENTIAL_NOT_FOUND", "IDENTITY_CONTINUITY_NOT_FOUND"],
+  "recommended_path": "improve_resolver_posture",
+  "actions": [
+    { "label": "Open TrustOps setup if you operate this target", "kind": "route", "url": "https://trustops.ecocitizenz.com/start?source=mcp_verifier&intent=setup&target_type=agent_manifest&policy=PREFER&operator=unknown&result_state=NO_PUBLIC_RESOLVER_PROOF_FOUND&reason_codes=AGENT_CREDENTIAL_NOT_FOUND%2CIDENTITY_CONTINUITY_NOT_FOUND&verifier=ecz_id_mcp_verifier&v=1.0.0" },
+    { "label": "Share resolver guidance", "kind": "route", "url": "https://developers.ecocitizenz.com/agents" },
+    { "label": "Re-check before reliance", "kind": "recheck", "url": null }
+  ],
+  "trustops_action_url": "https://trustops.ecocitizenz.com/start?source=mcp_verifier&intent=setup&target_type=agent_manifest&policy=PREFER&operator=unknown&result_state=NO_PUBLIC_RESOLVER_PROOF_FOUND&reason_codes=AGENT_CREDENTIAL_NOT_FOUND%2CIDENTITY_CONTINUITY_NOT_FOUND&verifier=ecz_id_mcp_verifier&v=1.0.0",
+  "developer_guidance_url": "https://developers.ecocitizenz.com/agents",
+  "resolver_url": null,
+  "machine_json_url": null,
+  "authority_boundary": "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "verifier_writes_truth": false,
+  "verifier_activates_proof": false,
+  "verifier_marks_bound": false
+}

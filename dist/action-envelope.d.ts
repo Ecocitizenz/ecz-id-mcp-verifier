@@ -1,0 +1,34 @@
+import type { ResultState } from "./result-states.js";
+import type { ReasonCode } from "./reason-codes.js";
+import type { PolicyMode } from "./policy.js";
+import type { TargetType } from "./classify-target.js";
+import type { VerifyResult } from "./verify.js";
+import { type AcquisitionFlow, type NextAction, type OperatorMode } from "./acquisition-flow.js";
+export type EnvelopeType = "MCP" | "AGENT" | "RESOLVER" | "RECIPROCAL_RELIANCE";
+export interface ActionEnvelope {
+    schema_version: number;
+    envelope_type: EnvelopeType;
+    target_type: TargetType;
+    target_value: string;
+    result_state: ResultState;
+    reason_codes: ReasonCode[];
+    resolver_url: string | null;
+    machine_json_url: string | null;
+    recommended_next_steps: string[];
+    trustops_action_url: string;
+    developer_guidance_url: string;
+    policy_mode: PolicyMode;
+    operator: OperatorMode;
+    acquisition_flow: AcquisitionFlow;
+    primary_action: NextAction;
+    secondary_actions: NextAction[];
+    local_policy_decides: true;
+    recheck_before_reliance: true;
+    no_safety_or_approval_inference: true;
+    backend_remains_final_authority: true;
+    verifier_writes_truth: false;
+    verifier_activates_proof: false;
+    verifier_marks_bound: false;
+}
+export declare function buildEnvelope(result: VerifyResult): ActionEnvelope;
+export declare function emptyEnvelope(): ActionEnvelope;

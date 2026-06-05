@@ -1,0 +1,29 @@
+{
+  "_comment": "Example only. Reciprocal Reliance Envelope composed from two single-target checks: both agent and MCP resolver-verifiable. Mock data. Resolver-verifiable proof is public proof metadata, not a safety verdict. Re-check before reliance.",
+  "type": "ecz.reciprocal_reliance_envelope",
+  "version": "1.0",
+  "agent_subject": {
+    "target": "https://agent.example.com/.well-known/ecz-agent.json",
+    "target_type": "agent_manifest",
+    "posture": "RESOLVER_VERIFIABLE"
+  },
+  "mcp_subject": {
+    "target": "https://mcp.example.com/sse",
+    "target_type": "mcp_server",
+    "posture": "RESOLVER_VERIFIABLE"
+  },
+  "policy_hint": "REQUIRE",
+  "recommended_posture_paths": [
+    "agent: view_resolver_proof",
+    "mcp: view_resolver_proof",
+    "recheck_before_reliance"
+  ],
+  "external_authorisation": "not_determined_by_eczid",
+  "authority_boundary": "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "verifier_writes_truth": false,
+  "verifier_activates_proof": false,
+  "verifier_marks_bound": false
+}

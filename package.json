@@ -1,0 +1,60 @@
+{
+  "name": "@ecocitizenz/ecz-id-mcp-verifier",
+  "version": "0.7.0",
+  "private": true,
+  "description": "ECZ-ID MCP Verifier(TM). Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, or mark BOUND.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ecz-id-mcp-verifier": "dist/cli.js",
+    "ecz-mcp-verify": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "action.yml",
+    "README.md",
+    "LICENSE.md",
+    "docs/ROLE_SPLIT.md",
+    "docs/PRIVACY.md",
+    "examples"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "verify:scaffold": "vitest run",
+    "prepublishOnly": "node -e \"console.error('publishing is disabled for this package'); process.exit(1)\""
+  },
+  "keywords": [
+    "ecz-id",
+    "mcp",
+    "verifier",
+    "resolver",
+    "agent-trust",
+    "machine-readable",
+    "trustops",
+    "action-envelope",
+    "local-first",
+    "privacy-first"
+  ],
+  "author": "EcoCitizenZ",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "homepage": "https://developers.ecocitizenz.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5",
+    "@types/node": "^20.14.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+

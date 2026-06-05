@@ -1,0 +1,35 @@
+{
+  "_comment": "Example only. Mock data. The action envelope is local routing metadata, not a proof authority. The verifier does not certify safety or approval.",
+  "schema_version": 1,
+  "envelope_type": "MCP",
+  "target_type": "mcp_server",
+  "target_value": "https://api.example.com/.well-known/ecz-mcp.json",
+  "result_state": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+  "reason_codes": [
+    "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+    "RESOLVER_READ_ONLY",
+    "LOCAL_POLICY_DECIDES"
+  ],
+  "resolver_url": "https://resolver.ecocitizenz.org/mcp/api.example.com",
+  "machine_json_url": null,
+  "primary_action": "ROUTE_TO_TRUSTOPS_SETUP",
+  "recommended_next_steps": [
+    "If you operate this target, start setup at TrustOps.",
+    "If you do not operate this target, share guidance via Developer Gateway.",
+    "Re-check before reliance. Local policy decides."
+  ],
+  "trustops_action_url": "https://trustops.ecocitizenz.com/start",
+  "developer_guidance_url": "https://developers.ecocitizenz.com",
+  "policy_mode": "PREFER",
+  "operator_mode": "self",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "acquisition_flow": {
+    "schema_version": 1,
+    "operator_mode": "self",
+    "primary_action": "ROUTE_TO_TRUSTOPS_SETUP",
+    "trustops_action_url": "https://trustops.ecocitizenz.com/start",
+    "developer_guidance_url": "https://developers.ecocitizenz.com"
+  }
+}

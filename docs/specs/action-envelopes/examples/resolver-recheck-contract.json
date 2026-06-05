@@ -1,0 +1,19 @@
+{
+  "_comment": "Example only. Re-check semantics instance. Resolver unavailable must not hallucinate proof. REQUIRE fails closed. Mock data.",
+  "type": "ecz.resolver_recheck_contract",
+  "version": "1.0",
+  "recheck_before_reliance": true,
+  "resolver_unavailable_behaviour": "no_hallucinated_proof",
+  "policy_failclosed": {
+    "OPEN": "informational; missing proof does not fail",
+    "PREFER": "warn; missing proof does not fail",
+    "REQUIRE": "fail closed on unresolved/mismatch/degraded/revoked/suspended/expired/unavailable"
+  },
+  "cache_guidance": {
+    "live_proof_endpoints": "no-store",
+    "revoked_suspended_degraded": "no_stale_success"
+  },
+  "authority_boundary": "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.",
+  "local_policy_decides": true,
+  "no_safety_or_approval_inference": true
+}

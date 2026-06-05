@@ -1,0 +1,26 @@
+{
+  "_comment": "Example only. MCP Action Envelope for an MCP server with no public resolver proof yet. Mock data. Route-only. Does not certify safety or approval.",
+  "type": "ecz.mcp_action_envelope",
+  "version": "1.0",
+  "subject": { "target": "https://mcp.example.com/sse", "target_type": "mcp_server" },
+  "posture": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+  "result": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+  "missing_evidence": ["NO_PUBLIC_RESOLVER_PROOF_FOUND", "OPERATOR_PROOF_NOT_FOUND"],
+  "recommended_path": "improve_resolver_posture",
+  "actions": [
+    { "label": "Open TrustOps setup if you operate this target", "kind": "route", "url": "https://trustops.ecocitizenz.com/start?source=mcp_verifier&intent=setup&target_type=mcp_server&policy=PREFER&operator=unknown&result_state=NO_PUBLIC_RESOLVER_PROOF_FOUND&reason_codes=NO_PUBLIC_RESOLVER_PROOF_FOUND%2COPERATOR_PROOF_NOT_FOUND&verifier=ecz_id_mcp_verifier&v=1.0.0" },
+    { "label": "Share resolver guidance", "kind": "route", "url": "https://developers.ecocitizenz.com/mcp" },
+    { "label": "Re-check before reliance", "kind": "recheck", "url": null }
+  ],
+  "trustops_action_url": "https://trustops.ecocitizenz.com/start?source=mcp_verifier&intent=setup&target_type=mcp_server&policy=PREFER&operator=unknown&result_state=NO_PUBLIC_RESOLVER_PROOF_FOUND&reason_codes=NO_PUBLIC_RESOLVER_PROOF_FOUND%2COPERATOR_PROOF_NOT_FOUND&verifier=ecz_id_mcp_verifier&v=1.0.0",
+  "developer_guidance_url": "https://developers.ecocitizenz.com/mcp",
+  "resolver_url": null,
+  "machine_json_url": null,
+  "authority_boundary": "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "verifier_writes_truth": false,
+  "verifier_activates_proof": false,
+  "verifier_marks_bound": false
+}

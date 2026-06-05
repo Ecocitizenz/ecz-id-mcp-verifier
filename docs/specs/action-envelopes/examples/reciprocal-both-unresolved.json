@@ -1,0 +1,29 @@
+{
+  "_comment": "Example only. Reciprocal Reliance Envelope composed from two single-target checks: neither agent nor MCP has public proof yet. Mock data. This does not mean unsafe. Local policy decides.",
+  "type": "ecz.reciprocal_reliance_envelope",
+  "version": "1.0",
+  "agent_subject": {
+    "target": "https://agent.example.com/.well-known/ecz-agent.json",
+    "target_type": "agent_manifest",
+    "posture": "NO_PUBLIC_RESOLVER_PROOF_FOUND"
+  },
+  "mcp_subject": {
+    "target": "https://mcp.example.com/sse",
+    "target_type": "mcp_server",
+    "posture": "NO_PUBLIC_RESOLVER_PROOF_FOUND"
+  },
+  "policy_hint": "OPEN",
+  "recommended_posture_paths": [
+    "agent: improve_resolver_posture",
+    "mcp: improve_resolver_posture",
+    "recheck_before_reliance"
+  ],
+  "external_authorisation": "not_determined_by_eczid",
+  "authority_boundary": "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "verifier_writes_truth": false,
+  "verifier_activates_proof": false,
+  "verifier_marks_bound": false
+}

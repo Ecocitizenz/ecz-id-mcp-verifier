@@ -1,0 +1,19 @@
+node_modules/
+coverage/
+.env
+.env.*
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Compiled dist/ is intentionally tracked: a JS GitHub Action runs the
+# committed dist/action.js, and the npm "files" allow-list ships dist/.
+
+# Quarantined reference material. Never imported by src/tests.
+_reference/
+
+# Internal cross-workspace planning / go-to-market material.
+# Not part of the public package; never committed to the public repo.
+docs/flywheel/
+/ECZID_MCP_IMMEDIATE_MARKETPLACE_BATTLECARDS.md

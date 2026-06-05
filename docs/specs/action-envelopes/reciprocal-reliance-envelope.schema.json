@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://developers.ecocitizenz.com/schemas/action-envelopes/reciprocal-reliance-envelope.schema.json",
+  "title": "Reciprocal Reliance Envelope",
+  "description": "Both-sides agent <-> MCP/tool context. Read-only. Presents public posture and guidance only. ECZ-ID does not decide whether an agent may spend, transact, or call tools.",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "agent_subject",
+    "mcp_subject",
+    "policy_hint",
+    "recommended_posture_paths",
+    "external_authorisation",
+    "authority_boundary",
+    "local_policy_decides",
+    "recheck_before_reliance",
+    "no_safety_or_approval_inference",
+    "verifier_writes_truth",
+    "verifier_activates_proof",
+    "verifier_marks_bound"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "type": { "const": "ecz.reciprocal_reliance_envelope" },
+    "version": { "type": "string" },
+    "agent_subject": {
+      "type": ["object", "null"],
+      "properties": {
+        "target": { "type": "string" },
+        "target_type": { "type": "string" },
+        "posture": { "type": "string" }
+      }
+    },
+    "mcp_subject": {
+      "type": ["object", "null"],
+      "properties": {
+        "target": { "type": "string" },
+        "target_type": { "type": "string" },
+        "posture": { "type": "string" }
+      }
+    },
+    "policy_hint": { "type": "string", "enum": ["OPEN", "PREFER", "REQUIRE"] },
+    "recommended_posture_paths": { "type": "array", "items": { "type": "string" } },
+    "external_authorisation": { "const": "not_determined_by_eczid" },
+    "authority_boundary": { "type": "string" },
+    "local_policy_decides": { "const": true },
+    "recheck_before_reliance": { "const": true },
+    "no_safety_or_approval_inference": { "const": true },
+    "verifier_writes_truth": { "const": false },
+    "verifier_activates_proof": { "const": false },
+    "verifier_marks_bound": { "const": false }
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "manifest_type": "ecz.trustops_product_action_manifest",
+  "version": "1.0",
+  "generated_boundary": "Static route-only manifest. Does not create checkout, does not create entitlement, does not activate proof, does not imply certification, does not imply platform endorsement. Payment is not proof.",
+  "authority_boundary": "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.",
+  "notes": [
+    "This manifest is a read-only routing projection. It does not assert binding-map hierarchy; parent/child passport relationships are owned by Backend/Core SSOT and the internal binding-map catalogue, not by this file.",
+    "Acquisition and payment occur only inside TrustOps or an internally operated rail, never inside any public marketplace app, extension, or verifier.",
+    "Agent Credential Entry Pack is an identity floor, not a KYA Lite tier.",
+    "The MCP stack is OFF-SSOT provisional and is not bound into canonical SSOT.",
+    "The MCP Passport concept is rejected and is not offered."
+  ],
+  "global_boundaries": {
+    "not_safety_certification": true,
+    "local_policy_decides": true,
+    "marketplace_native_entitlement": "forbidden",
+    "payment_is_not_proof": true,
+    "backend_writes_truth": true,
+    "resolver_projects_read_only": true,
+    "recheck_before_reliance": true
+  },
+  "rejected": [
+    "mcp_passport",
+    "resolver_clone",
+    "marketplace_native_entitlement_truth",
+    "off_platform_billing_inside_platform_controlled_apps"
+  ],
+  "products": [
+    {
+      "product_name": "Agent Credential Entry Pack",
+      "product_status": "canonical",
+      "price": "£24.99/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&product=agent_credential_entry",
+      "required_parent_passport": null,
+      "classification": "identity_floor_not_kya_lite",
+      "proof_boundary": "Payment is not proof. Resolver status changes only after Backend binding/provisioning.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    },
+    {
+      "product_name": "KYA Starter",
+      "product_status": "canonical",
+      "price": "£34.99/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&product=kya_starter",
+      "required_parent_passport": null,
+      "proof_boundary": "Payment is not proof. Resolver status changes only after Backend binding/provisioning.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    },
+    {
+      "product_name": "Verified KYA Ready Pack",
+      "product_status": "canonical",
+      "price": "£149.97/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&product=verified_kya_ready",
+      "required_parent_passport": null,
+      "proof_boundary": "Payment is not proof. Resolver status changes only after Backend binding/provisioning.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    },
+    {
+      "product_name": "Assured KYA Ready Pack",
+      "product_status": "canonical",
+      "price": "£179.97/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&product=assured_kya_ready",
+      "required_parent_passport": null,
+      "proof_boundary": "Payment is not proof. Resolver status changes only after Backend binding/provisioning.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    },
+    {
+      "product_name": "MCP Assurance",
+      "product_status": "off_ssot_provisional",
+      "price": "£199/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&product=mcp_assurance",
+      "required_parent_passport": null,
+      "classification": "off_ssot_provisional_not_bound_into_canonical_ssot",
+      "proof_boundary": "OFF-SSOT provisional. Payment is not proof. Resolver status changes only after Backend binding/provisioning. MCP Passport is rejected.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    },
+    {
+      "product_name": "MCP Assurance Plus",
+      "product_status": "off_ssot_provisional",
+      "price": "£499/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&product=mcp_assurance_plus",
+      "required_parent_passport": null,
+      "classification": "off_ssot_provisional_not_bound_into_canonical_ssot",
+      "proof_boundary": "OFF-SSOT provisional. Payment is not proof. Resolver status changes only after Backend binding/provisioning. MCP Passport is rejected.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    },
+    {
+      "product_name": "MCP Policy",
+      "product_status": "off_ssot_provisional",
+      "price": "£1,499/mo",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=enterprise_policy&product=mcp_policy",
+      "required_parent_passport": null,
+      "classification": "off_ssot_provisional_not_bound_into_canonical_ssot",
+      "proof_boundary": "OFF-SSOT provisional. Payment is not proof. Resolver status changes only after Backend binding/provisioning. MCP Passport is rejected.",
+      "purchase_boundary": "Acquisition and payment happen in TrustOps, not in any public marketplace app or extension.",
+      "backend_truth_boundary": "Backend/Core writes canonical truth. This manifest does not.",
+      "resolver_projection_boundary": "Resolver projects Backend truth read-only. This manifest does not change Resolver status.",
+      "not_safety_certification": true,
+      "local_policy_decides": true
+    }
+  ],
+  "acquisition_routing": [
+    {
+      "intention": "I operate this MCP server",
+      "intent": "setup",
+      "operator": "self",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&operator=self&target_type=mcp_server"
+    },
+    {
+      "intention": "I operate this agent",
+      "intent": "setup",
+      "operator": "self",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&operator=self&target_type=agent"
+    },
+    {
+      "intention": "I represent a business/principal",
+      "intent": "setup",
+      "operator": "self",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&operator=self&target_type=principal"
+    },
+    {
+      "intention": "I am checking someone else",
+      "intent": "guidance",
+      "operator": "third_party",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=guidance&operator=third_party"
+    },
+    {
+      "intention": "I need enterprise policy",
+      "intent": "enterprise_policy",
+      "operator": "self",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=enterprise_policy&operator=self"
+    },
+    {
+      "intention": "I am a merchant preparing for agentic commerce",
+      "intent": "setup",
+      "operator": "self",
+      "route": "https://trustops.ecocitizenz.com/start?source=acquisition_manifest&intent=setup&operator=self&target_type=shopify_store"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://developers.ecocitizenz.com/schemas/action-envelopes/resolver-action-envelope.schema.json",
+  "title": "Resolver Action Envelope",
+  "description": "Universal public proof/action metadata. Read-only projection. Never writes truth, activates proof, or sets BOUND.",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "subject",
+    "posture",
+    "result",
+    "missing_evidence",
+    "recommended_path",
+    "actions",
+    "authority_boundary",
+    "local_policy_decides",
+    "recheck_before_reliance",
+    "no_safety_or_approval_inference",
+    "verifier_writes_truth",
+    "verifier_activates_proof",
+    "verifier_marks_bound"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "type": { "const": "ecz.resolver_action_envelope" },
+    "version": { "type": "string" },
+    "subject": {
+      "type": "object",
+      "required": ["target", "target_type"],
+      "properties": {
+        "target": { "type": "string" },
+        "target_type": { "type": "string" }
+      }
+    },
+    "posture": { "type": "string", "description": "Current result state. Not a safety verdict." },
+    "result": { "type": "string" },
+    "missing_evidence": { "type": "array", "items": { "type": "string" } },
+    "recommended_path": {
+      "type": "string",
+      "enum": ["view_resolver_proof", "improve_resolver_posture", "repair_resolver_posture", "view_developer_guidance"]
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "kind"],
+        "properties": {
+          "label": { "type": "string" },
+          "kind": { "type": "string", "enum": ["route", "recheck"] },
+          "url": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "resolver_url": { "type": ["string", "null"] },
+    "machine_json_url": { "type": ["string", "null"] },
+    "trustops_action_url": { "type": "string" },
+    "developer_guidance_url": { "type": "string" },
+    "authority_boundary": { "type": "string" },
+    "local_policy_decides": { "const": true },
+    "recheck_before_reliance": { "const": true },
+    "no_safety_or_approval_inference": { "const": true },
+    "verifier_writes_truth": { "const": false },
+    "verifier_activates_proof": { "const": false },
+    "verifier_marks_bound": { "const": false }
+  }
+}

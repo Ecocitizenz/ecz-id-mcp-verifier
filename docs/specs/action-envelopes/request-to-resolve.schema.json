@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://developers.ecocitizenz.com/schemas/action-envelopes/request-to-resolve.schema.json",
+  "title": "Request-to-Resolve local guidance packet",
+  "description": "Locally generated guidance packet. NOT signed and NOT created server-side by the CLI. Routes only. Never writes truth or activates proof.",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "target",
+    "target_type",
+    "state",
+    "reason_codes",
+    "message",
+    "share_label",
+    "operator_label",
+    "trustops_url",
+    "developer_guidance_url",
+    "ttl_hint",
+    "signed_request",
+    "server_side_status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "const": "ecz.request_to_resolve" },
+    "version": { "type": "string" },
+    "target": { "type": "string" },
+    "target_type": {
+      "type": "string",
+      "enum": ["mcp_server", "agent", "api", "domain", "repo", "package", "shopify_store", "unknown"]
+    },
+    "state": { "type": "string" },
+    "reason_codes": { "type": "array", "items": { "type": "string" } },
+    "message": {
+      "type": "string",
+      "const": "No public resolver proof found yet. This does not mean unsafe. Resolver-verifiable proof may make this easier to review. Local policy decides."
+    },
+    "share_label": { "const": "Share resolver guidance" },
+    "operator_label": { "const": "Open TrustOps setup if you operate this target" },
+    "trustops_url": { "type": "string" },
+    "developer_guidance_url": { "type": "string" },
+    "ttl_hint": { "const": "generated_locally_no_server_claim" },
+    "signed_request": { "const": false },
+    "server_side_status": { "const": "not_created_by_cli" }
+  }
+}

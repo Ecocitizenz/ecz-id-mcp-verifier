@@ -1,0 +1,29 @@
+{
+  "_comment": "Example only. Mock data. The verifier does not certify safety, approval, or compliance. RESOLVER_VERIFIABLE means the resolver returned a proof projection for this target at the time of the check. Re-check before reliance. Local policy decides. Backend remains final authority.",
+  "schema_version": 1,
+  "verifier": "ECZ-ID MCP Verifier",
+  "verifier_version": "0.7.0",
+  "target": "ECZ-GB-EXAMPLE",
+  "target_type": "ecz_id",
+  "policy_mode": "PREFER",
+  "result_state": "RESOLVER_VERIFIABLE",
+  "reason_codes": [
+    "RESOLVER_VERIFIABLE",
+    "RESOLVER_READ_ONLY",
+    "LOCAL_POLICY_DECIDES",
+    "RECHECK_BEFORE_RELIANCE"
+  ],
+  "resolver_url": "https://resolver.ecocitizenz.org/eczid/ECZ-GB-EXAMPLE",
+  "machine_json_url": "https://resolver.ecocitizenz.org/eczid/ECZ-GB-EXAMPLE.json",
+  "trustops_action_url": "https://trustops.ecocitizenz.com/start",
+  "developer_guidance_url": "https://developers.ecocitizenz.com",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "no_source_uploaded": true,
+  "no_secrets_uploaded": true,
+  "no_telemetry": true,
+  "timestamp": "2026-05-18T00:00:00.000Z",
+  "exit_code": 0,
+  "action_envelope": null
+}

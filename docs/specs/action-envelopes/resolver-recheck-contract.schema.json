@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://developers.ecocitizenz.com/schemas/action-envelopes/resolver-recheck-contract.schema.json",
+  "title": "Resolver Re-check Contract",
+  "description": "Re-check semantics for verifiers relying on Resolver projections. Resolver unavailable must not hallucinate proof. Require mode fails closed.",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "recheck_before_reliance",
+    "resolver_unavailable_behaviour",
+    "policy_failclosed",
+    "cache_guidance",
+    "authority_boundary",
+    "local_policy_decides",
+    "no_safety_or_approval_inference"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "type": { "const": "ecz.resolver_recheck_contract" },
+    "version": { "type": "string" },
+    "recheck_before_reliance": { "const": true },
+    "resolver_unavailable_behaviour": {
+      "type": "string",
+      "const": "no_hallucinated_proof",
+      "description": "If the Resolver is unavailable, treat as missing proof; never invent proof."
+    },
+    "policy_failclosed": {
+      "type": "object",
+      "required": ["OPEN", "PREFER", "REQUIRE"],
+      "properties": {
+        "OPEN": { "type": "string", "description": "informational; missing proof does not fail" },
+        "PREFER": { "type": "string", "description": "warn; missing proof does not fail" },
+        "REQUIRE": {
+          "type": "string",
+          "description": "fail closed on unresolved/mismatch/degraded/revoked/suspended/expired/unavailable"
+        }
+      }
+    },
+    "cache_guidance": {
+      "type": "object",
+      "required": ["live_proof_endpoints", "revoked_suspended_degraded"],
+      "properties": {
+        "live_proof_endpoints": { "const": "no-store" },
+        "revoked_suspended_degraded": { "const": "no_stale_success" }
+      }
+    },
+    "authority_boundary": { "type": "string" },
+    "local_policy_decides": { "const": true },
+    "no_safety_or_approval_inference": { "const": true }
+  }
+}

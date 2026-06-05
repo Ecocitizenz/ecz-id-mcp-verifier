@@ -1,0 +1,40 @@
+# Example GitHub Action workflow that invokes the ECZ-ID MCP Verifier.
+#
+# This example uses a placeholder target. It does not upload source.
+# It does not upload secrets. It does not write truth. It does not
+# perform checkout. It does not certify that the target is safe.
+
+name: ECZ-ID MCP Verifier (example)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ECZ-ID MCP Verifier
+        id: ecz_verify
+        # Placeholder ref. Replace with the published action ref once available.
+        uses: ecocitizenz/ecz-id-mcp-verifier@v0
+        with:
+          target: "ECZ-GB-EXAMPLE"
+          target-type: "ecz_id"
+          policy: "PREFER"
+          operator: "third_party"
+          resolver-base: "https://resolver.ecocitizenz.org"
+          no-network: "false"
+          timeout-ms: "5000"
+
+      - name: Print result
+        run: |
+          echo "result-state=${{ steps.ecz_verify.outputs.result-state }}"
+          echo "reason-codes=${{ steps.ecz_verify.outputs.reason-codes }}"
+          echo "primary-action=${{ steps.ecz_verify.outputs.primary-action }}"
+          echo "trustops-action-url=${{ steps.ecz_verify.outputs.trustops-action-url }}"
+          echo "developer-guidance-url=${{ steps.ecz_verify.outputs.developer-guidance-url }}"

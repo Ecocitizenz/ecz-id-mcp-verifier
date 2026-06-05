@@ -1,0 +1,68 @@
+name: "ECZ-ID MCP Verifier"
+description: "Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, mark BOUND, or upload source/secrets."
+author: "EcoCitizenZ"
+
+branding:
+  icon: "shield"
+  color: "green"
+
+inputs:
+  target:
+    description: "Target to verify (URL, package, repo, or identifier)."
+    required: true
+  target-type:
+    description: "Optional explicit target type hint."
+    required: false
+    default: ""
+  policy:
+    description: "Local policy mode: OPEN, PREFER, or REQUIRE."
+    required: false
+    default: "PREFER"
+  operator:
+    description: "Operator role: self, third_party, or unknown. Not auto-inferred."
+    required: false
+    default: "unknown"
+  resolver-base:
+    description: "Override for the public resolver base URL."
+    required: false
+    default: "https://resolver.ecocitizenz.org"
+  no-network:
+    description: "If true, run in fully offline mode."
+    required: false
+    default: "false"
+  offline:
+    description: "Alias for no-network. If true, run in fully offline mode."
+    required: false
+    default: "false"
+  json:
+    description: "If true, emit JSON output to the log (CLI default)."
+    required: false
+    default: "true"
+  timeout-ms:
+    description: "Timeout for resolver lookups, in milliseconds."
+    required: false
+    default: "5000"
+
+outputs:
+  result-state:
+    description: "Canonical ResultState produced by the verifier."
+  reason-codes:
+    description: "Comma-separated canonical ReasonCodes."
+  action-envelope-json:
+    description: "Local ActionEnvelope JSON describing routing only."
+  acquisition-flow-json:
+    description: "Deterministic Mandated Acquisition Flow JSON (routing only)."
+  mcp-action-envelope-json:
+    description: "MCP Action Envelope JSON (route-only posture path). Null for non-MCP targets."
+  request-to-resolve-json:
+    description: "Request-to-Resolve local guidance packet JSON. signed_request=false; not created server-side."
+  primary-action:
+    description: "Single deterministic next action verb."
+  trustops-action-url:
+    description: "Deterministic TrustOps action URL (no secrets, allow-list params)."
+  developer-guidance-url:
+    description: "Deterministic Developer Gateway guidance URL for this target type."
+
+runs:
+  using: "node20"
+  main: "dist/action.js"

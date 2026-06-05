@@ -1,0 +1,28 @@
+{
+  "_comment": "Example only. Illustrative output for a target with no public resolver proof under the OPEN policy. Mock data. Not a real customer proof. The verifier does not certify safety or approval.",
+  "schema_version": 1,
+  "verifier": "ECZ-ID MCP Verifier",
+  "verifier_version": "0.7.0",
+  "target": "ECZ-GB-EXAMPLE",
+  "target_type": "ecz_id",
+  "policy_mode": "OPEN",
+  "result_state": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+  "reason_codes": [
+    "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+    "RESOLVER_READ_ONLY",
+    "LOCAL_POLICY_DECIDES"
+  ],
+  "resolver_url": "https://resolver.ecocitizenz.org/eczid/ECZ-GB-EXAMPLE",
+  "machine_json_url": null,
+  "trustops_action_url": "https://trustops.ecocitizenz.com/start",
+  "developer_guidance_url": "https://developers.ecocitizenz.com",
+  "local_policy_decides": true,
+  "recheck_before_reliance": true,
+  "no_safety_or_approval_inference": true,
+  "no_source_uploaded": true,
+  "no_secrets_uploaded": true,
+  "no_telemetry": true,
+  "timestamp": "2026-05-18T00:00:00.000Z",
+  "exit_code": 0,
+  "action_envelope": null
+}
