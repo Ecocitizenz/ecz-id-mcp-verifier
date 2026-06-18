@@ -24,7 +24,7 @@
 
 import { RESOLVER_BASE, RESOLVER_API_BASE, DEFAULT_TIMEOUT_MS } from "./constants.js";
 import type { TargetType } from "./classify-target.js";
-import { isValidEczId } from "./ecz-id.js";
+import { isValidEczId, parseEczId } from "./ecz-id.js";
 
 export interface ResolverLookupOptions {
   resolverBase?: string;
@@ -40,6 +40,7 @@ export interface ResolverLookupOptions {
  */
 export type ResolverProofState =
   | "active" // 2xx + recognised projection + usable, non-degraded current proof
+  | "child_machine_unproven" // child ID: no documented/proven machine endpoint
   | "not_found" // 404 / 410 — no public proof projection for this ECZ-ID
   | "unavailable" // 5xx / 429 / other non-2xx / network error / timeout
   | "malformed" // 2xx but the body is not parseable JSON
@@ -82,18 +83,29 @@ export function isAcceptedEczId(value: string): boolean {
 
 export interface ResolverUrls {
   human: string;
-  machine: string;
+  /**
+   * Machine proof JSON URL. Present ONLY for a parent ECZ-ID (the proven
+   * `/api/p/{parent}.json` endpoint). Omitted for a child, because no child
+   * machine projection endpoint is documented/proven.
+   */
+  machine?: string;
+  kind: "parent" | "child";
 }
 
 /**
  * Derive the canonical Resolver URLs for a target.
  *
- * Returns the human proof URL and machine JSON URL ONLY when the target maps
- * deterministically to a VALID ECZ-ID (parent or child). For any other target
- * shape — URL, repository, package, container image, MCP server URL, free text,
- * or a malformed ECZ-ID — it returns `undefined`. The client never invents a
- * Resolver path. Parent and child share the same documented `/p/{id}` and
- * `/api/p/{id}.json` templates (the child decomposition lives in the body).
+ * Returns URLs ONLY when the target maps deterministically to a VALID ECZ-ID
+ * (parent or child). For any other shape — URL, repository, package, container
+ * image, MCP server URL, free text, or a malformed ECZ-ID — returns `undefined`.
+ * The client never invents a Resolver path.
+ *
+ * Routes (locked):
+ *   - Parent human:   {base}/p/{parent}
+ *   - Parent machine: {api}/api/p/{parent}.json  (proven)
+ *   - Child human:    {base}/p/{parent}/{passport_code}/{instance_suffix}
+ *     (decomposed external form — NEVER a percent-encoded internal child ID)
+ *   - Child machine:  none (no documented/proven child machine endpoint)
  */
 export function deriveResolverUrls(
   target: string,
@@ -102,10 +114,22 @@ export function deriveResolverUrls(
   apiBase: string = RESOLVER_API_BASE
 ): ResolverUrls | undefined {
   if (targetType !== "ecz_id") return undefined;
-  if (!isValidEczId(target)) return undefined;
-  const human = `${resolverBase.replace(/\/+$/, "")}/p/${encodeURIComponent(target)}`;
-  const machine = `${apiBase.replace(/\/+$/, "")}/api/p/${encodeURIComponent(target)}.json`;
-  return { human, machine };
+  const parsed = parseEczId(target);
+  if (!parsed.valid || !parsed.parent) return undefined;
+  const base = resolverBase.replace(/\/+$/, "");
+  const api = apiBase.replace(/\/+$/, "");
+
+  if (parsed.kind === "child") {
+    // Decomposed external URL. The parser restricts each segment to [A-Z0-9-],
+    // so no percent-encoding is applied (and the internal `::` form is never
+    // used as a path).
+    const human = `${base}/p/${parsed.parent}/${parsed.passportCode}/${parsed.instanceSuffix}`;
+    return { human, kind: "child" }; // child machine endpoint is unproven -> omitted
+  }
+
+  const human = `${base}/p/${parsed.parent}`;
+  const machine = `${api}/api/p/${parsed.parent}.json`;
+  return { human, machine, kind: "parent" };
 }
 
 /**
@@ -246,6 +270,21 @@ export async function lookup(
   // Non-ECZ-ID / invalid target: not directly resolvable. No request, no path.
   if (!urls) {
     return { found: false, applicable: false, resolver_base, network_attempted: false };
+  }
+
+  // Child identifier: the decomposed human URL is retained, but there is no
+  // documented/proven child machine projection endpoint. Do NOT fetch and do
+  // NOT reuse the parent machine endpoint. machine_json_url stays null and no
+  // proof is claimed (child machine projection unavailable/unproven).
+  if (urls.kind === "child" || !urls.machine) {
+    return {
+      found: false,
+      applicable: true,
+      proof_state: "child_machine_unproven",
+      resolver_base,
+      resolver_url: urls.human,
+      network_attempted: false
+    };
   }
 
   if (options.noNetwork) {

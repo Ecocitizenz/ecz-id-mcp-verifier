@@ -105,6 +105,10 @@ export function mapProofState(state) {
             // A 2xx body that cannot be safely interpreted: missing proof, tagged
             // distinctly. Never positive proof.
             return { result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND", reason_codes: UNVERIFIABLE_REASONS };
+        case "child_machine_unproven":
+            // Child ID: human URL retained, but no proven machine projection endpoint
+            // exists, so no public machine proof can be confirmed. Never positive proof.
+            return { result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND", reason_codes: MISSING_PROOF_REASONS };
         case "not_found":
         case "unavailable":
         default:

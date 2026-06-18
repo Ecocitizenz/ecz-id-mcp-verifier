@@ -1,10 +1,14 @@
 export declare const BASE36_ALPHABET: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-export declare const CANONICAL_PASSPORT_CODES: readonly ["AGENT_CREDENTIAL", "CYBER_RESILIENCE", "API_PASSPORT", "AI_MODEL", "DATASET", "IOT_DEVICE", "SOFTWARE_SUPPLY_CHAIN", "PRODUCT_PASSPORT", "CUSTODY_TRANSFER", "RISK_POLICY", "INDUSTRIAL_ROBOT", "PUBLIC_SPACE_ROBOT", "DOMESTIC_ROBOT", "ROBOTAXI", "AUTONOMOUS_CAR", "AUTONOMOUS_HAULAGE_TRUCK", "CROSS_BORDER_HAULAGE_TRUCK", "HIGH_VALUE_CARGO_TRUCK", "DRONE_D1", "DRONE_D2", "DRONE_D3", "DRONE_D4", "INTERMODAL_TRANSFER", "INDUSTRIAL_SITE", "CRITICAL_INFRASTRUCTURE", "FINANCIAL_AUTHORITY_FUNDS_FLOW", "MARINE_VESSEL", "CARGO_CONTAINER", "AIRCRAFT", "AVIATION_COMPONENT", "PLATFORM_SAFE_HARBOUR", "IDENTITY_CONTINUITY", "LICENSED_INFRASTRUCTURE_OPERATOR"];
-export declare const SHORT_FORM_PASSPORT_CODES: readonly ["AGENT", "SSCM", "D1-DRONE"];
-/** All passport codes this verifier recognises as registry-controlled. */
-export declare const RECOGNISED_PASSPORT_CODES: ReadonlySet<string>;
-/** True if `code` is a registry-controlled passport code. */
+export declare const PUBLIC_PASSPORT_CODES: readonly ["AGENT", "CYBER", "API", "AI", "DATASET", "IOT", "SSCM", "PRODUCT", "CUSTODY", "RISKPOL", "ROBOT-IND", "ROBOT-PUB", "ROBOT-DOM", "ROBOTAXI", "AUTO-CAR", "AUTO-TRUCK", "XHAUL", "HV-CARGO", "D1-DRONE", "D2-DRONE", "D3-DRONE", "D4-DRONE"];
+export declare const PUBLIC_PASSPORT_CODE_SET: ReadonlySet<string>;
+export declare const PUBLIC_TO_BACKEND_SEMANTIC_KEY: Readonly<Record<string, string>>;
+export declare const BACKEND_SEMANTIC_KEYS: readonly ["AGENT_CREDENTIAL", "CYBER_RESILIENCE", "API_PASSPORT", "AI_MODEL", "IOT_DEVICE", "SOFTWARE_SUPPLY_CHAIN", "PRODUCT_PASSPORT", "CUSTODY_TRANSFER", "RISK_POLICY", "INDUSTRIAL_ROBOT", "PUBLIC_SPACE_ROBOT", "DOMESTIC_ROBOT", "AUTONOMOUS_CAR", "AUTONOMOUS_HAULAGE_TRUCK", "CROSS_BORDER_HAULAGE_TRUCK", "HIGH_VALUE_CARGO_TRUCK", "DRONE_D1", "DRONE_D2", "DRONE_D3", "DRONE_D4"];
+/** True iff `code` is a LOCKED public passport-number code. */
+export declare function isPublicPassportCode(code: string): boolean;
+/** Back-compat name; public-code membership is the single acceptance rule. */
 export declare function isRecognisedPassportCode(code: string): boolean;
+/** Map a public passport-number code to its backend semantic key (internal use only). */
+export declare function backendSemanticKeyFor(code: string): string | undefined;
 export type EczIdKind = "parent" | "child";
 export interface ParsedEczId {
     /** Whether the whole identifier is a valid parent or child ECZ-ID. */

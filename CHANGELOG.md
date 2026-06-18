@@ -17,8 +17,16 @@ Not yet published to npm or the GitHub Action Marketplace.
   uppercase Base36); child passport instances are
   `ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY` with an exactly six-character instance
   suffix split off the final hyphen (hyphenated passport codes parse correctly).
-  Passport codes are validated against the canonical registry. Malformed IDs
-  (e.g. `ECZ-GB-EXAMPLE`) are rejected and never trigger a Resolver fetch.
+  `PASSPORT_CODE` is validated against the locked **public passport-number code**
+  registry (e.g. `AGENT`, `SSCM`, `D1-DRONE`) from the Passport Number's SSOT;
+  backend semantic registry keys (e.g. `AGENT_CREDENTIAL`) are **not** accepted
+  as public child codes (a separate internal public→backend mapping is provided).
+  Malformed IDs (e.g. `ECZ-GB-EXAMPLE`) are rejected and never trigger a fetch.
+- **Decomposed child Resolver routes.** A parent resolves to `…/p/{parent}`; a
+  child resolves to the decomposed external form
+  `…/p/{parent}/{passport_code}/{instance_suffix}` (never a percent-encoded
+  internal child ID). No child machine-JSON endpoint is documented/proven, so a
+  child reports `machine_json_url: null`; the parent machine JSON is retained.
 - **Resolver lifecycle parsing.** The machine projection body is now parsed with
   strict, bounded rules. HTTP 200 alone is never proof; revoked / suspended /
   expired / stale / degraded / abuse / subject-mismatch / malformed /

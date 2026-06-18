@@ -37,73 +37,95 @@ const SUFFIX6_RE = /^[0-9A-Z]{6}$/; // exactly six uppercase Base36 characters
 const PASSPORT_CODE_SHAPE = /^[A-Z0-9]+(?:[_-][A-Z0-9]+)*$/;
 
 // ---------------------------------------------------------------------------
-// Registry-controlled passport codes.
+// PUBLIC passport-number codes — the LOCKED public child ID code set.
 //
-// CANONICAL: the EXACTLY-33 child passport codes from the backend SSOT
-// (services/functions/shared/child_passport_registry.py, CHILD_PASSPORT_REGISTRY).
-// These are bare identifier tokens — no names, SKUs, prices, or categories — and
-// they already appear publicly in Resolver `/api/p/{id}.json` child entries, so
-// listing them here is not a new disclosure.
+// Source: the Passport Number's SSOT, as restated by the explicit CEO decision
+// (source precedence #1) and corroborated by backend ground-truth issuance
+// (e.g. `ECZ-GB-5IK4FK::SSCM-FX63TW`, `::CYBER-…` observed in backend wiring
+// evidence). These short PUBLIC NUMBER CODES are the ONLY codes accepted inside
+// a public child ECZ-ID.
+//
+// These are NOT backend semantic registry keys. Backend keys
+// (`AGENT_CREDENTIAL`, `SOFTWARE_SUPPLY_CHAIN`, `DRONE_D1`, …) are NOT public
+// codes and MUST NOT be accepted as public child identifiers — they may only be
+// reached through the deterministic mapping below, which never affects public
+// identifier validity.
+//
+// SCOPE NOTE: the SSOT enumerates more categories than are locked here. Only the
+// codes explicitly published in the numbering SSOT / CEO decision are locked.
+// The remaining categories (Infrastructure-Grade Additions and Control & Trust
+// Overlays) are NOT added to the public namespace until their exact public
+// number codes are supplied by the SSOT — they are deliberately NOT guessed, so
+// the accepted public namespace is never silently expanded.
 // ---------------------------------------------------------------------------
-export const CANONICAL_PASSPORT_CODES = [
-  // Core Digital & Operational (7)
-  "AGENT_CREDENTIAL",
-  "CYBER_RESILIENCE",
-  "API_PASSPORT",
-  "AI_MODEL",
-  "DATASET",
-  "IOT_DEVICE",
-  "SOFTWARE_SUPPLY_CHAIN",
-  // Product, Risk & Transfer (3)
-  "PRODUCT_PASSPORT",
-  "CUSTODY_TRANSFER",
-  "RISK_POLICY",
-  // Robotics (3)
-  "INDUSTRIAL_ROBOT",
-  "PUBLIC_SPACE_ROBOT",
-  "DOMESTIC_ROBOT",
-  // Road & Freight Mobility (5)
-  "ROBOTAXI",
-  "AUTONOMOUS_CAR",
-  "AUTONOMOUS_HAULAGE_TRUCK",
-  "CROSS_BORDER_HAULAGE_TRUCK",
-  "HIGH_VALUE_CARGO_TRUCK",
-  // Aerial Mobility — Drones (4)
-  "DRONE_D1",
-  "DRONE_D2",
-  "DRONE_D3",
-  "DRONE_D4",
-  // Infrastructure-Grade Additions (8)
-  "INTERMODAL_TRANSFER",
-  "INDUSTRIAL_SITE",
-  "CRITICAL_INFRASTRUCTURE",
-  "FINANCIAL_AUTHORITY_FUNDS_FLOW",
-  "MARINE_VESSEL",
-  "CARGO_CONTAINER",
-  "AIRCRAFT",
-  "AVIATION_COMPONENT",
-  // Control & Trust Overlays (3)
-  "PLATFORM_SAFE_HARBOUR",
-  "IDENTITY_CONTINUITY",
-  "LICENSED_INFRASTRUCTURE_OPERATOR"
+export const PUBLIC_PASSPORT_CODES = [
+  // Core Digital & Operational
+  "AGENT", "CYBER", "API", "AI", "DATASET", "IOT", "SSCM",
+  // Product, Risk & Transfer
+  "PRODUCT", "CUSTODY", "RISKPOL",
+  // Robotics
+  "ROBOT-IND", "ROBOT-PUB", "ROBOT-DOM",
+  // Road & Freight Mobility
+  "ROBOTAXI", "AUTO-CAR", "AUTO-TRUCK", "XHAUL", "HV-CARGO",
+  // Aerial Mobility — Drones
+  "D1-DRONE", "D2-DRONE", "D3-DRONE", "D4-DRONE"
 ] as const;
 
-// Public short-form passport codes blessed as canonical-valid by the Phase 1
-// corrective directive. They also exercise the hyphen-safe instance-suffix
-// split (D1-DRONE contains an internal hyphen). The SSOT spellings differ
-// (AGENT_CREDENTIAL / SOFTWARE_SUPPLY_CHAIN / DRONE_D1); that discrepancy is
-// recorded for CEO reconciliation rather than silently dropped.
-export const SHORT_FORM_PASSPORT_CODES = ["AGENT", "SSCM", "D1-DRONE"] as const;
+export const PUBLIC_PASSPORT_CODE_SET: ReadonlySet<string> = new Set<string>(
+  PUBLIC_PASSPORT_CODES
+);
 
-/** All passport codes this verifier recognises as registry-controlled. */
-export const RECOGNISED_PASSPORT_CODES: ReadonlySet<string> = new Set<string>([
-  ...CANONICAL_PASSPORT_CODES,
-  ...SHORT_FORM_PASSPORT_CODES
-]);
+// Deterministic PUBLIC passport-number code -> backend semantic registry key.
+// For internal Backend integration ONLY. This mapping NEVER alters public
+// identifier validity: a backend key is never a valid public code.
+export const PUBLIC_TO_BACKEND_SEMANTIC_KEY: Readonly<Record<string, string>> = {
+  AGENT: "AGENT_CREDENTIAL",
+  CYBER: "CYBER_RESILIENCE",
+  API: "API_PASSPORT",
+  AI: "AI_MODEL",
+  DATASET: "DATASET",
+  IOT: "IOT_DEVICE",
+  SSCM: "SOFTWARE_SUPPLY_CHAIN",
+  PRODUCT: "PRODUCT_PASSPORT",
+  CUSTODY: "CUSTODY_TRANSFER",
+  RISKPOL: "RISK_POLICY",
+  "ROBOT-IND": "INDUSTRIAL_ROBOT",
+  "ROBOT-PUB": "PUBLIC_SPACE_ROBOT",
+  "ROBOT-DOM": "DOMESTIC_ROBOT",
+  ROBOTAXI: "ROBOTAXI",
+  "AUTO-CAR": "AUTONOMOUS_CAR",
+  "AUTO-TRUCK": "AUTONOMOUS_HAULAGE_TRUCK",
+  XHAUL: "CROSS_BORDER_HAULAGE_TRUCK",
+  "HV-CARGO": "HIGH_VALUE_CARGO_TRUCK",
+  "D1-DRONE": "DRONE_D1",
+  "D2-DRONE": "DRONE_D2",
+  "D3-DRONE": "DRONE_D3",
+  "D4-DRONE": "DRONE_D4"
+};
 
-/** True if `code` is a registry-controlled passport code. */
+// Known backend semantic registry keys, listed ONLY so they can be explicitly
+// rejected (and for the public->backend mapping). NEVER valid public codes.
+export const BACKEND_SEMANTIC_KEYS = [
+  "AGENT_CREDENTIAL", "CYBER_RESILIENCE", "API_PASSPORT", "AI_MODEL",
+  "IOT_DEVICE", "SOFTWARE_SUPPLY_CHAIN", "PRODUCT_PASSPORT", "CUSTODY_TRANSFER",
+  "RISK_POLICY", "INDUSTRIAL_ROBOT", "PUBLIC_SPACE_ROBOT", "DOMESTIC_ROBOT",
+  "AUTONOMOUS_CAR", "AUTONOMOUS_HAULAGE_TRUCK", "CROSS_BORDER_HAULAGE_TRUCK",
+  "HIGH_VALUE_CARGO_TRUCK", "DRONE_D1", "DRONE_D2", "DRONE_D3", "DRONE_D4"
+] as const;
+
+/** True iff `code` is a LOCKED public passport-number code. */
+export function isPublicPassportCode(code: string): boolean {
+  return PUBLIC_PASSPORT_CODE_SET.has(code);
+}
+
+/** Back-compat name; public-code membership is the single acceptance rule. */
 export function isRecognisedPassportCode(code: string): boolean {
-  return RECOGNISED_PASSPORT_CODES.has(code);
+  return isPublicPassportCode(code);
+}
+
+/** Map a public passport-number code to its backend semantic key (internal use only). */
+export function backendSemanticKeyFor(code: string): string | undefined {
+  return PUBLIC_TO_BACKEND_SEMANTIC_KEY[code];
 }
 
 export type EczIdKind = "parent" | "child";

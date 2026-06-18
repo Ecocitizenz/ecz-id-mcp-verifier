@@ -123,13 +123,19 @@ invalid target and never produces a Resolver request.
 | Form | Template | Example |
 | --- | --- | --- |
 | Parent (operator) | `ECZ-CC-XXXXXX` | `ECZ-GB-A93K7Q` |
-| Child (passport instance) | `ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY` | `ECZ-GB-A93K7Q::AGENT_CREDENTIAL-M4X9P2` |
+| Child (passport instance) | `ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY` | `ECZ-GB-A93K7Q::AGENT-4F9Q2A` |
 
 - `CC` is exactly two uppercase letters (operator country/class code).
 - `XXXXXX` and `YYYYYY` are each exactly six uppercase Base36 characters
   (`0-9A-Z`).
-- `PASSPORT_CODE` is a registry-controlled passport code and may itself contain
-  hyphens; the six-character instance suffix is split off the final hyphen.
+- `PASSPORT_CODE` is a **public passport-number code** from the canonical
+  numbering registry (e.g. `AGENT`, `SSCM`, `D1-DRONE`); it may itself contain
+  hyphens, and the six-character instance suffix is split off the final hyphen.
+  Backend semantic registry keys (e.g. `AGENT_CREDENTIAL`) are **not** valid
+  public child codes.
+
+Resolver routes: a parent resolves to `…/p/{parent}`; a child resolves to the
+decomposed form `…/p/{parent}/{passport_code}/{instance_suffix}`.
 
 ### CLI examples
 

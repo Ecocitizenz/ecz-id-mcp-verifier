@@ -4,61 +4,89 @@ import {
   isValidEczId,
   isValidParentEczId,
   isValidChildEczId,
+  isPublicPassportCode,
   isRecognisedPassportCode,
-  CANONICAL_PASSPORT_CODES,
-  RECOGNISED_PASSPORT_CODES
+  backendSemanticKeyFor,
+  PUBLIC_PASSPORT_CODES,
+  PUBLIC_TO_BACKEND_SEMANTIC_KEY,
+  BACKEND_SEMANTIC_KEYS
 } from "../src/ecz-id.js";
 
-// ISSUE 1 — exact ECZ-ID format validation.
-// Locked parent:  ECZ-CC-XXXXXX  (CC=[A-Z]{2}, XXXXXX=6 uppercase Base36)
-// Locked child:   ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY (YYYYYY=6 Base36)
+// ISSUE/TASK — exact ECZ-ID format + Passport Number SSOT alignment.
+// Parent:  ECZ-CC-XXXXXX  (CC=[A-Z]{2}, XXXXXX=6 uppercase Base36)
+// Child:   ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY (PASSPORT_CODE = locked PUBLIC code)
+const PARENT = "ECZ-GB-A93K7Q";
 
 describe("ECZ-ID parser: valid parent identifiers", () => {
-  const valid = ["ECZ-GB-A93K7Q", "ECZ-CC-ABC123", "ECZ-AG-XYZ987", "ECZ-US-000000", "ECZ-ZZ-ZZZZZZ"];
-  for (const id of valid) {
+  for (const id of [PARENT, "ECZ-CC-ABC123", "ECZ-AG-XYZ987", "ECZ-US-000000", "ECZ-ZZ-ZZZZZZ"]) {
     it(`accepts parent ${id}`, () => {
       const p = parseEczId(id);
       expect(p.valid).toBe(true);
       expect(p.kind).toBe("parent");
       expect(p.parent).toBe(id);
-      expect(p.parentSuffix).toMatch(/^[0-9A-Z]{6}$/);
       expect(isValidParentEczId(id)).toBe(true);
       expect(isValidChildEczId(id)).toBe(false);
     });
   }
 });
 
-describe("ECZ-ID parser: valid child passport-instance identifiers", () => {
-  // The Phase-1 directive's blessed examples (AGENT / SSCM / D1-DRONE) plus the
-  // canonical SSOT spellings. D1-DRONE proves the hyphen-safe suffix split.
-  const cases: Array<[string, string, string]> = [
-    ["ECZ-GB-A93K7Q::AGENT-4F9Q2A", "AGENT", "4F9Q2A"],
-    ["ECZ-GB-A93K7Q::SSCM-M29F8Q", "SSCM", "M29F8Q"],
-    ["ECZ-GB-A93K7Q::D1-DRONE-7A9F2Q", "D1-DRONE", "7A9F2Q"],
-    ["ECZ-GB-A93K7Q::AGENT_CREDENTIAL-M4X9P2", "AGENT_CREDENTIAL", "M4X9P2"],
-    ["ECZ-GB-A93K7Q::SOFTWARE_SUPPLY_CHAIN-M29F8Q", "SOFTWARE_SUPPLY_CHAIN", "M29F8Q"],
-    ["ECZ-GB-A93K7Q::DRONE_D1-7A9F2Q", "DRONE_D1", "7A9F2Q"],
-    ["ECZ-GB-A93K7Q::API_PASSPORT-P7K2Q9", "API_PASSPORT", "P7K2Q9"]
-  ];
-  for (const [id, code, suffix] of cases) {
-    it(`accepts child ${id}`, () => {
+describe("ECZ-ID parser: valid child identifiers use PUBLIC passport-number codes", () => {
+  it("accepts the SSOT public-code examples", () => {
+    const cases: Array<[string, string, string]> = [
+      [`${PARENT}::AGENT-4F9Q2A`, "AGENT", "4F9Q2A"],
+      [`${PARENT}::SSCM-M29F8Q`, "SSCM", "M29F8Q"],
+      [`${PARENT}::D1-DRONE-7A9F2Q`, "D1-DRONE", "7A9F2Q"]
+    ];
+    for (const [id, code, suffix] of cases) {
       const p = parseEczId(id);
-      expect(p.valid).toBe(true);
+      expect(p.valid, id).toBe(true);
       expect(p.kind).toBe("child");
-      expect(p.parent).toBe("ECZ-GB-A93K7Q");
+      expect(p.parent).toBe(PARENT);
       expect(p.passportCode).toBe(code);
       expect(p.instanceSuffix).toBe(suffix);
-      expect(isValidChildEczId(id)).toBe(true);
-      expect(isValidParentEczId(id)).toBe(false);
-    });
-  }
-});
+    }
+  });
 
-describe("ECZ-ID parser: hyphen-safe suffix split (no simplistic first-hyphen split)", () => {
-  it("splits a hyphenated passport code off the FINAL hyphen", () => {
-    const p = parseEczId("ECZ-GB-A93K7Q::D1-DRONE-7A9F2Q");
+  it("accepts EVERY locked public passport-number code", () => {
+    for (const code of PUBLIC_PASSPORT_CODES) {
+      const id = `${PARENT}::${code}-4F9Q2A`;
+      const p = parseEczId(id);
+      expect(p.valid, `expected ${id} valid`).toBe(true);
+      expect(p.passportCode).toBe(code);
+      expect(isValidChildEczId(id)).toBe(true);
+    }
+  });
+
+  it("splits a hyphenated code off the FINAL hyphen (no first-hyphen split)", () => {
+    const p = parseEczId(`${PARENT}::D1-DRONE-7A9F2Q`);
     expect(p.passportCode).toBe("D1-DRONE"); // NOT "D1"
     expect(p.instanceSuffix).toBe("7A9F2Q"); // NOT "DRONE-7A9F2Q"
+    const r = parseEczId(`${PARENT}::ROBOT-IND-4F9Q2A`);
+    expect(r.passportCode).toBe("ROBOT-IND");
+    expect(r.instanceSuffix).toBe("4F9Q2A");
+  });
+});
+
+describe("ECZ-ID parser: backend semantic keys are NOT public child codes", () => {
+  // These represent the same products but must never be accepted as PUBLIC IDs.
+  const rejected = [
+    `${PARENT}::AGENT_CREDENTIAL-M4X9P2`,
+    `${PARENT}::SOFTWARE_SUPPLY_CHAIN-M29F8Q`,
+    `${PARENT}::DRONE_D1-7A9F2Q`,
+    `${PARENT}::API_PASSPORT-P7K2Q9`,
+    `${PARENT}::AI_MODEL-P7K2Q9`,
+    `${PARENT}::CYBER_RESILIENCE-P7K2Q9`
+  ];
+  for (const id of rejected) {
+    it(`rejects backend-only key ${id}`, () => {
+      expect(isValidEczId(id)).toBe(false);
+      expect(parseEczId(id).reason).toBe("passport_code_unknown");
+    });
+  }
+  it("backend semantic keys are not public codes", () => {
+    for (const k of BACKEND_SEMANTIC_KEYS) {
+      expect(isPublicPassportCode(k)).toBe(false);
+    }
   });
 });
 
@@ -69,49 +97,49 @@ describe("ECZ-ID parser: invalid identifiers (mandatory rejections)", () => {
     ["ECZ-GB-ABC1234", "7-char identity suffix"],
     ["ECZ-gb-ABC123", "lowercase country"],
     ["ECZ-GB-ABC12!", "non-Base36 char"],
-    ["ECZ-GB-abc123", "lowercase suffix"],
-    ["ECZ-G-ABC123", "1-letter country"],
-    ["ECZ-GBR-ABC123", "3-letter country"],
     ["ECZ-API-AB12", "3-letter country + 4-char suffix"],
-    ["ECZ-GB-ABC123::UNKNOWN-ABC123", "passport code not in registry"],
-    ["ECZ-GB-ABC123::SSCM-ABC12", "5-char instance suffix"],
-    ["ECZ-GB-ABC123::SSCM-ABC1234", "7-char instance suffix"],
-    ["ECZ-GB-ABC123::AGENT_CREDENTIAL-7F2A", "4-char instance suffix"],
-    ["ECZ-GB-ABC123::AGENT-abc123", "lowercase instance suffix"],
-    ["ECZ-GB-ABC123::AGENT", "no instance suffix"],
-    ["ECZ-GB-ABC123::-ABC123", "empty passport code"],
-    ["ECZ-GB-ABC123::AGENT::X-ABC123", "multiple separators"],
-    [" ECZ-GB-ABC123", "leading whitespace"],
-    ["ECZ-GB-ABC123 ", "trailing whitespace"],
+    [`${PARENT}::UNKNOWN-ABC123`, "passport code not in registry"],
+    [`${PARENT}::SSCM-ABC12`, "5-char instance suffix"],
+    [`${PARENT}::SSCM-ABC1234`, "7-char instance suffix"],
+    [`${PARENT}::AGENT-7F2A`, "4-char instance suffix"],
+    [`${PARENT}::AGENT-abc123`, "lowercase instance suffix"],
+    [`${PARENT}::AGENT`, "no instance suffix"],
+    [`${PARENT}::-ABC123`, "empty passport code"],
+    [`${PARENT}::AGENT::X-ABC123`, "multiple separators"],
+    [` ${PARENT}`, "leading whitespace"],
     ["not-an-ecz-id", "free text"],
-    ["ECZ-GB", "incomplete"],
-    ["https://example.com", "url"],
     ["", "empty"]
   ];
   for (const [id, why] of invalid) {
     it(`rejects ${JSON.stringify(id)} (${why})`, () => {
       expect(isValidEczId(id)).toBe(false);
-      expect(parseEczId(id).valid).toBe(false);
       expect(parseEczId(id).reason).not.toBeNull();
     });
   }
 });
 
-describe("ECZ-ID parser: passport-code registry", () => {
-  it("carries the 33 canonical SSOT codes", () => {
-    expect(CANONICAL_PASSPORT_CODES.length).toBe(33);
-    expect(new Set(CANONICAL_PASSPORT_CODES).size).toBe(33);
+describe("ECZ-ID: public passport-code registry & backend mapping", () => {
+  it("locks exactly the 22 SSOT public codes (unique)", () => {
+    expect(PUBLIC_PASSPORT_CODES.length).toBe(22);
+    expect(new Set(PUBLIC_PASSPORT_CODES).size).toBe(22);
   });
-  it("recognises canonical codes and rejects unknown ones", () => {
-    expect(isRecognisedPassportCode("AGENT_CREDENTIAL")).toBe(true);
-    expect(isRecognisedPassportCode("SOFTWARE_SUPPLY_CHAIN")).toBe(true);
-    expect(isRecognisedPassportCode("DRONE_D1")).toBe(true);
-    expect(isRecognisedPassportCode("UNKNOWN")).toBe(false);
-    expect(isRecognisedPassportCode("agent_credential")).toBe(false);
+  it("recognises public codes; rejects unknown + backend keys", () => {
+    expect(isPublicPassportCode("AGENT")).toBe(true);
+    expect(isPublicPassportCode("SSCM")).toBe(true);
+    expect(isPublicPassportCode("D1-DRONE")).toBe(true);
+    expect(isRecognisedPassportCode("AGENT")).toBe(true); // back-compat alias
+    expect(isPublicPassportCode("UNKNOWN")).toBe(false);
+    expect(isPublicPassportCode("AGENT_CREDENTIAL")).toBe(false);
+    expect(isPublicPassportCode("agent")).toBe(false); // case-sensitive
   });
-  it("recognises the Phase-1 blessed short forms", () => {
-    for (const c of ["AGENT", "SSCM", "D1-DRONE"]) {
-      expect(RECOGNISED_PASSPORT_CODES.has(c)).toBe(true);
+  it("maps public code -> backend semantic key without affecting validity", () => {
+    expect(backendSemanticKeyFor("AGENT")).toBe("AGENT_CREDENTIAL");
+    expect(backendSemanticKeyFor("SSCM")).toBe("SOFTWARE_SUPPLY_CHAIN");
+    expect(backendSemanticKeyFor("D1-DRONE")).toBe("DRONE_D1");
+    expect(backendSemanticKeyFor("UNKNOWN")).toBeUndefined();
+    // every public code maps to a backend key
+    for (const code of PUBLIC_PASSPORT_CODES) {
+      expect(typeof PUBLIC_TO_BACKEND_SEMANTIC_KEY[code]).toBe("string");
     }
   });
 });

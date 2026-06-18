@@ -14,18 +14,22 @@ describe("classifyTarget", () => {
     expect(classifyTarget("ECZ-GB-A93K7Q")).toBe("ecz_id");
   });
 
-  it("recognises a valid child passport-instance ECZ-ID", () => {
-    expect(classifyTarget("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A")).toBe("ecz_id");
+  it("recognises a valid child passport-instance ECZ-ID (PUBLIC code)", () => {
+    expect(classifyTarget("ECZ-GB-A93K7Q::AGENT-4F9Q2A")).toBe("ecz_id");
+    expect(classifyTarget("ECZ-GB-A93K7Q::SSCM-M29F8Q")).toBe("ecz_id");
     expect(classifyTarget("ECZ-GB-A93K7Q::D1-DRONE-7A9F2Q")).toBe("ecz_id");
   });
 
-  it("does NOT classify a malformed ECZ-shaped string as ecz_id (no fetch path)", () => {
+  it("does NOT classify a malformed / backend-key ECZ-shaped string as ecz_id (no fetch path)", () => {
     // 7-char identity suffix, 3-letter country/4-char suffix, lowercase, bad char.
     expect(classifyTarget("ECZ-GB-EXAMPLE")).toBe("unsupported_target");
     expect(classifyTarget("ECZ-API-AB12")).toBe("unsupported_target");
     expect(classifyTarget("ECZ-gb-ABC123")).toBe("unsupported_target");
     expect(classifyTarget("ECZ-GB-ABC12!")).toBe("unsupported_target");
     expect(classifyTarget("ECZ-GB-A93K7Q::UNKNOWN-ABC123")).toBe("unsupported_target");
+    // backend semantic keys are NOT public child codes.
+    expect(classifyTarget("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A")).toBe("unsupported_target");
+    expect(classifyTarget("ECZ-GB-A93K7Q::DRONE_D1-7A9F2Q")).toBe("unsupported_target");
   });
 
   it("recognises MCP server well-known manifest URL", () => {

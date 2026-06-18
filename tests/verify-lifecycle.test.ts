@@ -192,13 +192,30 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
     expect(spy).not.toHaveBeenCalled();
     expect(res.resolver_url).toBeNull();
   });
+
+  it("child ID: decomposed human URL retained, machine null, no fetch, missing proof", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const res = await verify({ target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A", policy: "OPEN" });
+    expect(res.target_type).toBe("ecz_id");
+    expect(res.result_state).toBe("NO_PUBLIC_RESOLVER_PROOF_FOUND");
+    expect(res.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/AGENT/4F9Q2A");
+    expect(res.machine_json_url).toBeNull(); // no proven child machine endpoint
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("child backend-key ID is unsupported (not a public code), no fetch", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const res = await verify({ target: "ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A", policy: "OPEN" });
+    expect(res.result_state).toBe("UNSUPPORTED_TARGET");
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
 
 describe("mapProofState: total + safe mapping", () => {
   const states: ResolverProofState[] = [
-    "active", "not_found", "unavailable", "malformed", "schema_mismatch",
-    "target_mismatch", "revoked", "suspended", "expired", "stale", "degraded",
-    "abuse", "proof_invalid", "unknown"
+    "active", "child_machine_unproven", "not_found", "unavailable", "malformed",
+    "schema_mismatch", "target_mismatch", "revoked", "suspended", "expired",
+    "stale", "degraded", "abuse", "proof_invalid", "unknown"
   ];
   it("maps every proof state to a canonical ResultState and canonical ReasonCodes", () => {
     for (const s of states) {
