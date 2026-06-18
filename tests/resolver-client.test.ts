@@ -8,6 +8,7 @@ import {
   type ResolverProofState
 } from "../src/resolver-client.js";
 import { RESULT_STATES } from "../src/result-states.js";
+import { PUBLIC_PASSPORT_CODES } from "../src/ecz-id.js";
 
 const RBASE = "https://resolver.ecocitizenz.org";
 const ABASE = "https://api.ecocitizenz.com";
@@ -97,6 +98,18 @@ describe("resolver route contract: CHILD URLs are decomposed, machine is unprove
     const u = deriveResolverUrls(CHILD, "ecz_id", RBASE, ABASE)!;
     expect(u.kind).toBe("child");
     expect(u.machine).toBeUndefined();
+  });
+
+  it("ALL 33 public codes produce a correct decomposed human URL + null machine", () => {
+    for (const code of PUBLIC_PASSPORT_CODES) {
+      const u = deriveResolverUrls(`ECZ-GB-A93K7Q::${code}-4F9Q2A`, "ecz_id", RBASE, ABASE)!;
+      expect(u, code).toBeDefined();
+      expect(u.kind).toBe("child");
+      expect(u.human).toBe(`https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/${code}/4F9Q2A`);
+      expect(u.human.includes("%3A%3A")).toBe(false);
+      expect(u.human.includes("::")).toBe(false);
+      expect(u.machine).toBeUndefined(); // no fabricated child machine route
+    }
   });
 });
 

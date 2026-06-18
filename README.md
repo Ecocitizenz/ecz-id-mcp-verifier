@@ -128,14 +128,56 @@ invalid target and never produces a Resolver request.
 - `CC` is exactly two uppercase letters (operator country/class code).
 - `XXXXXX` and `YYYYYY` are each exactly six uppercase Base36 characters
   (`0-9A-Z`).
-- `PASSPORT_CODE` is a **public passport-number code** from the canonical
-  numbering registry (e.g. `AGENT`, `SSCM`, `D1-DRONE`); it may itself contain
-  hyphens, and the six-character instance suffix is split off the final hyphen.
-  Backend semantic registry keys (e.g. `AGENT_CREDENTIAL`) are **not** valid
-  public child codes.
+- `PASSPORT_CODE` is one of the **33 public passport-number codes** from the
+  canonical numbering registry (below); it may itself contain hyphens, and the
+  six-character instance suffix is split off the final hyphen. Backend semantic
+  registry keys (e.g. `AGENT_CREDENTIAL`) and obsolete earlier-taxonomy codes
+  are **not** valid public child codes.
 
 Resolver routes: a parent resolves to `…/p/{parent}`; a child resolves to the
 decomposed form `…/p/{parent}/{passport_code}/{instance_suffix}`.
+
+#### Public passport-number codes (33)
+
+| # | Passport | Public code | Backend key (internal) | Example public Resolver URL |
+| --- | --- | --- | --- | --- |
+| 1 | Agent Credential | `AGENT` | `AGENT_CREDENTIAL` | `…/p/ECZ-GB-A93K7Q/AGENT/4F9Q2A` |
+| 2 | Cyber Resilience | `CYBER` | `CYBER` | `…/p/ECZ-GB-A93K7Q/CYBER/4F9Q2A` |
+| 3 | API Passport | `API` | `API` | `…/p/ECZ-GB-A93K7Q/API/4F9Q2A` |
+| 4 | AI Model | `AI` | `AIMODEL` | `…/p/ECZ-GB-A93K7Q/AI/4F9Q2A` |
+| 5 | Dataset | `DATASET` | `DATASET` | `…/p/ECZ-GB-A93K7Q/DATASET/4F9Q2A` |
+| 6 | IoT Device | `IOT` | `IOT` | `…/p/ECZ-GB-A93K7Q/IOT/4F9Q2A` |
+| 7 | Software Supply Chain | `SSCM` | `SOFTWARE_SUPPLY_CHAIN` | `…/p/ECZ-GB-A93K7Q/SSCM/4F9Q2A` |
+| 8 | Product | `PRODUCT` | `PRODUCT` | `…/p/ECZ-GB-A93K7Q/PRODUCT/4F9Q2A` |
+| 9 | Custody Transfer | `CUSTODY` | `CUSTODY` | `…/p/ECZ-GB-A93K7Q/CUSTODY/4F9Q2A` |
+| 10 | Risk Policy | `RISKPOL` | `RISK_POLICY` | `…/p/ECZ-GB-A93K7Q/RISKPOL/4F9Q2A` |
+| 11 | Industrial Robot | `ROBOT-IND` | `IROBOT` | `…/p/ECZ-GB-A93K7Q/ROBOT-IND/4F9Q2A` |
+| 12 | Public-Space Robot | `ROBOT-PUB` | `PROBOT` | `…/p/ECZ-GB-A93K7Q/ROBOT-PUB/4F9Q2A` |
+| 13 | Domestic Robot | `ROBOT-DOM` | `DROBOT` | `…/p/ECZ-GB-A93K7Q/ROBOT-DOM/4F9Q2A` |
+| 14 | Robotaxi | `ROBOTAXI` | `ROBOTAXI` | `…/p/ECZ-GB-A93K7Q/ROBOTAXI/4F9Q2A` |
+| 15 | Autonomous Car | `AUTO-CAR` | `AUTOCAR` | `…/p/ECZ-GB-A93K7Q/AUTO-CAR/4F9Q2A` |
+| 16 | Autonomous Haulage Truck | `AUTO-TRUCK` | `AUTOHAUL` | `…/p/ECZ-GB-A93K7Q/AUTO-TRUCK/4F9Q2A` |
+| 17 | Cross-Border Haulage Truck | `XHAUL` | `XBRDHAUL` | `…/p/ECZ-GB-A93K7Q/XHAUL/4F9Q2A` |
+| 18 | High-Value Cargo Truck | `HV-CARGO` | `HVCARGO` | `…/p/ECZ-GB-A93K7Q/HV-CARGO/4F9Q2A` |
+| 19 | D1 Drone | `D1-DRONE` | `D1` | `…/p/ECZ-GB-A93K7Q/D1-DRONE/4F9Q2A` |
+| 20 | D2 Drone | `D2-DRONE` | `D2` | `…/p/ECZ-GB-A93K7Q/D2-DRONE/4F9Q2A` |
+| 21 | D3 Drone | `D3-DRONE` | `D3` | `…/p/ECZ-GB-A93K7Q/D3-DRONE/4F9Q2A` |
+| 22 | D4 Drone | `D4-DRONE` | `D4` | `…/p/ECZ-GB-A93K7Q/D4-DRONE/4F9Q2A` |
+| 23 | Intermodal Transfer | `INTERMODAL` | `INTERMODAL` | `…/p/ECZ-GB-A93K7Q/INTERMODAL/4F9Q2A` |
+| 24 | Industrial Site | `IND-SITE` | `INDUSTRIAL_SITE` | `…/p/ECZ-GB-A93K7Q/IND-SITE/4F9Q2A` |
+| 25 | Critical Infrastructure | `CRITICAL-INFRA` | `CRITICAL_INFRA` | `…/p/ECZ-GB-A93K7Q/CRITICAL-INFRA/4F9Q2A` |
+| 26 | Financial Authority & Funds Flow | `FUNDS-FLOW` | `FUNDS_FLOW` | `…/p/ECZ-GB-A93K7Q/FUNDS-FLOW/4F9Q2A` |
+| 27 | Marine Vessel | `MARINE-VESSEL` | `MARINE_VESSEL` | `…/p/ECZ-GB-A93K7Q/MARINE-VESSEL/4F9Q2A` |
+| 28 | Cargo Container | `CARGO-CONTAINER` | `CONTAINER` | `…/p/ECZ-GB-A93K7Q/CARGO-CONTAINER/4F9Q2A` |
+| 29 | Aircraft | `AIRCRAFT` | `AIRCRAFT` | `…/p/ECZ-GB-A93K7Q/AIRCRAFT/4F9Q2A` |
+| 30 | Aviation Component | `AVIATION-COMP` | `AVIATION_COMP` | `…/p/ECZ-GB-A93K7Q/AVIATION-COMP/4F9Q2A` |
+| 31 | Platform Safe-Harbour | `SAFE-HARBOUR` | `SAFE_HARBOUR` | `…/p/ECZ-GB-A93K7Q/SAFE-HARBOUR/4F9Q2A` |
+| 32 | Identity Continuity | `ID-CONTINUITY` | `ID_CONTINUITY` | `…/p/ECZ-GB-A93K7Q/ID-CONTINUITY/4F9Q2A` |
+| 33 | Licensed Infrastructure Operator | `LIC-INFRA` | `LICENSED_OPERATOR` | `…/p/ECZ-GB-A93K7Q/LIC-INFRA/4F9Q2A` |
+
+The backend-key column is an internal mapping only; those keys are never valid
+public child codes. Child `machine_json_url` is `null` (no proven child machine
+endpoint); the parent machine projection `…/api/p/{parent}.json` is unchanged.
 
 ### CLI examples
 

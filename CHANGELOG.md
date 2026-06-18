@@ -17,10 +17,12 @@ Not yet published to npm or the GitHub Action Marketplace.
   uppercase Base36); child passport instances are
   `ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY` with an exactly six-character instance
   suffix split off the final hyphen (hyphenated passport codes parse correctly).
-  `PASSPORT_CODE` is validated against the locked **public passport-number code**
-  registry (e.g. `AGENT`, `SSCM`, `D1-DRONE`) from the Passport Number's SSOT;
-  backend semantic registry keys (e.g. `AGENT_CREDENTIAL`) are **not** accepted
-  as public child codes (a separate internal public→backend mapping is provided).
+  `PASSPORT_CODE` is validated against the **complete locked 33-code public
+  passport-number registry** (the Final Canonical Registry; e.g. `AGENT`, `SSCM`,
+  `D1-DRONE`, …, `CRITICAL-INFRA`, `LIC-INFRA`). Backend semantic registry keys
+  (e.g. `AGENT_CREDENTIAL`, `IROBOT`, `D1`) and obsolete earlier-taxonomy codes
+  (e.g. `DATA-EXCHANGE`) are **not** accepted as public child codes; a separate
+  internal public→backend mapping is provided that never affects public validity.
   Malformed IDs (e.g. `ECZ-GB-EXAMPLE`) are rejected and never trigger a fetch.
 - **Decomposed child Resolver routes.** A parent resolves to `…/p/{parent}`; a
   child resolves to the decomposed external form
