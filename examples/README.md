@@ -3,7 +3,7 @@
 This directory contains example invocations of the ECZ-ID MCP
 Verifier(TM) CLI and GitHub Action.
 
-> All examples use placeholder targets (such as `ECZ-GB-EXAMPLE` or
+> All examples use placeholder targets (such as `ECZ-GB-A93K7Q` or
 > `https://api.example.com/...`) and mock outputs. Nothing in this
 > directory implies that any real target is safe, certified, approved,
 > insured, or fully compliant. The verifier does not certify safety.

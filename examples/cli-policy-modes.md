@@ -15,7 +15,7 @@
 ### OPEN
 
 ```sh
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" --policy OPEN
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" --policy OPEN
 ```
 
 A missing public resolver proof is reported as informational and exits 0.
@@ -23,7 +23,7 @@ A missing public resolver proof is reported as informational and exits 0.
 ### PREFER
 
 ```sh
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" --policy PREFER
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" --policy PREFER
 ```
 
 A missing public resolver proof emits a warning on stderr and exits 0.
@@ -33,7 +33,7 @@ decides." It does not say the target is unsafe.
 ### REQUIRE
 
 ```sh
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" --policy REQUIRE
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" --policy REQUIRE
 ```
 
 Under REQUIRE the verifier fails closed when proof is missing or

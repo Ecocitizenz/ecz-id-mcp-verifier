@@ -3,12 +3,18 @@ import {
   lookup,
   deriveResolverUrl,
   deriveResolverUrls,
-  isAcceptedEczId
+  isAcceptedEczId,
+  interpretResolverResponse,
+  type ResolverProofState
 } from "../src/resolver-client.js";
 import { RESULT_STATES } from "../src/result-states.js";
 
 const RBASE = "https://resolver.ecocitizenz.org";
 const ABASE = "https://api.ecocitizenz.com";
+
+// Canonical fixtures (exact format): parent + child with a 6-char instance suffix.
+const PARENT = "ECZ-GB-A93K7Q";
+const CHILD = "ECZ-GB-A93K7Q::AGENT_CREDENTIAL-M4X9P2";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -19,39 +25,56 @@ function mockFetch(impl: (url: string) => Promise<Response> | Response) {
     Promise.resolve(impl(String(input)))) as typeof fetch);
 }
 
-describe("resolver route contract: ECZ-ID acceptance", () => {
+function activeBody(id: string): string {
+  return JSON.stringify({
+    ecz_id: id,
+    status: "active",
+    lifecycle_state: "ACTIVE",
+    trust_assertion: { revoked: false, ledger_anchored: true, pulse_fresh: true }
+  });
+}
+
+describe("resolver route contract: ECZ-ID acceptance (exact format)", () => {
   it("accepts a valid parent ECZ-ID", () => {
-    expect(isAcceptedEczId("ECZ-GB-ABC123")).toBe(true);
+    expect(isAcceptedEczId(PARENT)).toBe(true);
   });
-  it("accepts a valid child passport instance", () => {
-    expect(isAcceptedEczId("ECZ-GB-ABC123::AGENT_CREDENTIAL-7F2A")).toBe(true);
+  it("accepts a valid child passport instance (6-char suffix)", () => {
+    expect(isAcceptedEczId(CHILD)).toBe(true);
   });
-  it("rejects an invalid identifier", () => {
+  it("rejects malformed identifiers", () => {
+    expect(isAcceptedEczId("ECZ-GB-EXAMPLE")).toBe(false);
+    expect(isAcceptedEczId("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-7F2A")).toBe(false); // 4-char suffix
     expect(isAcceptedEczId("not-an-ecz-id")).toBe(false);
     expect(isAcceptedEczId("ECZ-GB")).toBe(false);
     expect(isAcceptedEczId("https://example.com")).toBe(false);
   });
 });
 
-describe("resolver route contract: URL construction", () => {
-  it("constructs the canonical human proof URL (/p/{ecz_id})", () => {
-    const u = deriveResolverUrls("ECZ-GB-ABC123", "ecz_id", RBASE, ABASE);
-    expect(u?.human).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-ABC123");
+describe("resolver route contract: URL construction (parent + child)", () => {
+  it("constructs the canonical human proof URL for a parent (/p/{ecz_id})", () => {
+    const u = deriveResolverUrls(PARENT, "ecz_id", RBASE, ABASE);
+    expect(u?.human).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q");
   });
-  it("constructs the canonical machine JSON endpoint (api host /api/p/{ecz_id}.json)", () => {
-    const u = deriveResolverUrls("ECZ-GB-ABC123", "ecz_id", RBASE, ABASE);
-    expect(u?.machine).toBe("https://api.ecocitizenz.com/api/p/ECZ-GB-ABC123.json");
+  it("constructs the canonical machine JSON endpoint for a parent", () => {
+    const u = deriveResolverUrls(PARENT, "ecz_id", RBASE, ABASE);
+    expect(u?.machine).toBe("https://api.ecocitizenz.com/api/p/ECZ-GB-A93K7Q.json");
   });
-  it("derives the human URL for a child passport instance", () => {
-    const u = deriveResolverUrls("ECZ-GB-ABC123::AGENT_CREDENTIAL-7F2A", "ecz_id", RBASE, ABASE);
+  it("derives the human + machine URL for a child passport instance", () => {
+    const u = deriveResolverUrls(CHILD, "ecz_id", RBASE, ABASE);
     expect(u?.human).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-ABC123%3A%3AAGENT_CREDENTIAL-7F2A"
+      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q%3A%3AAGENT_CREDENTIAL-M4X9P2"
+    );
+    expect(u?.machine).toBe(
+      "https://api.ecocitizenz.com/api/p/ECZ-GB-A93K7Q%3A%3AAGENT_CREDENTIAL-M4X9P2.json"
     );
   });
   it("deriveResolverUrl (back-compat) returns the human /p/ URL for an ECZ-ID", () => {
-    expect(deriveResolverUrl("ECZ-GB-ABC123", "ecz_id", RBASE)).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-ABC123"
+    expect(deriveResolverUrl(PARENT, "ecz_id", RBASE)).toBe(
+      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q"
     );
+  });
+  it("never fabricates a route for an invalid ECZ-ID", () => {
+    expect(deriveResolverUrls("ECZ-GB-EXAMPLE", "ecz_id", RBASE, ABASE)).toBeUndefined();
   });
 });
 
@@ -74,46 +97,113 @@ describe("resolver route contract: no fabricated paths for non-ECZ-ID targets", 
     expect(r.resolver_url).toBeUndefined();
     expect(spy).not.toHaveBeenCalled();
   });
+  it("lookup on an invalid ECZ-ID never fetches (invalid IDs never trigger fetch)", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    // Even if mis-classified as ecz_id, the client refuses an invalid identifier.
+    const r = await lookup("ECZ-GB-EXAMPLE", "ecz_id");
+    expect(r.applicable).toBe(false);
+    expect(r.network_attempted).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
 
 describe("resolver lookup behaviour (ECZ-ID, mocked network)", () => {
   it("no-network mode performs no fetch and returns found=false (applicable)", async () => {
     const spy = vi.spyOn(globalThis, "fetch");
-    const r = await lookup("ECZ-GB-ABC123", "ecz_id", { noNetwork: true });
+    const r = await lookup(PARENT, "ecz_id", { noNetwork: true });
     expect(r.found).toBe(false);
     expect(r.applicable).toBe(true);
     expect(r.network_attempted).toBe(false);
-    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-ABC123");
+    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q");
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("valid proof: a 2xx machine response yields found=true with both URLs", async () => {
-    mockFetch(() => new Response(JSON.stringify({ state: "active" }), { status: 200 }));
-    const r = await lookup("ECZ-GB-ABC123", "ecz_id");
+  it("200 active projection yields found=true with both URLs", async () => {
+    mockFetch(() => new Response(activeBody(PARENT), { status: 200 }));
+    const r = await lookup(PARENT, "ecz_id");
     expect(r.found).toBe(true);
+    expect(r.proof_state).toBe("active");
     expect(r.network_attempted).toBe(true);
-    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-ABC123");
-    expect(r.machine_json_url).toBe("https://api.ecocitizenz.com/api/p/ECZ-GB-ABC123.json");
+    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q");
+    expect(r.machine_json_url).toBe("https://api.ecocitizenz.com/api/p/ECZ-GB-A93K7Q.json");
   });
 
-  it("not found: a 404 machine response yields found=false after a real lookup", async () => {
-    mockFetch(() => new Response("", { status: 404 }));
-    const r = await lookup("ECZ-GB-ABC123", "ecz_id");
+  it("HTTP 200 ALONE (empty/2xx-only body) is never proof", async () => {
+    mockFetch(() => new Response("", { status: 200 }));
+    const r = await lookup(PARENT, "ecz_id");
     expect(r.found).toBe(false);
-    expect(r.network_attempted).toBe(true);
-    expect(r.http_status).toBe(404);
-    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-ABC123");
+    expect(r.proof_state).toBe("malformed");
+    expect(r.machine_json_url).toBeUndefined();
   });
 
-  it("unavailable: a network error yields found=false with an error and no fabricated proof", async () => {
+  it("200 child active projection yields found=true", async () => {
+    mockFetch(() => new Response(activeBody(CHILD), { status: 200 }));
+    const r = await lookup(CHILD, "ecz_id");
+    expect(r.found).toBe(true);
+    expect(r.proof_state).toBe("active");
+  });
+
+  it("404 yields not_found after a real lookup", async () => {
+    mockFetch(() => new Response(JSON.stringify({ error: "ECZ-ID not found" }), { status: 404 }));
+    const r = await lookup(PARENT, "ecz_id");
+    expect(r.found).toBe(false);
+    expect(r.proof_state).toBe("not_found");
+    expect(r.http_status).toBe(404);
+    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q");
+  });
+
+  it("network error yields unavailable with no fabricated proof", async () => {
     mockFetch(() => {
       throw new Error("boom");
     });
-    const r = await lookup("ECZ-GB-ABC123", "ecz_id");
+    const r = await lookup(PARENT, "ecz_id");
     expect(r.found).toBe(false);
+    expect(r.proof_state).toBe("unavailable");
     expect(r.network_attempted).toBe(true);
     expect(typeof r.network_error).toBe("string");
     expect(r.machine_json_url).toBeUndefined();
+  });
+});
+
+// ISSUE 3 — strict, bounded lifecycle-body interpretation.
+describe("interpretResolverResponse: HTTP + body -> proof state", () => {
+  const id = "ECZ-GB-A93K7Q";
+  const cases: Array<[string, number, unknown, ResolverProofState]> = [
+    ["200 active", 200, { ecz_id: id, status: "active", trust_assertion: { revoked: false } }, "active"],
+    ["200 revoked (trust_assertion)", 200, { ecz_id: id, status: "active", trust_assertion: { revoked: true } }, "revoked"],
+    ["200 revoked (status)", 200, { ecz_id: id, status: "revoked" }, "revoked"],
+    ["200 suspended", 200, { ecz_id: id, status: "suspended" }, "suspended"],
+    ["200 expired", 200, { ecz_id: id, status: "expired" }, "expired"],
+    ["200 abuse_flagged", 200, { ecz_id: id, status: "abuse_flagged", verification_state: "SUSPECTED_REUSE" }, "abuse"],
+    ["200 stale (pulseguard)", 200, { ecz_id: id, status: "active", pulseguard: { overall_validity: "STALE" } }, "stale"],
+    ["200 degraded", 200, { ecz_id: id, status: "degraded" }, "degraded"],
+    ["200 proof_invalid", 200, { ecz_id: id, verification_state: "PROOF_INVALID" }, "proof_invalid"],
+    ["200 target mismatch", 200, { ecz_id: "ECZ-GB-ZZZZZZ", status: "active" }, "target_mismatch"],
+    ["200 unknown schema (no ecz_id)", 200, { hello: "world" }, "schema_mismatch"],
+    ["200 unknown lifecycle", 200, { ecz_id: id, status: "frobnicated" }, "unknown"],
+    ["410 gone", 410, { error: "gone" }, "not_found"],
+    ["429 rate limited", 429, { error: "slow down" }, "unavailable"],
+    ["500", 500, { error: "boom" }, "unavailable"],
+    ["503", 503, { error: "maintenance" }, "unavailable"]
+  ];
+  for (const [label, status, body, expected] of cases) {
+    it(`${label} -> ${expected}`, () => {
+      expect(interpretResolverResponse(status, JSON.stringify(body), id)).toBe(expected);
+    });
+  }
+
+  it("200 with non-JSON body -> malformed (never proof)", () => {
+    expect(interpretResolverResponse(200, "<html>not json</html>", id)).toBe("malformed");
+  });
+
+  it("revoked dominates an active status claim (200 never overrides revoked)", () => {
+    const body = JSON.stringify({ ecz_id: id, status: "active", lifecycle_state: "REVOKED" });
+    expect(interpretResolverResponse(200, body, id)).toBe("revoked");
+  });
+
+  it("subject match is case-insensitive", () => {
+    const body = JSON.stringify({ ecz_id: id.toLowerCase(), status: "active" });
+    expect(interpretResolverResponse(200, body, id)).toBe("active");
   });
 });
 

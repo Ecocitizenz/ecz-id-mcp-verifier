@@ -4,11 +4,18 @@ name: Publish to npm (OIDC trusted publishing)
 # │ PREPARED — NOT YET ENABLED. This workflow performs a real npm publish.    │
 # │ It must not run until the controlled publication phase (Phase 2).         │
 # │                                                                           │
+# │ It is the CONTINUING-RELEASE path (Stage B) only. It CANNOT bootstrap a   │
+# │ package that does not exist yet: npm OIDC trusted publishing requires the │
+# │ package AND its registered Trusted Publisher to already exist, so this    │
+# │ workflow would fail on a first-ever publish. The FIRST publish (Stage A)  │
+# │ is a controlled, interactive manual publish — see, in the report set,     │
+# │ 19_FIRST_PUBLISH_BOOTSTRAP.md.                                            │
+# │                                                                           │
 # │ It uses npm Trusted Publishing (OIDC) — NOT a long-lived NPM_TOKEN.       │
 # │ Before first use:                                                         │
-# │   1. Publish v0.7.0 once via a controlled manual publish to create the    │
-# │      package, then register this workflow as the npm Trusted Publisher    │
-# │      (org/user, repo, workflow file name, environment) on npmjs.com.      │
+# │   1. Stage A: publish v0.7.0 once via a controlled manual publish to      │
+# │      CREATE the package, then register this workflow as the npm Trusted   │
+# │      Publisher (org/user, repo, workflow file name, environment).         │
 # │   2. Create the protected GitHub environment `npm-release` with required  │
 # │      reviewers.                                                           │
 # │   Trusted publishing requires npm CLI >= 11.5.1 on the runner and a       │

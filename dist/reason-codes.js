@@ -27,6 +27,12 @@ export const REASON_CODES = [
     "SHOPIFY_CANNOT_ACTIVATE_PROOF",
     "TRUSTOPS_CANNOT_MARK_BOUND",
     "RESOLVER_READ_ONLY",
+    // A 2xx Resolver response whose body could not be safely interpreted as
+    // valid proof (malformed JSON, unrecognised schema, subject mismatch, or an
+    // unknown lifecycle state). Deterministically treated as missing proof —
+    // never as positive proof. Added in Phase 1 corrective closure because no
+    // existing reason code distinguished an uninterpretable 2xx body.
+    "RESOLVER_RESPONSE_UNVERIFIABLE",
     "MARKETPLACE_CHECKOUT_NOT_ALLOWED",
     "LOCAL_POLICY_DECIDES",
     "UNKNOWN_PHASE1_SKU"

@@ -28,7 +28,7 @@ jobs:
         # Placeholder ref. Replace with the published action ref once available.
         uses: ecocitizenz/ecz-id-mcp-verifier@v0
         with:
-          target: "ECZ-GB-EXAMPLE"
+          target: "ECZ-GB-A93K7Q"
           target-type: "ecz_id"
           policy: "PREFER"
           operator: "third_party"

@@ -1,4 +1,5 @@
 // Deterministic, regex-based target classifier. No LLM. No network. No I/O.
+import { isValidEczId } from "./ecz-id.js";
 export const TARGET_TYPES = [
     "mcp_server",
     "agent_manifest",
@@ -10,7 +11,6 @@ export const TARGET_TYPES = [
     "ecz_id",
     "unsupported_target"
 ];
-const ECZ_ID_RE = /^ECZ-[A-Z]{2,4}-[A-Z0-9]{4,}$/;
 const MCP_WELLKNOWN_RE = /\/\.well-known\/ecz-mcp\.json(\?|#|$)/i;
 const AGENT_WELLKNOWN_RE = /\/\.well-known\/ecz-agent\.json(\?|#|$)/i;
 const GITHUB_RE = /^https?:\/\/github\.com\/[^/\s]+\/[^/\s?#]+/i;
@@ -38,7 +38,10 @@ export function classifyTarget(target, hint) {
     const t = target.trim();
     if (!t || /\s/.test(t))
         return "unsupported_target";
-    if (ECZ_ID_RE.test(t))
+    // Only a strictly valid parent or child ECZ-ID classifies as ecz_id. A
+    // malformed ECZ-shaped string falls through to unsupported_target so that an
+    // invalid identifier never produces a Resolver route or a network fetch.
+    if (isValidEczId(t))
         return "ecz_id";
     if (MCP_WELLKNOWN_RE.test(t))
         return "mcp_server";

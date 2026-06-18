@@ -29,7 +29,11 @@ export function computeExitCode(
   if (state === "RESOLVER_VERIFIABLE") return EXIT_OK;
   if (
     state === "NO_PUBLIC_RESOLVER_PROOF_FOUND" ||
-    state === "PARTIAL_PUBLIC_PROOF_FOUND"
+    state === "PARTIAL_PUBLIC_PROOF_FOUND" ||
+    // DEGRADED is grouped with missing proof for fail-closed purposes: the
+    // resolver-recheck contract requires REQUIRE to fail closed on a degraded
+    // projection (no stale success). OPEN/PREFER remain informational.
+    state === "DEGRADED"
   ) {
     if (policy === "REQUIRE") {
       return opts.network_attempted_and_failed

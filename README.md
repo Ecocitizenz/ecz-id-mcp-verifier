@@ -113,11 +113,29 @@ ecz-mcp-verify --target <value> [options]
 | `--version`         |                                        | Print version and exit.                  |
 | `--help`            |                                        | Print help and exit.                     |
 
+### ECZ-ID format
+
+The verifier validates ECZ-IDs against the canonical locked format. Only a
+strictly valid identifier classifies as `ecz_id`, builds a Resolver URL, or
+triggers a lookup; a malformed identifier is reported as an unsupported /
+invalid target and never produces a Resolver request.
+
+| Form | Template | Example |
+| --- | --- | --- |
+| Parent (operator) | `ECZ-CC-XXXXXX` | `ECZ-GB-A93K7Q` |
+| Child (passport instance) | `ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY` | `ECZ-GB-A93K7Q::AGENT_CREDENTIAL-M4X9P2` |
+
+- `CC` is exactly two uppercase letters (operator country/class code).
+- `XXXXXX` and `YYYYYY` are each exactly six uppercase Base36 characters
+  (`0-9A-Z`).
+- `PASSPORT_CODE` is a registry-controlled passport code and may itself contain
+  hyphens; the six-character instance suffix is split off the final hyphen.
+
 ### CLI examples
 
 ```sh
 # Offline classification + JSON output
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" --offline
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" --offline
 
 # REQUIRE policy with action envelope
 ecz-mcp-verify --target "https://api.example.com/.well-known/ecz-mcp.json" \
@@ -127,7 +145,7 @@ ecz-mcp-verify --target "https://api.example.com/.well-known/ecz-mcp.json" \
 ecz-mcp-verify --target "https://github.com/org/repo" --report
 
 # Write JSON + SARIF files for CI
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" --output result.json --sarif result.sarif
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" --output result.json --sarif result.sarif
 ```
 
 ### Operator modes

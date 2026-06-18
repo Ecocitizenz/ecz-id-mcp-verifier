@@ -5,10 +5,20 @@ export interface ResolverLookupOptions {
     noNetwork?: boolean;
     timeoutMs?: number;
 }
+/**
+ * Deterministic interpretation of a Resolver machine response. `active` is the
+ * ONLY state that represents usable public proof. Everything else is a
+ * non-positive state that local policy must weigh.
+ */
+export type ResolverProofState = "active" | "not_found" | "unavailable" | "malformed" | "schema_mismatch" | "target_mismatch" | "revoked" | "suspended" | "expired" | "stale" | "degraded" | "abuse" | "proof_invalid" | "unknown";
+/** True only for a state that represents usable public proof. */
+export declare function isPositiveProofState(s: ResolverProofState): boolean;
 export interface ResolverLookupResult {
     found: boolean;
     /** True only when the target maps to an accepted ECZ-ID resolver key. */
     applicable: boolean;
+    /** Strict interpretation of the response; undefined when no lookup ran. */
+    proof_state?: ResolverProofState;
     resolver_base: string;
     /** Human proof URL ({base}/p/{ecz_id}); only set when applicable. */
     resolver_url?: string;
@@ -28,21 +38,30 @@ export interface ResolverUrls {
  * Derive the canonical Resolver URLs for a target.
  *
  * Returns the human proof URL and machine JSON URL ONLY when the target maps
- * deterministically to an accepted ECZ-ID. For any other target shape — URL,
- * repository, package, container image, MCP server URL, free text — it returns
- * `undefined`. The client never invents a Resolver path from a non-ECZ-ID.
+ * deterministically to a VALID ECZ-ID (parent or child). For any other target
+ * shape — URL, repository, package, container image, MCP server URL, free text,
+ * or a malformed ECZ-ID — it returns `undefined`. The client never invents a
+ * Resolver path. Parent and child share the same documented `/p/{id}` and
+ * `/api/p/{id}.json` templates (the child decomposition lives in the body).
  */
 export declare function deriveResolverUrls(target: string, targetType: TargetType, resolverBase?: string, apiBase?: string): ResolverUrls | undefined;
 /**
  * Back-compat helper retained for callers that only need the human proof URL.
- * Returns undefined for any non-ECZ-ID target (no fabricated path).
+ * Returns undefined for any non-ECZ-ID / invalid target (no fabricated path).
  */
 export declare function deriveResolverUrl(target: string, targetType: TargetType, resolverBase?: string): string | undefined;
 /**
+ * Interpret a Resolver machine response into a ResolverProofState.
+ * `bodyText` is the raw response body; `httpStatus` the HTTP status; `requested`
+ * the ECZ-ID that was looked up (for subject-match verification).
+ */
+export declare function interpretResolverResponse(httpStatus: number, bodyText: string, requested: string): ResolverProofState;
+/**
  * Public Resolver lookup. GET-only. HTTPS-only.
  * Performs a real canonical machine lookup ONLY for accepted ECZ-IDs. For any
- * other target it returns applicable=false WITHOUT attempting a request and
- * WITHOUT fabricating a Resolver URL. Treats any non-2xx as missing proof
- * (does not invent proof). Never sends a body or credentials.
+ * other / invalid target it returns applicable=false WITHOUT attempting a
+ * request and WITHOUT fabricating a Resolver URL. The response body is parsed
+ * with strict, bounded rules: only an `active` projection yields found=true.
+ * Never sends a body or credentials. Never caches.
  */
 export declare function lookup(target: string, targetType: TargetType, options?: ResolverLookupOptions): Promise<ResolverLookupResult>;

@@ -4,7 +4,7 @@
 > not certify safety or approval. Re-check before reliance. Local policy
 > decides.
 
-All examples use placeholder targets such as `ECZ-GB-EXAMPLE` or
+All examples use placeholder targets such as `ECZ-GB-A93K7Q` or
 `https://api.example.com/...`. No real customer proof is implied.
 
 ## Help and version
@@ -19,13 +19,13 @@ ecz-mcp-verify --version
 Runs deterministic classification only. No network is touched.
 
 ```sh
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" --offline
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" --offline
 ```
 
 ## ECZ-ID target, default OPEN policy
 
 ```sh
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE"
+ecz-mcp-verify --target "ECZ-GB-A93K7Q"
 ```
 
 ## MCP server well-known URL
@@ -49,7 +49,7 @@ ecz-mcp-verify --target "pkg:npm/example-package@1.0.0" --actions
 ## Write JSON + SARIF for CI
 
 ```sh
-ecz-mcp-verify --target "ECZ-GB-EXAMPLE" \
+ecz-mcp-verify --target "ECZ-GB-A93K7Q" \
   --output result.json \
   --sarif result.sarif
 ```

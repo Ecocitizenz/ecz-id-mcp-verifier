@@ -1,4 +1,5 @@
 import { type TargetType } from "./classify-target.js";
+import { type ResolverProofState } from "./resolver-client.js";
 import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
@@ -31,3 +32,15 @@ export interface VerifyResult {
     network_error?: string;
 }
 export declare function verify(opts: VerifyOptions): Promise<VerifyResult>;
+interface MappedState {
+    result_state: ResultState;
+    reason_codes: ReasonCode[];
+}
+/**
+ * Map the strict Resolver proof interpretation onto the canonical 18-state
+ * model + reason codes. HTTP 200 alone is NEVER proof; revoked/suspended/
+ * expired/stale/mismatch/malformed bodies map to the safest applicable
+ * existing ResultState and ReasonCode and are never cached as positive proof.
+ */
+export declare function mapProofState(state: ResolverProofState | undefined): MappedState;
+export {};

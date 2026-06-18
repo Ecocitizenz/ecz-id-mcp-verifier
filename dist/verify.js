@@ -40,28 +40,75 @@ export async function verify(opts) {
         noNetwork: opts.noNetwork,
         timeoutMs
     });
-    if (r.found) {
-        return {
-            ...base,
-            result_state: "RESOLVER_VERIFIABLE",
-            reason_codes: [],
-            resolver_url: r.resolver_url ?? null,
-            machine_json_url: r.machine_json_url ?? null,
-            network_attempted: r.network_attempted
-        };
-    }
-    const reason_codes = [
-        "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-        "RESOLVER_READ_ONLY",
-        "LOCAL_POLICY_DECIDES"
-    ];
+    // Offline / no-lookup-ran: undefined proof_state means we could not confirm
+    // public proof. Treat as missing proof (never invents proof).
+    const mapped = mapProofState(r.proof_state);
     return {
         ...base,
-        result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-        reason_codes,
+        result_state: mapped.result_state,
+        reason_codes: mapped.reason_codes,
         resolver_url: r.resolver_url ?? null,
-        machine_json_url: null,
+        // The machine URL is only advertised as proof when the projection is active.
+        machine_json_url: r.machine_json_url ?? null,
         network_attempted: r.network_attempted,
         network_error: r.network_error
     };
+}
+const MISSING_PROOF_REASONS = [
+    "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+    "RESOLVER_READ_ONLY",
+    "LOCAL_POLICY_DECIDES"
+];
+const UNVERIFIABLE_REASONS = [
+    "RESOLVER_RESPONSE_UNVERIFIABLE",
+    "RESOLVER_READ_ONLY",
+    "LOCAL_POLICY_DECIDES"
+];
+/**
+ * Map the strict Resolver proof interpretation onto the canonical 18-state
+ * model + reason codes. HTTP 200 alone is NEVER proof; revoked/suspended/
+ * expired/stale/mismatch/malformed bodies map to the safest applicable
+ * existing ResultState and ReasonCode and are never cached as positive proof.
+ */
+export function mapProofState(state) {
+    switch (state) {
+        case "active":
+            return { result_state: "RESOLVER_VERIFIABLE", reason_codes: [] };
+        case "revoked":
+            return { result_state: "REVOKED", reason_codes: ["REVOKED_PARENT", "LOCAL_POLICY_DECIDES"] };
+        case "suspended":
+            return { result_state: "SUSPENDED", reason_codes: ["LOCAL_POLICY_DECIDES"] };
+        case "expired":
+            return { result_state: "EXPIRED", reason_codes: ["LOCAL_POLICY_DECIDES"] };
+        case "stale":
+            return { result_state: "DEGRADED", reason_codes: ["PULSEGUARD_STALE", "LOCAL_POLICY_DECIDES"] };
+        case "degraded":
+            return { result_state: "DEGRADED", reason_codes: ["LOCAL_POLICY_DECIDES"] };
+        case "abuse":
+            return {
+                result_state: "MISMATCH",
+                reason_codes: ["AGENT_CREDENTIAL_REUSED", "LOCAL_POLICY_DECIDES"]
+            };
+        case "proof_invalid":
+            return {
+                result_state: "MISMATCH",
+                reason_codes: ["KEYSET_HASH_MISMATCH", "LOCAL_POLICY_DECIDES"]
+            };
+        case "target_mismatch":
+            return {
+                result_state: "MISMATCH",
+                reason_codes: ["RESOLVER_RESPONSE_UNVERIFIABLE", "LOCAL_POLICY_DECIDES"]
+            };
+        case "malformed":
+        case "schema_mismatch":
+        case "unknown":
+            // A 2xx body that cannot be safely interpreted: missing proof, tagged
+            // distinctly. Never positive proof.
+            return { result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND", reason_codes: UNVERIFIABLE_REASONS };
+        case "not_found":
+        case "unavailable":
+        default:
+            // 404/410, transport failure/timeout, or no lookup ran (offline).
+            return { result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND", reason_codes: MISSING_PROOF_REASONS };
+    }
 }

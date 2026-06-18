@@ -3,7 +3,7 @@
   "schema_version": 1,
   "verifier": "ECZ-ID MCP Verifier",
   "verifier_version": "0.7.0",
-  "target": "ECZ-GB-EXAMPLE",
+  "target": "ECZ-GB-A93K7Q",
   "target_type": "ecz_id",
   "policy_mode": "OPEN",
   "result_state": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
@@ -12,7 +12,7 @@
     "RESOLVER_READ_ONLY",
     "LOCAL_POLICY_DECIDES"
   ],
-  "resolver_url": "https://resolver.ecocitizenz.org/p/ECZ-GB-EXAMPLE",
+  "resolver_url": "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q",
   "machine_json_url": null,
   "trustops_action_url": "https://trustops.ecocitizenz.com/start",
   "developer_guidance_url": "https://developers.ecocitizenz.com",

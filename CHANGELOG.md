@@ -10,6 +10,22 @@ Release-candidate closure of the deterministic CLI and the bundled GitHub Action
 Not yet published to npm or the GitHub Action Marketplace.
 
 ### Changed
+- **Exact ECZ-ID format validation.** A single deterministic parser
+  (`src/ecz-id.ts`) is the source of truth for identifier format across target
+  classification, Resolver eligibility, URL construction, CLI input and the
+  Action. Parent IDs are exactly `ECZ-CC-XXXXXX` (two uppercase letters + six
+  uppercase Base36); child passport instances are
+  `ECZ-CC-XXXXXX::PASSPORT_CODE-YYYYYY` with an exactly six-character instance
+  suffix split off the final hyphen (hyphenated passport codes parse correctly).
+  Passport codes are validated against the canonical registry. Malformed IDs
+  (e.g. `ECZ-GB-EXAMPLE`) are rejected and never trigger a Resolver fetch.
+- **Resolver lifecycle parsing.** The machine projection body is now parsed with
+  strict, bounded rules. HTTP 200 alone is never proof; revoked / suspended /
+  expired / stale / degraded / abuse / subject-mismatch / malformed /
+  unknown-schema responses each map deterministically to the safest applicable
+  ResultState + ReasonCode and are never treated as positive proof or cached as
+  success. Only an explicit active projection for the requested subject yields
+  `RESOLVER_VERIFIABLE`.
 - **Public terminology.** Internal-named modules were renamed to purpose-first,
   public-safe names across source, compiled output, exports, tests, examples and
   Action outputs. The result-routing module is now `result-actions`; the TrustOps
@@ -32,6 +48,10 @@ Not yet published to npm or the GitHub Action Marketplace.
   public packages or source; they were relocated to private internal records.
 
 ### Added
+- `RESOLVER_RESPONSE_UNVERIFIABLE` reason code for a 2xx Resolver body that
+  cannot be safely interpreted as valid proof (malformed, unknown schema,
+  subject mismatch, or unknown lifecycle state). The 18-state ResultState model
+  is unchanged.
 - `scan:public` disclosure scanner and a `public-disclosure` test guard
   (no internal-strategy terminology, no pricing, no private commercial logic in
   public surfaces).
