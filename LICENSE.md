@@ -19,8 +19,9 @@ non-sublicensable, revocable license, at no charge, to:
 (a) install the official, unmodified ECZ-ID MCP Verifier as distributed by
     EcoCitizenZ; and
 
-(b) operate it to check the public posture of the ECZ-ID Resolver and to
-    read public, machine-readable ECZ-ID Resolver output.
+(b) operate it — at no charge, for personal, organisational, development,
+    CI/CD, and internal business purposes — to check the public posture of the
+    ECZ-ID Resolver and to read public, machine-readable ECZ-ID Resolver output.
 
 "Installation" includes only the technical copying strictly required to
 download, cache, and run the official package on systems you control.
@@ -91,11 +92,18 @@ This license terminates automatically if you breach any term. On
 termination you must stop using and remove all copies of the software,
 except cached copies deleted in the ordinary course of operation.
 
-## 9. Status
+## 9. Free-forever distribution posture
 
-This license text is provided for pre-public readiness. Public distribution
-through any channel — including the npm registry and the GitHub Action
-Marketplace — is **BLOCKED** pending review by EcoCitizenZ intellectual-
-property and patent counsel to confirm what may be safely disclosed. Until
-that review completes and is authorized in writing by EcoCitizenZ, the
-software is not offered for public distribution.
+The official, unmodified ECZ-ID MCP Verifier and its bundled GitHub Action are
+offered free of charge — now and in the future ("free forever") — under this
+Proprietary Limited-Use License, for the purposes described in Section 1.
+
+"Free forever" refers to price only. It grants no open-source rights, no
+redistribution rights, and no right beyond Section 1. EcoCitizenZ may publish
+the official package and Action through public distribution channels, including
+the npm registry and the GitHub Action Marketplace.
+
+Public visibility of the source — for transparency or installation — does not
+place the software in the public domain, does not make it open source, and does
+not grant any right beyond Section 1. All prohibitions in Sections 2–5 continue
+to apply.

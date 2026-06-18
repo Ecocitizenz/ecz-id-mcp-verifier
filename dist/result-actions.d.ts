@@ -3,7 +3,7 @@ import type { TargetType } from "./classify-target.js";
 import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
-export declare const FLYWHEEL_VERSION: "1.0";
+export declare const RESULT_ACTIONS_VERSION: "1.0";
 export declare const REQUEST_TO_RESOLVE_MESSAGE: string;
 export declare const AUTHORITY_BOUNDARY = "Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.";
 export declare const SHARE_LABEL = "Share resolver guidance";
@@ -27,7 +27,7 @@ export interface RouteAction {
 }
 export interface McpActionEnvelope extends BoundaryFlags {
     type: "ecz.mcp_action_envelope";
-    version: typeof FLYWHEEL_VERSION;
+    version: typeof RESULT_ACTIONS_VERSION;
     subject: {
         target: string;
         target_type: TargetType;
@@ -45,7 +45,7 @@ export interface McpActionEnvelope extends BoundaryFlags {
 export declare function buildMcpActionEnvelope(result: VerifyResult): McpActionEnvelope | null;
 export interface AgentActionEnvelope extends BoundaryFlags {
     type: "ecz.agent_action_envelope";
-    version: typeof FLYWHEEL_VERSION;
+    version: typeof RESULT_ACTIONS_VERSION;
     subject: {
         target: string;
         target_type: TargetType;
@@ -63,7 +63,7 @@ export interface AgentActionEnvelope extends BoundaryFlags {
 export declare function buildAgentActionEnvelope(result: VerifyResult): AgentActionEnvelope | null;
 export interface RequestToResolve {
     type: "ecz.request_to_resolve";
-    version: typeof FLYWHEEL_VERSION;
+    version: typeof RESULT_ACTIONS_VERSION;
     target: string;
     target_type: PacketTargetType;
     state: string;
@@ -85,7 +85,7 @@ export interface ReciprocalSubject {
 }
 export interface ReciprocalRelianceEnvelope extends BoundaryFlags {
     type: "ecz.reciprocal_reliance_envelope";
-    version: typeof FLYWHEEL_VERSION;
+    version: typeof RESULT_ACTIONS_VERSION;
     agent_subject: ReciprocalSubject | null;
     mcp_subject: ReciprocalSubject | null;
     policy_hint: PolicyMode;

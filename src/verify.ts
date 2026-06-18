@@ -10,7 +10,7 @@ import { lookup } from "./resolver-client.js";
 import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
-import type { OperatorMode } from "./acquisition-flow.js";
+import type { OperatorMode } from "./setup-handoff.js";
 import {
   RESOLVER_BASE,
   TRUSTOPS_START,

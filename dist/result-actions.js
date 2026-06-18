@@ -1,4 +1,4 @@
-// Flywheel builders for the ECZ-ID Action Envelope Stack.
+// Result actions builders for the ECZ-ID Action Envelope Stack.
 //
 // Route-only, read-only guidance objects. These builders never write truth,
 // never activate proof, never mark BOUND, never process purchase, and never
@@ -11,8 +11,8 @@
 //   3. Agent Action Envelope     (agent/KYA/operator/principal path)
 //   4. Reciprocal Reliance Env.  (both-sides agent <-> MCP context)
 // Plus the Request-to-Resolve local guidance packet.
-import { buildAcquisitionFlow } from "./acquisition-flow.js";
-export const FLYWHEEL_VERSION = "1.0";
+import { buildSetupHandoff } from "./setup-handoff.js";
+export const RESULT_ACTIONS_VERSION = "1.0";
 // Exact approved Request-to-Resolve message. The only place the bare word
 // "unsafe" appears is the sanctioned phrase "This does not mean unsafe".
 export const REQUEST_TO_RESOLVE_MESSAGE = "No public resolver proof found yet. This does not mean unsafe. " +
@@ -80,7 +80,7 @@ const BOUNDARY = {
     verifier_marks_bound: false
 };
 function flowFor(result) {
-    return buildAcquisitionFlow({
+    return buildSetupHandoff({
         target: result.target,
         target_type: result.target_type,
         result_state: result.result_state,
@@ -111,7 +111,7 @@ export function buildMcpActionEnvelope(result) {
     const flow = flowFor(result);
     return {
         type: "ecz.mcp_action_envelope",
-        version: FLYWHEEL_VERSION,
+        version: RESULT_ACTIONS_VERSION,
         subject: { target: result.target, target_type: result.target_type },
         posture: result.result_state,
         result: result.result_state,
@@ -131,7 +131,7 @@ export function buildAgentActionEnvelope(result) {
     const flow = flowFor(result);
     return {
         type: "ecz.agent_action_envelope",
-        version: FLYWHEEL_VERSION,
+        version: RESULT_ACTIONS_VERSION,
         subject: { target: result.target, target_type: result.target_type },
         posture: result.result_state,
         result: result.result_state,
@@ -154,7 +154,7 @@ export function buildRequestToResolve(result) {
         return null;
     return {
         type: "ecz.request_to_resolve",
-        version: FLYWHEEL_VERSION,
+        version: RESULT_ACTIONS_VERSION,
         target: result.target,
         target_type: toPacketTargetType(result.target_type),
         state: result.result_state,
@@ -184,7 +184,7 @@ export function buildReciprocalRelianceEnvelope(result) {
     paths.push("recheck_before_reliance");
     return {
         type: "ecz.reciprocal_reliance_envelope",
-        version: FLYWHEEL_VERSION,
+        version: RESULT_ACTIONS_VERSION,
         agent_subject: isAgent ? subject : null,
         mcp_subject: isMcp ? subject : null,
         policy_hint: result.policy_mode,

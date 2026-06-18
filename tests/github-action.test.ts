@@ -25,7 +25,7 @@ describe("GitHub Action", () => {
       "result-state",
       "reason-codes",
       "action-envelope-json",
-      "acquisition-flow-json",
+      "setup-handoff-json",
       "mcp-action-envelope-json",
       "request-to-resolve-json",
       "primary-action",
@@ -43,6 +43,34 @@ describe("GitHub Action", () => {
   });
   it("description carries no-truth-write boundary", () => {
     expect(action.toLowerCase()).toMatch(/does not write truth/);
+  });
+  it("README documents minimum permissions (contents: read) and no-write posture", () => {
+    expect(readme).toMatch(/permissions:\s*\n\s*contents:\s*read/);
+    expect(readme.toLowerCase()).toMatch(/mutate the repository/);
+  });
+});
+
+describe("workflows: least-privilege, no NPM_TOKEN, publish prepared-not-run", () => {
+  const ci = readFileSync(join(ROOT, ".github", "workflows", "ci.yml"), "utf8");
+  const publish = readFileSync(join(ROOT, ".github", "workflows", "publish-npm.yml"), "utf8");
+
+  it("CI runs read-only with contents: read and no publish", () => {
+    expect(ci).toMatch(/permissions:\s*\n\s*contents:\s*read/);
+    expect(/npm\s+publish/.test(ci)).toBe(false);
+  });
+  it("publish workflow uses OIDC trusted publishing, not a long-lived NPM_TOKEN", () => {
+    expect(publish).toMatch(/id-token:\s*write/);
+    expect(publish).toMatch(/contents:\s*read/);
+    // No real token usage (a "No NPM_TOKEN" comment is allowed; a secrets/env
+    // token reference is not).
+    expect(/secrets\.[A-Za-z_]*TOKEN/.test(publish)).toBe(false);
+    expect(/NODE_AUTH_TOKEN\s*:/.test(publish)).toBe(false);
+  });
+  it("publish workflow is gated (manual dispatch + protected environment), not auto-run", () => {
+    expect(publish).toMatch(/workflow_dispatch/);
+    expect(publish).toMatch(/environment:\s*npm-release/);
+    // Must not auto-publish on push.
+    expect(/on:\s*\n\s*push:/.test(publish)).toBe(false);
   });
 });
 

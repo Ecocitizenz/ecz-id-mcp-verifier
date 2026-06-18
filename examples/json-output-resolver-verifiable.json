@@ -13,8 +13,8 @@
     "LOCAL_POLICY_DECIDES",
     "RECHECK_BEFORE_RELIANCE"
   ],
-  "resolver_url": "https://resolver.ecocitizenz.org/eczid/ECZ-GB-EXAMPLE",
-  "machine_json_url": "https://resolver.ecocitizenz.org/eczid/ECZ-GB-EXAMPLE.json",
+  "resolver_url": "https://resolver.ecocitizenz.org/p/ECZ-GB-EXAMPLE",
+  "machine_json_url": "https://api.ecocitizenz.com/api/p/ECZ-GB-EXAMPLE.json",
   "trustops_action_url": "https://trustops.ecocitizenz.com/start",
   "developer_guidance_url": "https://developers.ecocitizenz.com",
   "local_policy_decides": true,

@@ -1,4 +1,4 @@
-// Deterministic Mandated Acquisition Flow (Phase 8A).
+// Deterministic Setup Handoff (Phase 8A).
 //
 // Pure routing only. The verifier:
 //   - does NOT write truth
@@ -12,10 +12,10 @@
 // actions, and deterministic role-targeted URLs (TrustOps, Developer
 // Gateway, Resolver) built from a fixed allow-list of query params.
 import { TRUSTOPS_START, DEVELOPER_GATEWAY } from "./constants.js";
-export const FLOW_NAME = "Deterministic Mandated Acquisition Flow";
-export const FLOW_VERSION = "1.0.0";
+export const HANDOFF_NAME = "Deterministic Setup Handoff";
+export const HANDOFF_VERSION = "1.0.0";
 export const OPERATOR_MODES = ["self", "third_party", "unknown"];
-export const ACQUISITION_INTENTS = [
+export const SETUP_INTENTS = [
     "setup",
     "repair",
     "view_proof",
@@ -152,7 +152,7 @@ export function buildTrustopsUrl(input) {
         params.set("return_to", safeReturnTo);
     }
     params.set("verifier", "ecz_id_mcp_verifier");
-    params.set("v", FLOW_VERSION);
+    params.set("v", HANDOFF_VERSION);
     // Target itself is intentionally NOT included by default. Phase 8A keeps
     // the URL free of any potentially sensitive identifier.
     return `${base}?${params.toString()}`;
@@ -274,7 +274,7 @@ function planFor(state, operator) {
 // ---------------------------------------------------------------------------
 // Main entry point.
 // ---------------------------------------------------------------------------
-export function buildAcquisitionFlow(input) {
+export function buildSetupHandoff(input) {
     const plan = planFor(input.result_state, input.operator);
     const posture = postureFor(input.result_state);
     const developerUrl = developerGuidanceUrlFor(input.target_type, input.developer_base_url);
@@ -288,8 +288,8 @@ export function buildAcquisitionFlow(input) {
         reason_codes: input.reason_codes
     });
     return {
-        flow_name: FLOW_NAME,
-        flow_version: FLOW_VERSION,
+        handoff_name: HANDOFF_NAME,
+        handoff_version: HANDOFF_VERSION,
         operator: input.operator,
         posture,
         intent: plan.intent,

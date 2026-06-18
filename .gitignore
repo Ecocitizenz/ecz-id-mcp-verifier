@@ -17,3 +17,6 @@ _reference/
 # Not part of the public package; never committed to the public repo.
 docs/flywheel/
 /ECZID_MCP_IMMEDIATE_MARKETPLACE_BATTLECARDS.md
+
+# npm pack artifacts (release evidence; preserved locally, not committed)
+*.tgz

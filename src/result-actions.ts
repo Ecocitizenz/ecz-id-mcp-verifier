@@ -1,4 +1,4 @@
-// Flywheel builders for the ECZ-ID Action Envelope Stack.
+// Result actions builders for the ECZ-ID Action Envelope Stack.
 //
 // Route-only, read-only guidance objects. These builders never write truth,
 // never activate proof, never mark BOUND, never process purchase, and never
@@ -17,9 +17,9 @@ import type { TargetType } from "./classify-target.js";
 import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
-import { buildAcquisitionFlow } from "./acquisition-flow.js";
+import { buildSetupHandoff } from "./setup-handoff.js";
 
-export const FLYWHEEL_VERSION = "1.0" as const;
+export const RESULT_ACTIONS_VERSION = "1.0" as const;
 
 // Exact approved Request-to-Resolve message. The only place the bare word
 // "unsafe" appears is the sanctioned phrase "This does not mean unsafe".
@@ -131,7 +131,7 @@ export interface RouteAction {
 }
 
 function flowFor(result: VerifyResult) {
-  return buildAcquisitionFlow({
+  return buildSetupHandoff({
     target: result.target,
     target_type: result.target_type,
     result_state: result.result_state,
@@ -167,7 +167,7 @@ function routeActions(
 
 export interface McpActionEnvelope extends BoundaryFlags {
   type: "ecz.mcp_action_envelope";
-  version: typeof FLYWHEEL_VERSION;
+  version: typeof RESULT_ACTIONS_VERSION;
   subject: { target: string; target_type: TargetType };
   posture: ResultState;
   result: ResultState;
@@ -185,7 +185,7 @@ export function buildMcpActionEnvelope(result: VerifyResult): McpActionEnvelope 
   const flow = flowFor(result);
   return {
     type: "ecz.mcp_action_envelope",
-    version: FLYWHEEL_VERSION,
+    version: RESULT_ACTIONS_VERSION,
     subject: { target: result.target, target_type: result.target_type },
     posture: result.result_state,
     result: result.result_state,
@@ -206,7 +206,7 @@ export function buildMcpActionEnvelope(result: VerifyResult): McpActionEnvelope 
 
 export interface AgentActionEnvelope extends BoundaryFlags {
   type: "ecz.agent_action_envelope";
-  version: typeof FLYWHEEL_VERSION;
+  version: typeof RESULT_ACTIONS_VERSION;
   subject: { target: string; target_type: TargetType };
   posture: ResultState;
   result: ResultState;
@@ -224,7 +224,7 @@ export function buildAgentActionEnvelope(result: VerifyResult): AgentActionEnvel
   const flow = flowFor(result);
   return {
     type: "ecz.agent_action_envelope",
-    version: FLYWHEEL_VERSION,
+    version: RESULT_ACTIONS_VERSION,
     subject: { target: result.target, target_type: result.target_type },
     posture: result.result_state,
     result: result.result_state,
@@ -245,7 +245,7 @@ export function buildAgentActionEnvelope(result: VerifyResult): AgentActionEnvel
 
 export interface RequestToResolve {
   type: "ecz.request_to_resolve";
-  version: typeof FLYWHEEL_VERSION;
+  version: typeof RESULT_ACTIONS_VERSION;
   target: string;
   target_type: PacketTargetType;
   state: string;
@@ -267,7 +267,7 @@ export function buildRequestToResolve(result: VerifyResult): RequestToResolve | 
   if (result.target_type === "unsupported_target") return null;
   return {
     type: "ecz.request_to_resolve",
-    version: FLYWHEEL_VERSION,
+    version: RESULT_ACTIONS_VERSION,
     target: result.target,
     target_type: toPacketTargetType(result.target_type),
     state: result.result_state,
@@ -295,7 +295,7 @@ export interface ReciprocalSubject {
 
 export interface ReciprocalRelianceEnvelope extends BoundaryFlags {
   type: "ecz.reciprocal_reliance_envelope";
-  version: typeof FLYWHEEL_VERSION;
+  version: typeof RESULT_ACTIONS_VERSION;
   agent_subject: ReciprocalSubject | null;
   mcp_subject: ReciprocalSubject | null;
   policy_hint: PolicyMode;
@@ -323,7 +323,7 @@ export function buildReciprocalRelianceEnvelope(
 
   return {
     type: "ecz.reciprocal_reliance_envelope",
-    version: FLYWHEEL_VERSION,
+    version: RESULT_ACTIONS_VERSION,
     agent_subject: isAgent ? subject : null,
     mcp_subject: isMcp ? subject : null,
     policy_hint: result.policy_mode,

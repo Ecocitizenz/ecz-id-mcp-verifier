@@ -5,9 +5,9 @@
 import type { VerifyResult } from "./verify.js";
 import type { ActionEnvelope } from "./action-envelope.js";
 import {
-  buildAcquisitionFlow,
-  type AcquisitionFlow
-} from "./acquisition-flow.js";
+  buildSetupHandoff,
+  type SetupHandoff
+} from "./setup-handoff.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import {
   buildMcpActionEnvelope,
@@ -18,7 +18,7 @@ import {
   type AgentActionEnvelope,
   type RequestToResolve,
   type ReciprocalRelianceEnvelope
-} from "./flywheel.js";
+} from "./result-actions.js";
 import {
   SCHEMA_VERSION,
   VERIFIER_NAME,
@@ -46,7 +46,7 @@ export interface JsonOutputCore {
   machine_json_url: string | null;
   trustops_action_url: string;
   developer_guidance_url: string;
-  acquisition_flow: AcquisitionFlow;
+  setup_handoff: SetupHandoff;
   primary_action: string;
   secondary_actions: string[];
   mcp_action_envelope: McpActionEnvelope | null;
@@ -71,7 +71,7 @@ export function buildJsonOutput(
   result: VerifyResult,
   opts: JsonOutputOptions
 ): JsonOutput {
-  const flow = buildAcquisitionFlow({
+  const flow = buildSetupHandoff({
     target: result.target,
     target_type: result.target_type,
     result_state: result.result_state,
@@ -97,7 +97,7 @@ export function buildJsonOutput(
     machine_json_url: result.machine_json_url,
     trustops_action_url: flow.trustops_action_url,
     developer_guidance_url: flow.developer_guidance_url,
-    acquisition_flow: flow,
+    setup_handoff: flow,
     primary_action: flow.primary_action,
     secondary_actions: [...flow.secondary_actions],
     mcp_action_envelope: buildMcpActionEnvelope(result),

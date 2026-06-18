@@ -1,10 +1,10 @@
 // Human-readable soft report. Uses only approved soft copy.
 // Never asserts safety, certification, approval, or guarantee.
-import { buildAcquisitionFlow } from "./acquisition-flow.js";
+import { buildSetupHandoff } from "./setup-handoff.js";
 import { UNRESOLVED_PROOF_COPY, operateRouteLine } from "./copy.js";
-import { REQUEST_TO_RESOLVE_MESSAGE, isResolved } from "./flywheel.js";
+import { REQUEST_TO_RESOLVE_MESSAGE, isResolved } from "./result-actions.js";
 export function toHumanReport(result) {
-    const flow = buildAcquisitionFlow({
+    const flow = buildSetupHandoff({
         target: result.target,
         target_type: result.target_type,
         result_state: result.result_state,
@@ -91,7 +91,7 @@ export function toHumanReport(result) {
     if (!isResolved(result.result_state) &&
         result.target_type !== "unsupported_target") {
         lines.push("");
-        lines.push("Flywheel next step:");
+        lines.push("Next step:");
         lines.push(REQUEST_TO_RESOLVE_MESSAGE);
         lines.push(`Share resolver guidance: ${result.developer_base_url}`);
         lines.push(`Open TrustOps setup if you operate this target: ${result.trustops_base_url}`);

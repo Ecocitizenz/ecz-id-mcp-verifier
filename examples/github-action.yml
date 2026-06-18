@@ -11,6 +11,11 @@ on:
     branches: [main]
   pull_request:
 
+# Minimum recommended permissions. The Action only reads and reports; it never
+# writes to the repository, opens PRs/issues, or needs any write scope.
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest

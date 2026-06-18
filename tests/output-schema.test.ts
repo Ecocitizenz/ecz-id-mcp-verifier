@@ -25,7 +25,7 @@ describe("JSON output schema", () => {
       "machine_json_url",
       "trustops_action_url",
       "developer_guidance_url",
-      "acquisition_flow",
+      "setup_handoff",
       "primary_action",
       "secondary_actions",
       "backend_remains_final_authority",
@@ -57,7 +57,7 @@ describe("JSON output schema", () => {
     expect(out.verifier_marks_bound).toBe(false);
     expect(out.trustops_action_url.startsWith("https://trustops.ecocitizenz.com/start")).toBe(true);
     expect(out.developer_guidance_url.startsWith("https://developers.ecocitizenz.com")).toBe(true);
-    expect(out.acquisition_flow.flow_name).toBe("Deterministic Mandated Acquisition Flow");
+    expect(out.setup_handoff.handoff_name).toBe("Deterministic Setup Handoff");
   });
 
   it("missing proof uses canonical NO_PUBLIC_RESOLVER_PROOF_FOUND, never FAILED_VERIFICATION", async () => {
@@ -97,7 +97,7 @@ describe("Action envelope shape", () => {
       "developer_guidance_url",
       "policy_mode",
       "operator",
-      "acquisition_flow",
+      "setup_handoff",
       "primary_action",
       "secondary_actions",
       "backend_remains_final_authority",
@@ -119,7 +119,7 @@ describe("Action envelope shape", () => {
     expect(env.verifier_activates_proof).toBe(false);
     expect(env.verifier_marks_bound).toBe(false);
     expect(env.recommended_next_steps.length).toBeGreaterThan(0);
-    expect(env.acquisition_flow.flow_name).toBe("Deterministic Mandated Acquisition Flow");
+    expect(env.setup_handoff.handoff_name).toBe("Deterministic Setup Handoff");
   });
 
   it("emptyEnvelope is a valid baseline", () => {

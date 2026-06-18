@@ -11,7 +11,7 @@ import { writeFileSync, appendFileSync } from "node:fs";
 import { verify, type VerifyOptions } from "./verify.js";
 import { buildJsonOutput, buildSarif, toJson } from "./output.js";
 import { buildEnvelope, type ActionEnvelope } from "./action-envelope.js";
-import { buildMcpActionEnvelope, buildRequestToResolve } from "./flywheel.js";
+import { buildMcpActionEnvelope, buildRequestToResolve } from "./result-actions.js";
 import { toHumanReport } from "./human-report.js";
 import {
   computeExitCode,
@@ -22,7 +22,7 @@ import { POLICY_MODES, type PolicyMode } from "./policy.js";
 import {
   OPERATOR_MODES,
   type OperatorMode
-} from "./acquisition-flow.js";
+} from "./setup-handoff.js";
 import {
   RESOLVER_BASE,
   TRUSTOPS_START,
@@ -265,7 +265,7 @@ export async function runCli(argv: string[]): Promise<CliResult> {
       `result-state=${result.result_state}\n` +
       `reason-codes=${result.reason_codes.join(",")}\n` +
       `action-envelope-json=${JSON.stringify(envelope)}\n` +
-      `acquisition-flow-json=${JSON.stringify(envelope.acquisition_flow)}\n` +
+      `setup-handoff-json=${JSON.stringify(envelope.setup_handoff)}\n` +
       `mcp-action-envelope-json=${JSON.stringify(mcpActionEnvelope)}\n` +
       `request-to-resolve-json=${JSON.stringify(requestToResolve)}\n` +
       `primary-action=${envelope.primary_action}\n` +
@@ -300,6 +300,29 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
       appendFileSync(ghOutPath, result.gh_outputs, "utf8");
     } catch {
       /* never crash on action output write */
+    }
+  }
+
+  // GitHub Step Summary (only when running inside Actions; harmless for CLI).
+  // Reporting-only, route-only summary. Never asserts safety/approval.
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+  if (summaryPath && result.action_envelope) {
+    try {
+      const env = result.action_envelope;
+      const reasons = env.reason_codes.length ? "`" + env.reason_codes.join("`, `") + "`" : "_none_";
+      const md =
+        `### ECZ-ID MCP Verifier\n\n` +
+        `| Field | Value |\n| --- | --- |\n` +
+        `| Result state | \`${env.result_state}\` |\n` +
+        `| Reason codes | ${reasons} |\n` +
+        `| Primary action | \`${env.primary_action}\` |\n` +
+        `| Policy mode | \`${env.policy_mode}\` |\n` +
+        `| Exit code | \`${result.exit_code}\` |\n\n` +
+        `Reports only. Does not write truth, activate proof, or mark BOUND. ` +
+        `Local policy decides. Re-check before reliance.\n`;
+      appendFileSync(summaryPath, md, "utf8");
+    } catch {
+      /* never crash on step-summary write */
     }
   }
   return result.exit_code;

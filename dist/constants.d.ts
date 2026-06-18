@@ -1,4 +1,5 @@
 export declare const RESOLVER_BASE: "https://resolver.ecocitizenz.org";
+export declare const RESOLVER_API_BASE: "https://api.ecocitizenz.com";
 export declare const TRUSTOPS_START: "https://trustops.ecocitizenz.com/start";
 export declare const DEVELOPER_GATEWAY: "https://developers.ecocitizenz.com";
 export declare const PACKAGE_NAME: "@ecocitizenz/ecz-id-mcp-verifier";

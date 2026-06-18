@@ -10,12 +10,12 @@ import type { VerifyResult } from "./verify.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import { SCHEMA_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
 import {
-  buildAcquisitionFlow,
+  buildSetupHandoff,
   developerGuidanceUrlFor,
-  type AcquisitionFlow,
+  type SetupHandoff,
   type NextAction,
   type OperatorMode
-} from "./acquisition-flow.js";
+} from "./setup-handoff.js";
 
 export type EnvelopeType = "MCP" | "AGENT" | "RESOLVER" | "RECIPROCAL_RELIANCE";
 
@@ -33,7 +33,7 @@ export interface ActionEnvelope {
   developer_guidance_url: string;
   policy_mode: PolicyMode;
   operator: OperatorMode;
-  acquisition_flow: AcquisitionFlow;
+  setup_handoff: SetupHandoff;
   primary_action: NextAction;
   secondary_actions: NextAction[];
   local_policy_decides: true;
@@ -52,7 +52,7 @@ function chooseEnvelopeType(t: TargetType): EnvelopeType {
   return "RECIPROCAL_RELIANCE";
 }
 
-function buildSteps(result: VerifyResult, flow: AcquisitionFlow): string[] {
+function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
   const steps: string[] = [];
   switch (result.result_state) {
     case "RESOLVER_VERIFIABLE":
@@ -117,7 +117,7 @@ function buildSteps(result: VerifyResult, flow: AcquisitionFlow): string[] {
 }
 
 export function buildEnvelope(result: VerifyResult): ActionEnvelope {
-  const flow = buildAcquisitionFlow({
+  const flow = buildSetupHandoff({
     target: result.target,
     target_type: result.target_type,
     result_state: result.result_state,
@@ -144,7 +144,7 @@ export function buildEnvelope(result: VerifyResult): ActionEnvelope {
     developer_guidance_url: flow.developer_guidance_url,
     policy_mode: result.policy_mode,
     operator: result.operator,
-    acquisition_flow: flow,
+    setup_handoff: flow,
     primary_action: flow.primary_action,
     secondary_actions: flow.secondary_actions,
     local_policy_decides: OUTPUT_PRIVACY_FIELDS.local_policy_decides,
@@ -159,7 +159,7 @@ export function buildEnvelope(result: VerifyResult): ActionEnvelope {
 }
 
 export function emptyEnvelope(): ActionEnvelope {
-  const baseFlow = buildAcquisitionFlow({
+  const baseFlow = buildSetupHandoff({
     target: "",
     target_type: "unsupported_target",
     result_state: "NOT_APPLICABLE",
@@ -186,7 +186,7 @@ export function emptyEnvelope(): ActionEnvelope {
     ),
     policy_mode: "OPEN",
     operator: "unknown",
-    acquisition_flow: baseFlow,
+    setup_handoff: baseFlow,
     primary_action: baseFlow.primary_action,
     secondary_actions: baseFlow.secondary_actions,
     local_policy_decides: true,

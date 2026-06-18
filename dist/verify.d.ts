@@ -2,7 +2,7 @@ import { type TargetType } from "./classify-target.js";
 import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
-import type { OperatorMode } from "./acquisition-flow.js";
+import type { OperatorMode } from "./setup-handoff.js";
 export interface VerifyOptions {
     target: string;
     targetType?: string;

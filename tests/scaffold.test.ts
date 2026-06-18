@@ -29,14 +29,15 @@ function readAllSourceFiles(): { path: string; content: string }[] {
 }
 
 describe("scaffold: package", () => {
-  it("package.json exists and is private", () => {
+  it("package.json exists and is publishable (release candidate)", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
-    expect(pkg.private).toBe(true);
+    expect(pkg.private).not.toBe(true);
     expect(pkg.name).toBe("@ecocitizenz/ecz-id-mcp-verifier");
     expect(pkg.scripts.test).toBeDefined();
     expect(pkg.scripts.typecheck).toBeDefined();
     expect(pkg.scripts.build).toBeDefined();
-    expect(pkg.scripts["verify:scaffold"]).toBeDefined();
+    expect(pkg.scripts["scan:public"]).toBeDefined();
+    expect(pkg.scripts["release:check"]).toBeDefined();
   });
 });
 

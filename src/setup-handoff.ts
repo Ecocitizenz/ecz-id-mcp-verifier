@@ -1,4 +1,4 @@
-// Deterministic Mandated Acquisition Flow (Phase 8A).
+// Deterministic Setup Handoff (Phase 8A).
 //
 // Pure routing only. The verifier:
 //   - does NOT write truth
@@ -18,20 +18,20 @@ import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
 import { TRUSTOPS_START, DEVELOPER_GATEWAY } from "./constants.js";
 
-export const FLOW_NAME = "Deterministic Mandated Acquisition Flow" as const;
-export const FLOW_VERSION = "1.0.0" as const;
+export const HANDOFF_NAME = "Deterministic Setup Handoff" as const;
+export const HANDOFF_VERSION = "1.0.0" as const;
 
 export const OPERATOR_MODES = ["self", "third_party", "unknown"] as const;
 export type OperatorMode = (typeof OPERATOR_MODES)[number];
 
-export const ACQUISITION_INTENTS = [
+export const SETUP_INTENTS = [
   "setup",
   "repair",
   "view_proof",
   "guidance",
   "none"
 ] as const;
-export type AcquisitionIntent = (typeof ACQUISITION_INTENTS)[number];
+export type SetupIntent = (typeof SETUP_INTENTS)[number];
 
 // Role-safe action verbs only. Nothing implies purchase / approval / safety.
 export const NEXT_ACTIONS = [
@@ -57,7 +57,7 @@ export type Posture =
   | "NOT_ROUTABLE_AS_ACTIVE"
   | "INFORMATIONAL";
 
-export interface BuildAcquisitionFlowInput {
+export interface BuildSetupHandoffInput {
   target: string;
   target_type: TargetType;
   result_state: ResultState;
@@ -70,12 +70,12 @@ export interface BuildAcquisitionFlowInput {
   developer_base_url?: string;
 }
 
-export interface AcquisitionFlow {
-  flow_name: typeof FLOW_NAME;
-  flow_version: typeof FLOW_VERSION;
+export interface SetupHandoff {
+  handoff_name: typeof HANDOFF_NAME;
+  handoff_version: typeof HANDOFF_VERSION;
   operator: OperatorMode;
   posture: Posture;
-  intent: AcquisitionIntent;
+  intent: SetupIntent;
   primary_action: NextAction;
   secondary_actions: NextAction[];
   trustops_action_url: string;
@@ -121,7 +121,7 @@ export function developerGuidanceUrlFor(
 
 export interface BuildTrustopsUrlInput {
   trustopsBase?: string;
-  intent: AcquisitionIntent;
+  intent: SetupIntent;
   target_type: TargetType;
   policy_mode: PolicyMode;
   operator: OperatorMode;
@@ -230,7 +230,7 @@ export function buildTrustopsUrl(input: BuildTrustopsUrlInput): string {
     params.set("return_to", safeReturnTo);
   }
   params.set("verifier", "ecz_id_mcp_verifier");
-  params.set("v", FLOW_VERSION);
+  params.set("v", HANDOFF_VERSION);
   // Target itself is intentionally NOT included by default. Phase 8A keeps
   // the URL free of any potentially sensitive identifier.
   return `${base}?${params.toString()}`;
@@ -274,7 +274,7 @@ function postureFor(state: ResultState): Posture {
 }
 
 interface ActionPlan {
-  intent: AcquisitionIntent;
+  intent: SetupIntent;
   primary_action: NextAction;
   secondary_actions: NextAction[];
 }
@@ -367,9 +367,9 @@ function planFor(state: ResultState, operator: OperatorMode): ActionPlan {
 // Main entry point.
 // ---------------------------------------------------------------------------
 
-export function buildAcquisitionFlow(
-  input: BuildAcquisitionFlowInput
-): AcquisitionFlow {
+export function buildSetupHandoff(
+  input: BuildSetupHandoffInput
+): SetupHandoff {
   const plan = planFor(input.result_state, input.operator);
   const posture = postureFor(input.result_state);
 
@@ -389,8 +389,8 @@ export function buildAcquisitionFlow(
   });
 
   return {
-    flow_name: FLOW_NAME,
-    flow_version: FLOW_VERSION,
+    handoff_name: HANDOFF_NAME,
+    handoff_version: HANDOFF_VERSION,
     operator: input.operator,
     posture,
     intent: plan.intent,

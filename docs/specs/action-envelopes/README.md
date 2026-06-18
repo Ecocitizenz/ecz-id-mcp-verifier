@@ -1,6 +1,6 @@
 # ECZ-ID Action Envelope Stack™ — Shared Schema Contract
 
-Local, reusable schema contract for the ECZ-ID flywheel. These specs are the
+Local, reusable schema contract for the ECZ-ID result-actions. These specs are the
 single source of truth (SSOT) for the **route-only, read-only** guidance objects
 emitted by owned surfaces (MCP Verifier, GitHub Action, and — by reference —
 Developer Gateway docs, Resolver action metadata, future VS Code / Shopify
@@ -44,11 +44,13 @@ Plus:
 
 - **Request-to-Resolve™ local guidance packet**
   → [`request-to-resolve.schema.json`](request-to-resolve.schema.json)
-- **TrustOps Product/Action Manifest**
-  → [`trustops-product-action-manifest.schema.json`](trustops-product-action-manifest.schema.json)
-  · instance: [`trustops-acquisition-manifest.json`](trustops-acquisition-manifest.json)
 - **Resolver Re-check Contract**
   → [`resolver-recheck-contract.schema.json`](resolver-recheck-contract.schema.json)
+
+> Product, pricing and acquisition manifests are TrustOps-owned and are **not**
+> published in this public spec set. Owned surfaces route to TrustOps via an
+> opaque setup handoff; they never embed product catalogues, pricing or
+> recommendation logic.
 
 ## Common fields (every envelope)
 
@@ -74,5 +76,5 @@ rate-limited.
 ## Validation
 
 Schemas are JSON Schema 2020-12. The MCP Verifier ships structural tests
-(`tests/flywheel.test.ts`); full JSON-Schema validation (e.g. via `ajv`) is
+(`tests/result-actions.test.ts`); full JSON-Schema validation (e.g. via `ajv`) is
 intentionally not wired here to avoid adding dependencies. Reference only.

@@ -1,0 +1,45 @@
+name: CI
+
+# Safe, read-only continuous integration. No publish, no deploy, no repo writes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: typecheck · test · build · scan · package · action-harness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install (clean, from lockfile)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Public-disclosure scan (no internal terms / pricing / P2)
+        run: npm run scan:public
+
+      - name: Inspect package contents (dry-run, no publish)
+        run: npm run pack:inspect
+
+      - name: Local GitHub Action harness (no network, no repo mutation)
+        run: npm run harness:action

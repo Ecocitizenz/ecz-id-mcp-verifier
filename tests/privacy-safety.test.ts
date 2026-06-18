@@ -172,7 +172,10 @@ describe("_reference is quarantined", () => {
     expect(ts).toMatch(/_reference/);
     expect(vt).toMatch(/_reference/);
   });
-  it("DeepAgent audit document exists", () => {
-    expect(existsSync(join(ROOT, "docs", "DEEPAGENT_REFERENCE_AUDIT.md"))).toBe(true);
+  it("the quarantined DeepAgent reference is not present in public source", () => {
+    // The internal DeepAgent audit was relocated to gitignored _reference/ in
+    // Phase 1; it is not public source. What matters for safety is that the
+    // quarantine holds: nothing public imports it and it stays ignore-listed.
+    expect(existsSync(join(ROOT, "docs", "DEEPAGENT_REFERENCE_AUDIT.md"))).toBe(false);
   });
 });

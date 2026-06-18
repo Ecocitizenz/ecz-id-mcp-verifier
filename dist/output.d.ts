@@ -1,8 +1,8 @@
 import type { VerifyResult } from "./verify.js";
 import type { ActionEnvelope } from "./action-envelope.js";
-import { type AcquisitionFlow } from "./acquisition-flow.js";
+import { type SetupHandoff } from "./setup-handoff.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
-import { type McpActionEnvelope, type AgentActionEnvelope, type RequestToResolve, type ReciprocalRelianceEnvelope } from "./flywheel.js";
+import { type McpActionEnvelope, type AgentActionEnvelope, type RequestToResolve, type ReciprocalRelianceEnvelope } from "./result-actions.js";
 export interface JsonOutputOptions {
     exit_code: number;
     action_envelope?: ActionEnvelope | null;
@@ -22,7 +22,7 @@ export interface JsonOutputCore {
     machine_json_url: string | null;
     trustops_action_url: string;
     developer_guidance_url: string;
-    acquisition_flow: AcquisitionFlow;
+    setup_handoff: SetupHandoff;
     primary_action: string;
     secondary_actions: string[];
     mcp_action_envelope: McpActionEnvelope | null;

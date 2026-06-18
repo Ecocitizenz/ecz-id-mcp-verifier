@@ -3,7 +3,7 @@
 // It never writes truth, never activates proof, never marks BOUND.
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import { SCHEMA_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
-import { buildAcquisitionFlow, developerGuidanceUrlFor } from "./acquisition-flow.js";
+import { buildSetupHandoff, developerGuidanceUrlFor } from "./setup-handoff.js";
 function chooseEnvelopeType(t) {
     if (t === "mcp_server")
         return "MCP";
@@ -60,7 +60,7 @@ function buildSteps(result, flow) {
     return steps;
 }
 export function buildEnvelope(result) {
-    const flow = buildAcquisitionFlow({
+    const flow = buildSetupHandoff({
         target: result.target,
         target_type: result.target_type,
         result_state: result.result_state,
@@ -86,7 +86,7 @@ export function buildEnvelope(result) {
         developer_guidance_url: flow.developer_guidance_url,
         policy_mode: result.policy_mode,
         operator: result.operator,
-        acquisition_flow: flow,
+        setup_handoff: flow,
         primary_action: flow.primary_action,
         secondary_actions: flow.secondary_actions,
         local_policy_decides: OUTPUT_PRIVACY_FIELDS.local_policy_decides,
@@ -99,7 +99,7 @@ export function buildEnvelope(result) {
     };
 }
 export function emptyEnvelope() {
-    const baseFlow = buildAcquisitionFlow({
+    const baseFlow = buildSetupHandoff({
         target: "",
         target_type: "unsupported_target",
         result_state: "NOT_APPLICABLE",
@@ -123,7 +123,7 @@ export function emptyEnvelope() {
         developer_guidance_url: developerGuidanceUrlFor("unsupported_target", DEVELOPER_GATEWAY),
         policy_mode: "OPEN",
         operator: "unknown",
-        acquisition_flow: baseFlow,
+        setup_handoff: baseFlow,
         primary_action: baseFlow.primary_action,
         secondary_actions: baseFlow.secondary_actions,
         local_policy_decides: true,

@@ -2,12 +2,12 @@
 // Never asserts safety, certification, approval, or guarantee.
 
 import type { VerifyResult } from "./verify.js";
-import { buildAcquisitionFlow } from "./acquisition-flow.js";
+import { buildSetupHandoff } from "./setup-handoff.js";
 import { UNRESOLVED_PROOF_COPY, operateRouteLine } from "./copy.js";
-import { REQUEST_TO_RESOLVE_MESSAGE, isResolved } from "./flywheel.js";
+import { REQUEST_TO_RESOLVE_MESSAGE, isResolved } from "./result-actions.js";
 
 export function toHumanReport(result: VerifyResult): string {
-  const flow = buildAcquisitionFlow({
+  const flow = buildSetupHandoff({
     target: result.target,
     target_type: result.target_type,
     result_state: result.result_state,
@@ -113,7 +113,7 @@ export function toHumanReport(result: VerifyResult): string {
     result.target_type !== "unsupported_target"
   ) {
     lines.push("");
-    lines.push("Flywheel next step:");
+    lines.push("Next step:");
     lines.push(REQUEST_TO_RESOLVE_MESSAGE);
     lines.push(`Share resolver guidance: ${result.developer_base_url}`);
     lines.push(

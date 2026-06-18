@@ -9,7 +9,7 @@ import {
   buildReciprocalRelianceEnvelope,
   REQUEST_TO_RESOLVE_MESSAGE,
   AUTHORITY_BOUNDARY
-} from "../src/flywheel.js";
+} from "../src/result-actions.js";
 
 const MCP_TARGET = "https://mcp.example.com/.well-known/ecz-mcp.json";
 const AGENT_TARGET = "https://agent.example.com/.well-known/ecz-agent.json";
@@ -37,7 +37,7 @@ function resolvedMcpResult(): VerifyResult {
   };
 }
 
-describe("flywheel: MCP Action Envelope", () => {
+describe("result-actions: MCP Action Envelope", () => {
   it("exists for an unresolved MCP target", async () => {
     const env = buildMcpActionEnvelope(await verifyMcpUnresolved());
     expect(env).not.toBeNull();
@@ -83,7 +83,7 @@ describe("flywheel: MCP Action Envelope", () => {
   });
 });
 
-describe("flywheel: Request-to-Resolve packet", () => {
+describe("result-actions: Request-to-Resolve packet", () => {
   it("exists for an unresolved MCP target with the exact contract", async () => {
     const p = buildRequestToResolve(await verifyMcpUnresolved())!;
     expect(p).not.toBeNull();
@@ -115,7 +115,7 @@ describe("flywheel: Request-to-Resolve packet", () => {
   });
 });
 
-describe("flywheel: Reciprocal Reliance Envelope", () => {
+describe("result-actions: Reciprocal Reliance Envelope", () => {
   it("populates the mcp_subject for an MCP target and never decides authorisation", async () => {
     const env = buildReciprocalRelianceEnvelope(await verifyMcpUnresolved())!;
     expect(env.type).toBe("ecz.reciprocal_reliance_envelope");
@@ -140,8 +140,8 @@ describe("flywheel: Reciprocal Reliance Envelope", () => {
   });
 });
 
-describe("flywheel: JSON output integration", () => {
-  it("includes the new flywheel fields with boundary flags", async () => {
+describe("result-actions: JSON output integration", () => {
+  it("includes the new result-actions fields with boundary flags", async () => {
     const res = await verifyMcpUnresolved();
     const out = buildJsonOutput(res, { exit_code: 0 });
     expect(out).toHaveProperty("mcp_action_envelope");
@@ -153,14 +153,14 @@ describe("flywheel: JSON output integration", () => {
     expect(out.verifier_activates_proof).toBe(false);
     expect(out.verifier_marks_bound).toBe(false);
     // Backward-compatible: prior fields remain.
-    expect(out).toHaveProperty("acquisition_flow");
+    expect(out).toHaveProperty("setup_handoff");
     expect(out).toHaveProperty("action_envelope");
     expect(out.trustops_action_url).toMatch(/trustops\.ecocitizenz\.com\/start/);
     expect(out.developer_guidance_url).toMatch(/developers\.ecocitizenz\.com/);
   });
 });
 
-describe("flywheel: GitHub Action outputs", () => {
+describe("result-actions: GitHub Action outputs", () => {
   it("emits mcp-action-envelope-json and request-to-resolve-json plus existing outputs", async () => {
     const r = await runCli(["--target", MCP_TARGET, "--offline"]);
     expect(r.gh_outputs).toMatch(/^mcp-action-envelope-json=/m);
@@ -169,7 +169,7 @@ describe("flywheel: GitHub Action outputs", () => {
     expect(r.gh_outputs).toMatch(/^result-state=/m);
     expect(r.gh_outputs).toMatch(/^reason-codes=/m);
     expect(r.gh_outputs).toMatch(/^action-envelope-json=/m);
-    expect(r.gh_outputs).toMatch(/^acquisition-flow-json=/m);
+    expect(r.gh_outputs).toMatch(/^setup-handoff-json=/m);
     expect(r.gh_outputs).toMatch(/^primary-action=/m);
     expect(r.gh_outputs).toMatch(/^trustops-action-url=/m);
     expect(r.gh_outputs).toMatch(/^developer-guidance-url=/m);
@@ -181,10 +181,10 @@ describe("flywheel: GitHub Action outputs", () => {
   });
 });
 
-describe("flywheel: human report next step", () => {
-  it("renders a Flywheel next step block for unresolved targets", async () => {
+describe("result-actions: human report next step", () => {
+  it("renders a Next step block for unresolved targets", async () => {
     const r = await runCli(["--target", MCP_TARGET, "--offline", "--report"]);
-    expect(r.stdout).toMatch(/Flywheel next step:/);
+    expect(r.stdout).toMatch(/Next step:/);
     expect(r.stdout).toContain(REQUEST_TO_RESOLVE_MESSAGE);
     expect(r.stdout).toMatch(/Share resolver guidance:/);
     expect(r.stdout).toMatch(/Open TrustOps setup if you operate this target:/);
@@ -192,7 +192,7 @@ describe("flywheel: human report next step", () => {
   });
 });
 
-describe("flywheel: copy guardrails on serialized objects", () => {
+describe("result-actions: copy guardrails on serialized objects", () => {
   it("contains no forbidden wording except the sanctioned 'This does not mean unsafe'", async () => {
     const res = await verifyMcpUnresolved();
     const blob = JSON.stringify([
@@ -224,7 +224,7 @@ describe("flywheel: copy guardrails on serialized objects", () => {
   });
 });
 
-describe("flywheel: re-check contract (Require fails closed)", () => {
+describe("result-actions: re-check contract (Require fails closed)", () => {
   it("REQUIRE on unresolved MCP fails closed (non-zero) while OPEN/PREFER do not", async () => {
     const req = await runCli(["--target", MCP_TARGET, "--policy", "require", "--offline"]);
     expect(req.exit_code).not.toBe(0);

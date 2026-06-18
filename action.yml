@@ -50,8 +50,8 @@ outputs:
     description: "Comma-separated canonical ReasonCodes."
   action-envelope-json:
     description: "Local ActionEnvelope JSON describing routing only."
-  acquisition-flow-json:
-    description: "Deterministic Mandated Acquisition Flow JSON (routing only)."
+  setup-handoff-json:
+    description: "Deterministic Setup Handoff JSON (routing only)."
   mcp-action-envelope-json:
     description: "MCP Action Envelope JSON (route-only posture path). Null for non-MCP targets."
   request-to-resolve-json:

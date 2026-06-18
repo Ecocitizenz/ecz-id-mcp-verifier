@@ -10,7 +10,7 @@
     "RESOLVER_READ_ONLY",
     "LOCAL_POLICY_DECIDES"
   ],
-  "resolver_url": "https://resolver.ecocitizenz.org/mcp/api.example.com",
+  "resolver_url": null,
   "machine_json_url": null,
   "primary_action": "ROUTE_TO_TRUSTOPS_SETUP",
   "recommended_next_steps": [
@@ -25,7 +25,7 @@
   "local_policy_decides": true,
   "recheck_before_reliance": true,
   "no_safety_or_approval_inference": true,
-  "acquisition_flow": {
+  "setup_handoff": {
     "schema_version": 1,
     "operator_mode": "self",
     "primary_action": "ROUTE_TO_TRUSTOPS_SETUP",

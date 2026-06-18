@@ -1,19 +1,19 @@
 import { describe, it, expect } from "vitest";
 import {
-  ACQUISITION_INTENTS,
+  SETUP_INTENTS,
   ALLOWED_RETURN_TO_HOSTS,
-  FLOW_NAME,
-  FLOW_VERSION,
+  HANDOFF_NAME,
+  HANDOFF_VERSION,
   NEXT_ACTIONS,
   OPERATOR_MODES,
   allowedTrustopsParams,
-  buildAcquisitionFlow,
+  buildSetupHandoff,
   buildTrustopsUrl,
   developerGuidanceUrlFor,
   isAllowedReturnToUrl,
   sanitizeReturnToUrl,
-  type BuildAcquisitionFlowInput
-} from "../src/acquisition-flow.js";
+  type BuildSetupHandoffInput
+} from "../src/setup-handoff.js";
 import type { ReasonCode } from "../src/reason-codes.js";
 import {
   RESOLVER_BASE,
@@ -21,7 +21,7 @@ import {
   DEVELOPER_GATEWAY
 } from "../src/constants.js";
 
-const baseInput: BuildAcquisitionFlowInput = {
+const baseInput: BuildSetupHandoffInput = {
   target: "https://example.com/.well-known/ecz-mcp.json",
   target_type: "mcp_server",
   result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
@@ -32,16 +32,16 @@ const baseInput: BuildAcquisitionFlowInput = {
   machine_json_url: null
 };
 
-describe("acquisition-flow: constants", () => {
+describe("setup-handoff: constants", () => {
   it("operator modes are exactly self/third_party/unknown", () => {
     expect([...OPERATOR_MODES]).toEqual(["self", "third_party", "unknown"]);
   });
   it("flow name and version are fixed", () => {
-    expect(FLOW_NAME).toBe("Deterministic Mandated Acquisition Flow");
-    expect(FLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(HANDOFF_NAME).toBe("Deterministic Setup Handoff");
+    expect(HANDOFF_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
   });
   it("intent vocabulary is fixed", () => {
-    expect([...ACQUISITION_INTENTS]).toEqual([
+    expect([...SETUP_INTENTS]).toEqual([
       "setup",
       "repair",
       "view_proof",
@@ -60,10 +60,10 @@ describe("acquisition-flow: constants", () => {
   });
 });
 
-describe("acquisition-flow: routing matrix", () => {
+describe("setup-handoff: routing matrix", () => {
   it("RESOLVER_VERIFIABLE: primary is VIEW_RESOLVER_PROOF and not purchase", () => {
     for (const operator of OPERATOR_MODES) {
-      const f = buildAcquisitionFlow({
+      const f = buildSetupHandoff({
         ...baseInput,
         result_state: "RESOLVER_VERIFIABLE",
         reason_codes: [],
@@ -76,7 +76,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("MISSING_PROOF / self -> START_TRUSTOPS_SETUP", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       operator: "self"
@@ -86,7 +86,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("MISSING_PROOF / third_party -> SHARE_DEVELOPER_GUIDANCE", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       operator: "third_party"
@@ -96,7 +96,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("MISSING_PROOF / unknown -> CHOOSE_OPERATOR_PATH", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       operator: "unknown"
@@ -107,7 +107,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("DEGRADED / self -> START_TRUSTOPS_REPAIR", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "DEGRADED",
       reason_codes: ["KEYSET_HASH_MISMATCH"],
@@ -118,7 +118,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("DEGRADED / third_party -> RECHECK_BEFORE_RELIANCE", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "MISMATCH",
       reason_codes: ["MANIFEST_HASH_MISMATCH"],
@@ -134,7 +134,7 @@ describe("acquisition-flow: routing matrix", () => {
       "DEFERRED_PRODUCT_NOT_SELLABLE",
       "UNKNOWN_PHASE1_SKU"
     ] as const) {
-      const f = buildAcquisitionFlow({
+      const f = buildSetupHandoff({
         ...baseInput,
         result_state: state,
         operator: "self"
@@ -145,7 +145,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("PARENT_UPGRADE_REQUIRED / self -> view docs + contact TrustOps secondary", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "PARENT_UPGRADE_REQUIRED",
       operator: "self"
@@ -155,7 +155,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("UNSUPPORTED_TARGET -> VIEW_DEVELOPER_GUIDANCE", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       target_type: "unsupported_target",
       result_state: "UNSUPPORTED_TARGET",
@@ -165,7 +165,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 
   it("INFORMATIONAL / NOT_APPLICABLE -> RECHECK_BEFORE_RELIANCE", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NOT_APPLICABLE",
       operator: "unknown"
@@ -175,7 +175,7 @@ describe("acquisition-flow: routing matrix", () => {
   });
 });
 
-describe("acquisition-flow: TrustOps URL allow-list", () => {
+describe("setup-handoff: TrustOps URL allow-list", () => {
   it("uses canonical TrustOps base", () => {
     const url = buildTrustopsUrl({
       intent: "setup",
@@ -262,7 +262,7 @@ describe("acquisition-flow: TrustOps URL allow-list", () => {
   });
 });
 
-describe("acquisition-flow: return_to host allow-list (Phase 8A-B)", () => {
+describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
   it("allowed hosts are exactly the three canonical ECZ-ID surfaces", () => {
     expect([...ALLOWED_RETURN_TO_HOSTS]).toEqual([
       "developers.ecocitizenz.com",
@@ -365,7 +365,7 @@ describe("acquisition-flow: return_to host allow-list (Phase 8A-B)", () => {
   });
 });
 
-describe("acquisition-flow: Developer Gateway URL mapping", () => {
+describe("setup-handoff: Developer Gateway URL mapping", () => {
   it("maps every target_type to a deterministic Developer Gateway path", () => {
     const cases: Record<string, string> = {
       mcp_server: "/mcp",
@@ -385,9 +385,9 @@ describe("acquisition-flow: Developer Gateway URL mapping", () => {
   });
 });
 
-describe("acquisition-flow: invariants in returned envelope", () => {
+describe("setup-handoff: invariants in returned envelope", () => {
   it("never sets verifier-writes-truth/activates-proof/marks-bound", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "RESOLVER_VERIFIABLE",
       reason_codes: [],
@@ -401,7 +401,7 @@ describe("acquisition-flow: invariants in returned envelope", () => {
   });
 
   it("does not depend on the live resolver host for URL synthesis", () => {
-    const f = buildAcquisitionFlow({
+    const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       operator: "self"

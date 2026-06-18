@@ -3,7 +3,7 @@ import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
 import type { TargetType } from "./classify-target.js";
 import type { VerifyResult } from "./verify.js";
-import { type AcquisitionFlow, type NextAction, type OperatorMode } from "./acquisition-flow.js";
+import { type SetupHandoff, type NextAction, type OperatorMode } from "./setup-handoff.js";
 export type EnvelopeType = "MCP" | "AGENT" | "RESOLVER" | "RECIPROCAL_RELIANCE";
 export interface ActionEnvelope {
     schema_version: number;
@@ -19,7 +19,7 @@ export interface ActionEnvelope {
     developer_guidance_url: string;
     policy_mode: PolicyMode;
     operator: OperatorMode;
-    acquisition_flow: AcquisitionFlow;
+    setup_handoff: SetupHandoff;
     primary_action: NextAction;
     secondary_actions: NextAction[];
     local_policy_decides: true;

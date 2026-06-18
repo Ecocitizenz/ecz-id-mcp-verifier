@@ -69,8 +69,10 @@ describe("copy guardrails: README", () => {
     );
   });
 
-  it("includes the proof-before-LIVE note", () => {
-    expect(readme).toMatch(/not\s+live\/published\s+until/i);
+  it("states the free-forever proprietary (not open source) posture", () => {
+    expect(readme).toMatch(/free forever/i);
+    expect(readme).toMatch(/not\b[^.]*open source/i);
+    expect(readme).toMatch(/Publication readiness/i);
   });
 
   it("contains no forbidden overclaim wording", () => {

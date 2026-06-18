@@ -1,12 +1,12 @@
 // Output renderers: canonical JSON and minimal SARIF 2.1.0.
 // Privacy fields are spread from OUTPUT_PRIVACY_FIELDS so this file never
 // has to spell out token names that would look like runtime call sites.
-import { buildAcquisitionFlow } from "./acquisition-flow.js";
+import { buildSetupHandoff } from "./setup-handoff.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
-import { buildMcpActionEnvelope, buildAgentActionEnvelope, buildRequestToResolve, buildReciprocalRelianceEnvelope } from "./flywheel.js";
+import { buildMcpActionEnvelope, buildAgentActionEnvelope, buildRequestToResolve, buildReciprocalRelianceEnvelope } from "./result-actions.js";
 import { SCHEMA_VERSION, VERIFIER_NAME, VERIFIER_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
 export function buildJsonOutput(result, opts) {
-    const flow = buildAcquisitionFlow({
+    const flow = buildSetupHandoff({
         target: result.target,
         target_type: result.target_type,
         result_state: result.result_state,
@@ -32,7 +32,7 @@ export function buildJsonOutput(result, opts) {
         machine_json_url: result.machine_json_url,
         trustops_action_url: flow.trustops_action_url,
         developer_guidance_url: flow.developer_guidance_url,
-        acquisition_flow: flow,
+        setup_handoff: flow,
         primary_action: flow.primary_action,
         secondary_actions: [...flow.secondary_actions],
         mcp_action_envelope: buildMcpActionEnvelope(result),

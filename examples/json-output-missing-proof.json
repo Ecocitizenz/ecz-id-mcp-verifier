@@ -12,7 +12,7 @@
     "RESOLVER_READ_ONLY",
     "LOCAL_POLICY_DECIDES"
   ],
-  "resolver_url": "https://resolver.ecocitizenz.org/eczid/ECZ-GB-EXAMPLE",
+  "resolver_url": "https://resolver.ecocitizenz.org/p/ECZ-GB-EXAMPLE",
   "machine_json_url": null,
   "trustops_action_url": "https://trustops.ecocitizenz.com/start",
   "developer_guidance_url": "https://developers.ecocitizenz.com",

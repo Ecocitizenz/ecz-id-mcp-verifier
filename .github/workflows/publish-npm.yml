@@ -1,0 +1,58 @@
+name: Publish to npm (OIDC trusted publishing)
+
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ PREPARED — NOT YET ENABLED. This workflow performs a real npm publish.    │
+# │ It must not run until the controlled publication phase (Phase 2).         │
+# │                                                                           │
+# │ It uses npm Trusted Publishing (OIDC) — NOT a long-lived NPM_TOKEN.       │
+# │ Before first use:                                                         │
+# │   1. Publish v0.7.0 once via a controlled manual publish to create the    │
+# │      package, then register this workflow as the npm Trusted Publisher    │
+# │      (org/user, repo, workflow file name, environment) on npmjs.com.      │
+# │   2. Create the protected GitHub environment `npm-release` with required  │
+# │      reviewers.                                                           │
+# │   Trusted publishing requires npm CLI >= 11.5.1 on the runner and a       │
+# │   public repository for provenance. Provenance is automatic.              │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+on:
+  # Manual, gated trigger only. Add `release: { types: [published] }` in Phase 2
+  # once the Trusted Publisher is registered and the environment is protected.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC trusted publishing only
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: release-check · publish (provenance)
+    runs-on: ubuntu-latest
+    environment: npm-release # protected: requires reviewer approval
+    steps:
+      - name: Checkout (clean)
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Ensure npm supports trusted publishing (>= 11.5.1)
+        run: npm install -g npm@latest
+
+      - name: Install (clean, from lockfile)
+        run: npm ci
+
+      - name: Full release gate (typecheck · test · build · scan)
+        run: npm run release:check
+
+      - name: Publish (public, provenance via OIDC trusted publishing)
+        # No NODE_AUTH_TOKEN / NPM_TOKEN. Authentication is short-lived OIDC.
+        # publishConfig.access=public and provenance:true are set in package.json.
+        run: npm publish

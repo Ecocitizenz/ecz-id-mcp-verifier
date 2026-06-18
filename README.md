@@ -62,7 +62,7 @@ without any network call.
 
 > Note: this package is **not yet published**. The command above is the intended
 > first-use shape once local package proof and trusted publishing are complete.
-> See **Proof before LIVE** at the end of this document.
+> See **Publication readiness** at the end of this document.
 
 ## Install (local)
 
@@ -163,7 +163,7 @@ ecz-mcp-verify --target "https://api.example.com/.well-known/ecz-mcp.json" \
   "policy_mode": "OPEN",
   "result_state": "NO_PUBLIC_RESOLVER_PROOF_FOUND",
   "reason_codes": ["NO_PUBLIC_RESOLVER_PROOF_FOUND", "RESOLVER_READ_ONLY", "LOCAL_POLICY_DECIDES"],
-  "resolver_url": "https://resolver.ecocitizenz.org/eczid/...",
+  "resolver_url": "https://resolver.ecocitizenz.org/p/...",
   "machine_json_url": null,
   "trustops_action_url": "https://trustops.ecocitizenz.com/start",
   "developer_guidance_url": "https://developers.ecocitizenz.com",
@@ -267,6 +267,12 @@ Example:
 ```yaml
 name: ECZ-ID MCP Verifier
 on: [push]
+
+# Minimum recommended permissions. The Action only reads and reports — it never
+# writes to the repository, opens PRs/issues, or needs any write scope.
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -281,11 +287,15 @@ jobs:
           timeout-ms: "5000"
 ```
 
-Outputs: `result-state`, `reason-codes`, `action-envelope-json`.
+Outputs: `result-state`, `reason-codes`, `action-envelope-json`,
+`setup-handoff-json`, `mcp-action-envelope-json`, `request-to-resolve-json`,
+`primary-action`, `trustops-action-url`, `developer-guidance-url`. The Action
+also writes a concise GitHub **step summary**.
 
-The action does **not** upload source. It does **not** upload secrets.
-It does **not** write truth. It does **not** call TrustOps checkout.
-It does **not** require an ECZ-ID token for public checks.
+**Minimum permissions:** `contents: read`. The action does **not** upload
+source. It does **not** upload secrets. It does **not** write truth. It does
+**not** mutate the repository, open PRs, or open issues. It does **not** call
+TrustOps checkout. It does **not** require an ECZ-ID token for public checks.
 
 ## TrustOps routing
 
@@ -321,46 +331,55 @@ remains final authority.
 ## DeepAgent reference
 
 A DeepAgent draft of an MCP verifier was quarantined under
-`_reference/deepagent_zip_do_not_import/` and audited in
-[`docs/DEEPAGENT_REFERENCE_AUDIT.md`](docs/DEEPAGENT_REFERENCE_AUDIT.md).
-No file under `_reference/` is imported, re-exported, or copied verbatim.
+`_reference/deepagent_zip_do_not_import/` and audited in EcoCitizenZ internal
+records. No file under `_reference/` is imported, re-exported, or copied verbatim.
 Any reusable idea has been rewritten under current ECZ-ID canon.
 
-## Status
+## Support, security & uninstall
 
-Distribution-readiness local package. **Not yet published.**
+- **Support:** <https://ecocitizenz.com/support>
+- **Security reporting:** report suspected vulnerabilities privately via
+  <https://ecocitizenz.com/support> — do **not** open public issues for security
+  reports. Include the affected version and reproduction steps.
+- **Privacy:** see [`docs/PRIVACY.md`](docs/PRIVACY.md). The verifier performs
+  local checks and read-only Resolver GETs only; it uploads no source, secrets,
+  prompts, tool payloads, or telemetry.
+- **Uninstall / removal:** `npm uninstall -g @ecocitizenz/ecz-id-mcp-verifier`
+  (global) or remove it from your project's `devDependencies` and delete
+  `node_modules`. For the GitHub Action, remove the `uses:` step from your
+  workflow. No background services, daemons, or cached credentials are left
+  behind.
 
-- `package.json` is marked `"private": true`.
-- A `prepublishOnly` guard blocks accidental `npm publish`.
-- No GitHub release has been cut.
-- No registry account or marketplace listing has been activated.
-- License is proprietary limited-use (`LICENSE.md`); this is not open source.
-- Public distribution is blocked pending IP/patent counsel review.
+## Status & licence
 
-Phase 9A prepares npm, GitHub Action, GitHub repo, and MCP-style
-registry/listing metadata only. Phase 9B will align with the real
-registry account and live listing surfaces.
+Release candidate. The official, unmodified package and its bundled GitHub
+Action are **free forever** under the ECZ-ID Proprietary Limited-Use License
+(`LICENSE.md`) — free to install and run for personal, organisational,
+development, CI/CD, and internal business use.
 
-## Proof before LIVE
+This is **not** open source. Public visibility of the source (for transparency
+or installation) grants no redistribution, modification, derivative, or
+competing-product rights — see `LICENSE.md`.
 
-This package is not live/published until local package proof, external action
-proof, trusted publishing configuration, no-overclaim review, and IP/patent
-counsel review are complete.
+- Licensed proprietary limited-use; free of charge, now and in future.
+- Not yet published to npm or the GitHub Action Marketplace — publication is a
+  separate, controlled step.
+- No GitHub release has been cut yet.
 
-- **Local package proof:** `npm run build`, `npm test` (including privacy
-  invariants), and `npm pack --dry-run` content review must pass.
-- **External action proof:** the GitHub Action adapter (`dist/action.js`) must
-  run green on a sample workflow with real `with:` inputs.
+## Publication readiness
+
+Publication proceeds once these are complete:
+
+- **Local package proof:** `npm run build`, `npm test`, `npm run scan:public`,
+  and `npm pack --dry-run` content review pass.
+- **External action proof:** the bundled GitHub Action (`dist/action.js`) runs
+  green on a sample workflow with real `with:` inputs.
 - **Trusted publishing:** the canonical Git remote
   (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and
   `package.json` carries `repository` and `bugs` fields whose URLs match it
-  exactly (npm provenance/OIDC rejects any casing mismatch). Connecting the npm
-  trusted publisher (OIDC) is the remaining publish-side step.
-- **No-overclaim review:** forbidden wording absent from listing copy and report.
-- **IP / patent review (publication gate):** public distribution to npm and the
-  GitHub Action Marketplace is **blocked** pending EcoCitizenZ intellectual-
-  property and patent counsel review confirming what may be safely disclosed.
-  Source is not pushed to the public remote until that review clears.
+  exactly (npm provenance/OIDC rejects any casing mismatch). The npm trusted
+  publisher (OIDC) is connected as the publish-side step.
+- **No-overclaim review:** forbidden wording absent from listing copy.
 
 Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.
 

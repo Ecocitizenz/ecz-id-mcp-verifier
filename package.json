@@ -1,11 +1,16 @@
 {
   "name": "@ecocitizenz/ecz-id-mcp-verifier",
   "version": "0.7.0",
-  "private": true,
   "description": "ECZ-ID MCP Verifier(TM). Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, or mark BOUND.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "bin": {
     "ecz-id-mcp-verifier": "dist/cli.js",
     "ecz-mcp-verify": "dist/cli.js"
@@ -19,12 +24,19 @@
     "docs/PRIVACY.md",
     "examples"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "verify:scaffold": "vitest run",
-    "prepublishOnly": "node -e \"console.error('publishing is disabled for this package'); process.exit(1)\""
+    "scan:public": "node scripts/scan-public.mjs",
+    "harness:action": "node scripts/action-harness.mjs",
+    "release:check": "npm run typecheck && npm run test && npm run build && npm run scan:public",
+    "pack:inspect": "npm pack --dry-run",
+    "prepublishOnly": "npm run release:check"
   },
   "keywords": [
     "ecz-id",
@@ -57,4 +69,3 @@
     "node": ">=18"
   }
 }
-
