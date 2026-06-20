@@ -42,7 +42,9 @@ describe("GitHub Action", () => {
     expect(action).not.toMatch(/main:\s*["']dist\/cli\.js["']/);
   });
   it("description carries no-truth-write boundary", () => {
-    expect(action.toLowerCase()).toMatch(/does not write truth/);
+    // v0.7.1 Marketplace-compliant description (<=125 chars) phrases the boundary
+    // as "...telemetry or truth-writing." (was "Does not write truth...").
+    expect(action.toLowerCase()).toMatch(/truth-writing/);
   });
   it("README documents minimum permissions (contents: read) and no-write posture", () => {
     expect(readme).toMatch(/permissions:\s*\n\s*contents:\s*read/);

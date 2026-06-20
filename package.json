@@ -1,6 +1,6 @@
 {
   "name": "@ecocitizenz/ecz-id-mcp-verifier",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "ECZ-ID MCP Verifier(TM). Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, or mark BOUND.",
   "type": "module",
   "main": "dist/index.js",

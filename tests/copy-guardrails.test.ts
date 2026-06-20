@@ -54,7 +54,9 @@ describe("copy guardrails: README", () => {
   });
 
   it("documents a GitHub Action usage example with target and policy", () => {
-    expect(readme).toMatch(/uses:\s*ecocitizenz\/ecz-id-mcp-verifier/);
+    // v0.7.1 README pins the immutable tag with canonical owner casing
+    // (Ecocitizenz/ecz-id-mcp-verifier@v0.7.1); match case-insensitively.
+    expect(readme).toMatch(/uses:\s*ecocitizenz\/ecz-id-mcp-verifier/i);
     expect(readme).toMatch(/^\s*target:/m);
     expect(readme).toMatch(/^\s*policy:/m);
   });

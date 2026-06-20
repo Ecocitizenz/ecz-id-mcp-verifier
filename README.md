@@ -223,7 +223,7 @@ ecz-mcp-verify --target "https://api.example.com/.well-known/ecz-mcp.json" \
 {
   "schema_version": 1,
   "verifier": "ECZ-ID MCP Verifier",
-  "verifier_version": "0.7.0",
+  "verifier_version": "0.7.1",
   "target": "...",
   "target_type": "mcp_server",
   "policy_mode": "OPEN",
@@ -343,7 +343,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: ecocitizenz/ecz-id-mcp-verifier@v0
+      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
         with:
           target: "ECZ-CC-ABC123"
           target-type: "ecz_id"

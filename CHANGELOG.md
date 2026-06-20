@@ -4,6 +4,26 @@ All notable changes to the ECZ-ID MCP Verifier™ are documented here.
 This project is free-forever under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`); it is **not** open source.
 
+## [0.7.1] — GitHub Marketplace metadata-compliance patch
+
+Metadata-only patch so the bundled GitHub Action passes GitHub Marketplace
+validation. The immutable `v0.7.0` release, its npm package and its published
+bytes are unchanged.
+
+### Changed
+- **Action description shortened** to 114 characters (was 204) to satisfy the
+  Marketplace ≤125-character limit. New `action.yml` description:
+  "Local-first, privacy-first ECZ-ID verifier for MCP, agents and APIs. No source
+  upload, telemetry or truth-writing."
+- **Author capitalisation** corrected to `EcoCitizenz`.
+- **Version** bumped to `0.7.1` (package metadata, CLI `--version` output, README
+  examples, Action usage reference `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1`).
+
+### Not changed
+- No functional, identifier (33-code public registry), Resolver route/semantics,
+  policy (OPEN/PREFER/REQUIRE), privacy, output, or setup-handoff changes.
+- `v0.7.0` tag/release/npm bytes are immutable and untouched.
+
 ## [0.7.0] — Release candidate (unreleased)
 
 Release-candidate closure of the deterministic CLI and the bundled GitHub Action.
@@ -75,4 +95,5 @@ Not yet published to npm or the GitHub Action Marketplace.
 - No source maps, secrets, absolute paths, or internal material in the npm
   tarball. No telemetry. No source/secret/prompt/tool-payload upload.
 
+[0.7.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.7.0

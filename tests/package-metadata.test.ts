@@ -32,7 +32,7 @@ describe("package metadata: intentionally publishable (release candidate)", () =
 
   it("keeps the canonical package name and version", () => {
     expect(pkg.name).toBe("@ecocitizenz/ecz-id-mcp-verifier");
-    expect(pkg.version).toBe("0.7.0");
+    expect(pkg.version).toBe("0.7.1");
   });
 
   it("references the proprietary licence file (no invented SPDX id)", () => {

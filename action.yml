@@ -1,6 +1,6 @@
 name: "ECZ-ID MCP Verifier"
-description: "Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, mark BOUND, or upload source/secrets."
-author: "EcoCitizenZ"
+description: "Local-first, privacy-first ECZ-ID verifier for MCP, agents and APIs. No source upload, telemetry or truth-writing."
+author: "EcoCitizenz"
 
 branding:
   icon: "shield"

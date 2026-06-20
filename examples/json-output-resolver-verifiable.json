@@ -2,7 +2,7 @@
   "_comment": "Example only. Mock data. The verifier does not certify safety, approval, or compliance. RESOLVER_VERIFIABLE means the resolver returned a proof projection for this target at the time of the check. Re-check before reliance. Local policy decides. Backend remains final authority.",
   "schema_version": 1,
   "verifier": "ECZ-ID MCP Verifier",
-  "verifier_version": "0.7.0",
+  "verifier_version": "0.7.1",
   "target": "ECZ-GB-A93K7Q",
   "target_type": "ecz_id",
   "policy_mode": "PREFER",
