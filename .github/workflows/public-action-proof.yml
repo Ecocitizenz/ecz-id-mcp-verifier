@@ -1,0 +1,118 @@
+name: public-action-proof
+
+# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+# runs on a GitHub-hosted runner with least privilege. Read-only, reports only.
+# Does not rebuild the action, does not use ./ or main, does not mutate the repo.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/public-action-proof.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (read-only, to prove no source mutation)
+        uses: actions/checkout@v4
+
+      - name: OPEN (valid parent, offline)
+        id: open
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        with:
+          target: "ECZ-GB-A93K7Q"
+          policy: "OPEN"
+          no-network: "true"
+
+      - name: PREFER (valid child AGENT, offline)
+        id: prefer
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        with:
+          target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A"
+          policy: "PREFER"
+          no-network: "true"
+
+      - name: REQUIRE (valid parent — fail-closed expected)
+        id: require
+        continue-on-error: true
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        with:
+          target: "ECZ-GB-A93K7Q"
+          policy: "REQUIRE"
+          no-network: "true"
+
+      - name: INVALID input (exit 4 expected)
+        id: invalid
+        continue-on-error: true
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        with:
+          target: "ECZ-GB-EXAMPLE"
+          no-network: "true"
+
+      - name: Assert outputs, boundaries and expected failures
+        env:
+          OPEN_STATE: ${{ steps.open.outputs.result-state }}
+          OPEN_REASONS: ${{ steps.open.outputs.reason-codes }}
+          OPEN_PRIMARY: ${{ steps.open.outputs.primary-action }}
+          PREFER_STATE: ${{ steps.prefer.outputs.result-state }}
+          PREFER_HANDOFF: ${{ steps.prefer.outputs.setup-handoff-json }}
+          PREFER_TRUSTOPS: ${{ steps.prefer.outputs.trustops-action-url }}
+          # The renamed-away output name resolves to empty (it is not exposed):
+          PREFER_DEPRECATED: ${{ steps.prefer.outputs.acquisition-flow-json }}
+          REQUIRE_OUTCOME: ${{ steps.require.outcome }}
+          INVALID_OUTCOME: ${{ steps.invalid.outcome }}
+        run: |
+          set -euo pipefail
+          echo "OPEN result-state:   $OPEN_STATE"
+          echo "OPEN reason-codes:   $OPEN_REASONS"
+          echo "OPEN primary-action: $OPEN_PRIMARY"
+          echo "PREFER result-state: $PREFER_STATE"
+          echo "REQUIRE outcome:     $REQUIRE_OUTCOME"
+          echo "INVALID outcome:     $INVALID_OUTCOME"
+
+          # Captured outputs present (the renamed public interface)
+          [ -n "$OPEN_STATE" ]   || { echo "FAIL: result-state empty"; exit 1; }
+          [ -n "$OPEN_REASONS" ] || { echo "FAIL: reason-codes empty"; exit 1; }
+          [ -n "$PREFER_HANDOFF" ] || { echo "FAIL: setup-handoff-json empty"; exit 1; }
+          [ -n "$PREFER_TRUSTOPS" ] || { echo "FAIL: trustops-action-url empty"; exit 1; }
+
+          # The deprecated output name must be ABSENT (resolves to empty)
+          [ -z "$PREFER_DEPRECATED" ] || { echo "FAIL: deprecated output present"; exit 1; }
+
+          # Policy behaviour: REQUIRE fails closed; INVALID rejected (both non-zero)
+          [ "$REQUIRE_OUTCOME" = "failure" ] || { echo "FAIL: REQUIRE not fail-closed"; exit 1; }
+          [ "$INVALID_OUTCOME" = "failure" ] || { echo "FAIL: INVALID not rejected"; exit 1; }
+
+          echo "ALL ASSERTIONS PASSED"
+
+      - name: Prove no source / repository mutation (read-only run)
+        run: |
+          echo "git status after action runs:"
+          git status --porcelain
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "FAIL: workspace was modified by the action"; exit 1
+          fi
+          echo "NO REPO MUTATION — working tree clean (permissions: contents: read)"
+
+      - name: Record proof to job summary
+        if: always()
+        run: |
+          {
+            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.7.0"
+            echo ""
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| OPEN result-state | ${{ steps.open.outputs.result-state }} |"
+            echo "| OPEN reason-codes | ${{ steps.open.outputs.reason-codes }} |"
+            echo "| PREFER setup-handoff-json present | ${{ steps.prefer.outputs.setup-handoff-json != '' }} |"
+            echo "| deprecated handoff output present | ${{ steps.prefer.outputs.acquisition-flow-json != '' }} (expect false) |"
+            echo "| REQUIRE (fail-closed) outcome | ${{ steps.require.outcome }} |"
+            echo "| INVALID (exit 4) outcome | ${{ steps.invalid.outcome }} |"
+            echo "| Permissions | contents: read (no write) |"
+            echo ""
+            echo "The verifier Action also writes its own step summary under each invocation above."
+          } >> "$GITHUB_STEP_SUMMARY"
