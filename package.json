@@ -1,6 +1,7 @@
 {
   "name": "@ecocitizenz/ecz-id-mcp-verifier",
-  "version": "0.7.1",
+  "version": "0.8.0",
+  "mcpName": "io.github.ecocitizenz/ecz-id-mcp-verifier",
   "description": "ECZ-ID MCP Verifier(TM). Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, or mark BOUND.",
   "type": "module",
   "main": "dist/index.js",
@@ -13,11 +14,13 @@
   },
   "bin": {
     "ecz-id-mcp-verifier": "dist/cli.js",
-    "ecz-mcp-verify": "dist/cli.js"
+    "ecz-mcp-verify": "dist/cli.js",
+    "ecz-id-mcp-server": "dist/mcp/stdio.js"
   },
   "files": [
     "dist",
     "action.yml",
+    "server.json",
     "README.md",
     "LICENSE.md",
     "docs/ROLE_SPLIT.md",
@@ -34,6 +37,7 @@
     "test": "vitest run",
     "scan:public": "node scripts/scan-public.mjs",
     "harness:action": "node scripts/action-harness.mjs",
+    "proof:mcp-stdio": "node scripts/mcp-stdio-proof.mjs",
     "release:check": "npm run typecheck && npm run test && npm run build && npm run scan:public",
     "pack:inspect": "npm pack --dry-run",
     "prepublishOnly": "npm run release:check"
@@ -59,6 +63,10 @@
   },
   "bugs": {
     "url": "https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
