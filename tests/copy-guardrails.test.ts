@@ -74,7 +74,13 @@ describe("copy guardrails: README", () => {
   it("states the free-forever proprietary (not open source) posture", () => {
     expect(readme).toMatch(/free forever/i);
     expect(readme).toMatch(/not\b[^.]*open source/i);
-    expect(readme).toMatch(/Publication readiness/i);
+    // README now asserts the published posture (the obsolete readiness heading was removed).
+    expect(readme).toContain("## Publication status");
+    expect(readme).toContain("@ecocitizenz/ecz-id-mcp-verifier@0.7.0");
+    expect(readme).toContain("Ecocitizenz/ecz-id-mcp-verifier@v0.7.1");
+    expect(readme).toMatch(
+      /Published package versions and Action release tags are[\s\S]{0,40}\*\*immutable\*\*/i
+    );
   });
 
   it("contains no forbidden overclaim wording", () => {
