@@ -167,7 +167,17 @@ jobs:
           fi
 
       - name: Full test suite (existing + MCP + server.json)
-        run: npm test
+        shell: bash
+        run: |
+          set -uo pipefail
+          if npm test 2>&1 | tee /tmp/test.log; then
+            echo "tests OK"
+          else
+            rc=${PIPESTATUS[0]}
+            { echo "## Test suite FAILED (vitest)"; echo '```'; tail -c 14000 /tmp/test.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            grep -nE '(FAIL |AssertionError|Expected|expected |Received|received |❯ |× )' /tmp/test.log | head -30 | while IFS= read -r l; do echo "::error::$l"; done
+            exit "$rc"
+          fi
 
       - name: Build
         run: npm run build
