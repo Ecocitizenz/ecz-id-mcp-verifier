@@ -141,7 +141,12 @@ jobs:
           for p in @modelcontextprotocol/server @modelcontextprotocol/client @modelcontextprotocol/node; do
             if [ -d "node_modules/$p" ]; then echo "::error::Forbidden split SDK package present: $p"; exit 1; fi
           done
-          node -e "const p=require('@modelcontextprotocol/sdk/package.json');if(p.version!=='1.29.0'){console.error('SDK '+p.version+' != 1.29.0');process.exit(1);}console.log('SDK',p.version)"
+          # Read the installed SDK version straight from disk. The SDK's exports
+          # map has no "./package.json" entry (its "./*" wildcard points at
+          # dist/esm/*), so require('@modelcontextprotocol/sdk/package.json')
+          # throws ERR_PACKAGE_PATH_NOT_EXPORTED. A direct fs read is robust.
+          test -f node_modules/@modelcontextprotocol/sdk/package.json || { echo '::error::@modelcontextprotocol/sdk not installed'; exit 1; }
+          node -e "const fs=require('node:fs');const p=JSON.parse(fs.readFileSync('node_modules/@modelcontextprotocol/sdk/package.json','utf8'));if(p.version!=='1.29.0'){console.error('SDK '+p.version+' != 1.29.0');process.exit(1);}console.log('SDK pinned at',p.version)"
 
       - name: Typecheck
         run: npm run typecheck
