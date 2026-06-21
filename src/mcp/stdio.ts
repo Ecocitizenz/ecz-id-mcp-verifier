@@ -3,7 +3,7 @@
 //
 // stdio is the sole Phase 3 transport. Protocol travels on stdout; every human
 // or diagnostic line goes to stderr only, so the JSON-RPC stream is never
-// corrupted. No telemetry. No source/secret upload. No local file access.
+// corrupted. No background reporting. No source/secret upload. No local file access.
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";

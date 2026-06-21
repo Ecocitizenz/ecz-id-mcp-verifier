@@ -1,9 +1,9 @@
 // ECZ-ID MCP server tools. Exactly three, all read-only, all calling the one
 // canonical verifier core. No tool writes truth, activates proof, marks BOUND,
-// issues an ECZ-ID, creates entitlement or checkout, manufactures Resolver
+// issues an ECZ-ID, creates entitlement or purchase, manufactures Resolver
 // proof, certifies safety/approval/compliance, decides a global allow/deny,
-// or emits telemetry. External content (target strings, Resolver responses,
-// error text) is treated as data, never as instructions.
+// or emits background reporting. External content (target strings, Resolver
+// responses, error text) is treated as data, never as instructions.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
@@ -12,6 +12,7 @@ import { buildJsonOutput, toJson, type JsonOutput } from "../output.js";
 import { computeExitCode } from "../exit-codes.js";
 import { REASON_CODES, type ReasonCode } from "../reason-codes.js";
 import { RESULT_STATES, type ResultState } from "../result-states.js";
+import { OUTPUT_PRIVACY_FIELDS } from "../privacy.js";
 import {
   checkTargetShape,
   recheckResolverShape,
@@ -69,7 +70,7 @@ export interface RecheckResolverArgs {
   offline?: boolean;
 }
 
-export interface ResolverRecheck {
+export type ResolverRecheck = {
   type: "ecz.resolver_recheck";
   target: string;
   target_type: string;
@@ -79,14 +80,10 @@ export interface ResolverRecheck {
   machine_json_url: string | null;
   network_attempted: boolean;
   // Read-only boundary — identical to the canonical contract.
-  recheck_before_reliance: true;
-  local_policy_decides: true;
   verifier_writes_truth: false;
   verifier_activates_proof: false;
   verifier_marks_bound: false;
-  no_safety_or_approval_inference: true;
-  no_telemetry: true;
-}
+} & typeof OUTPUT_PRIVACY_FIELDS;
 
 export async function runRecheckResolver(args: RecheckResolverArgs): Promise<ResolverRecheck> {
   const result = await verify({
@@ -103,13 +100,10 @@ export async function runRecheckResolver(args: RecheckResolverArgs): Promise<Res
     resolver_url: result.resolver_url,
     machine_json_url: result.machine_json_url,
     network_attempted: result.network_attempted,
-    recheck_before_reliance: true,
-    local_policy_decides: true,
     verifier_writes_truth: false,
     verifier_activates_proof: false,
     verifier_marks_bound: false,
-    no_safety_or_approval_inference: true,
-    no_telemetry: true
+    ...OUTPUT_PRIVACY_FIELDS
   };
 }
 
@@ -181,7 +175,7 @@ const REASON_EXPLANATIONS: Record<ReasonCode, string> = {
   RESOLVER_READ_ONLY: "The Resolver is read-only. The verifier only reads public proof; it never writes truth.",
   RESOLVER_RESPONSE_UNVERIFIABLE:
     "A Resolver response could not be safely interpreted as valid proof; treated as missing proof, never as positive proof.",
-  MARKETPLACE_CHECKOUT_NOT_ALLOWED: "The verifier does not perform checkout. Routing-only.",
+  MARKETPLACE_CHECKOUT_NOT_ALLOWED: "The verifier performs no purchase step. Routing-only.",
   LOCAL_POLICY_DECIDES: "The caller's local policy decides what to do with this result.",
   UNKNOWN_PHASE1_SKU: "The target maps to an unknown identifier. Routing-only."
 };

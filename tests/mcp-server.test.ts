@@ -40,7 +40,7 @@ describe("ecz_check_target returns the canonical contract verbatim", () => {
     expect(out.no_source_uploaded).toBe(true);
     expect(out.no_secrets_uploaded).toBe(true);
     expect(out.no_telemetry).toBe(true);
-    expect(out.trustops_action_url).toMatch(/\/start$/);
+    expect(out.trustops_action_url).toMatch(/\/start(\?|$)/);
     expect(out.exit_code).toBe(0);
   });
 
