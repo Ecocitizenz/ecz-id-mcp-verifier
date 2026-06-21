@@ -129,7 +129,7 @@ jobs:
 
       - name: Clean-install @0.7.0 from the public npm registry and prove behaviour
         run: |
-          set -uo pipefail
+          set -euo pipefail
           fail() { echo "FAIL: $1"; echo "| $1 | FAIL |" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
           TMP="$(mktemp -d)"; cd "$TMP"
           npm init -y >/dev/null 2>&1
@@ -145,14 +145,26 @@ jobs:
           node "$BIN" --help | grep -qi "Usage" || fail "--help missing"
           node "$BIN" --help | grep -q "resolver.ecocitizenz.org" || fail "Resolver route not documented"
 
-          node "$BIN" --target ECZ-CC-ABC123 --policy OPEN    --offline --json > open.json; OPEN=$?
-          node "$BIN" --target ECZ-CC-ABC123 --policy PREFER  --offline --json > /dev/null; PREFER=$?
-          node "$BIN" --target ECZ-CC-ABC123 --policy REQUIRE --offline --json > /dev/null; REQUIRE=$?
-          node "$BIN" --target ECZ-GB-EXAMPLE --no-network --json > /dev/null; INVALID=$?
-          [ "$OPEN" = "0" ]     || fail "OPEN not 0 (got $OPEN)"
-          [ "$PREFER" = "0" ]   || fail "PREFER not 0 (got $PREFER)"
-          [ "$REQUIRE" != "0" ] || fail "REQUIRE not fail-closed (got $REQUIRE)"
-          [ "$INVALID" != "0" ] || fail "INVALID not rejected (got $INVALID)"
+          # OPEN and PREFER MUST return 0, so direct execution is safe under `set -e`
+          # (OPEN writes open.json, reused by the contract checks below).
+          node "$BIN" --target ECZ-CC-ABC123 --policy OPEN   --offline --json > open.json;   OPEN=$?
+          node "$BIN" --target ECZ-CC-ABC123 --policy PREFER --offline --json > prefer.json; PREFER=$?
+          # REQUIRE (exit 1) and INVALID (exit 4) are EXPECTED non-zero. Capture them via `if`,
+          # which consumes the non-zero status so `set -e` does NOT abort before the assignment.
+          if node "$BIN" --target ECZ-CC-ABC123 --policy REQUIRE --offline --json > require.json 2> require.err; then
+            REQUIRE=0
+          else
+            REQUIRE=$?
+          fi
+          if node "$BIN" --target ECZ-GB-EXAMPLE --no-network --json > invalid.json 2> invalid.err; then
+            INVALID=0
+          else
+            INVALID=$?
+          fi
+          [ "$OPEN" = "0" ]    || fail "OPEN expected 0, got $OPEN"
+          [ "$PREFER" = "0" ]  || fail "PREFER expected 0, got $PREFER"
+          [ "$REQUIRE" = "1" ] || fail "REQUIRE expected 1, got $REQUIRE"
+          [ "$INVALID" = "4" ] || fail "INVALID expected 4, got $INVALID"
 
           grep -q '"result_state"' open.json || fail "result_state missing"
           grep -q '"reason_codes"' open.json || fail "reason_codes missing"
@@ -172,6 +184,7 @@ jobs:
             echo "| Check | Result |"
             echo "| --- | --- |"
             echo "| installed version | $VER |"
+            echo "| public npm registry install (@0.7.0) | success |"
             echo "| OPEN offline exit | $OPEN |"
             echo "| PREFER offline exit | $PREFER |"
             echo "| REQUIRE offline (fail-closed) exit | $REQUIRE |"
