@@ -178,20 +178,22 @@ jobs:
           set -euo pipefail
           node -e "const p=require('./package.json');const s=require('./server.json');if(p.mcpName!==s.name)throw new Error('mcpName!=server.json.name');if(p.version!==s.version)throw new Error('version mismatch '+p.version+' vs '+s.version);const np=(s.packages||[]).find(x=>x.identifier===p.name);if(!np)throw new Error('npm package identifier missing in server.json');if(np.version!==p.version)throw new Error('server.json package version mismatch');if((np.transport||{}).type!=='stdio')throw new Error('stdio transport missing');console.log('server.json invariants OK')"
 
-      - name: Official Registry validation (no login, no publish)
+      - name: Official Registry metadata validation (HARD GATE — no login, no publish)
+        # Authoritative gate: identity/ownership invariants + live validation of
+        # server.json against the official schema pinned in its own $schema URL.
+        # This step FAILS the job on any issue (no warn-and-continue).
+        run: npm run validate:server-json
+
+      - name: mcp-publisher cross-check (informational; never login/publish)
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
-          echo 'Best-effort mcp-publisher validation. Never login, never publish.'
-          if npx -y @modelcontextprotocol/publisher --help >/tmp/pub.txt 2>&1; then
-            echo 'publisher CLI resolved:'; head -n 20 /tmp/pub.txt || true
-            if npx -y @modelcontextprotocol/publisher validate server.json >/tmp/val.txt 2>&1; then
-              echo 'server.json validated against official schema.'; cat /tmp/val.txt || true
-            else
-              echo '::warning::publisher validate returned non-zero — review server.json schema field casing.'; cat /tmp/val.txt || true
-            fi
+          set -uo pipefail
+          echo 'Informational only — the HARD GATE above is authoritative.'
+          if command -v mcp-publisher >/dev/null 2>&1; then
+            mcp-publisher validate server.json || echo '::notice::mcp-publisher reported issues (informational; hard gate is authoritative).'
           else
-            echo '::warning::mcp-publisher CLI not resolvable on runner; server.json checked by local invariant test only.'
+            echo '::notice::mcp-publisher CLI not installed on runner; ajv-vs-official-$schema hard gate is authoritative.'
           fi
 
       - name: Job summary
@@ -204,5 +206,5 @@ jobs:
             echo "- HEAD: \`$(git rev-parse HEAD)\`"
             echo "- Transport: stdio only · Tools: 3 (ecz_check_target, ecz_recheck_resolver, ecz_explain_result)"
             echo "- SDK pinned: @modelcontextprotocol/sdk@1.29.0"
-            echo "- Gate: typecheck · full test suite · build · scan:public · Action harness · stdio integration · package inspect · server.json invariants · Registry validate (no publish)"
+            echo "- Gate: typecheck · full test suite · build · scan:public · Action harness · stdio integration · package inspect · server.json invariants · **HARD** Registry metadata validation (ajv vs official \$schema; no publish)"
           } >> "$GITHUB_STEP_SUMMARY"

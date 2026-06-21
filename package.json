@@ -38,6 +38,7 @@
     "scan:public": "node scripts/scan-public.mjs",
     "harness:action": "node scripts/action-harness.mjs",
     "proof:mcp-stdio": "node scripts/mcp-stdio-proof.mjs",
+    "validate:server-json": "node scripts/validate-server-json.mjs",
     "release:check": "npm run typecheck && npm run test && npm run build && npm run scan:public",
     "pack:inspect": "npm pack --dry-run",
     "prepublishOnly": "npm run release:check"
@@ -71,7 +72,9 @@
   "devDependencies": {
     "typescript": "^5.5.4",
     "vitest": "^2.0.5",
-    "@types/node": "^20.14.0"
+    "@types/node": "^20.14.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   },
   "engines": {
     "node": ">=18"
