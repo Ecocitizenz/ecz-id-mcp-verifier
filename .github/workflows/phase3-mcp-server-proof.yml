@@ -149,7 +149,22 @@ jobs:
           node -e "const fs=require('node:fs');const p=JSON.parse(fs.readFileSync('node_modules/@modelcontextprotocol/sdk/package.json','utf8'));if(p.version!=='1.29.0'){console.error('SDK '+p.version+' != 1.29.0');process.exit(1);}console.log('SDK pinned at',p.version)"
 
       - name: Typecheck
-        run: npm run typecheck
+        shell: bash
+        run: |
+          set -uo pipefail
+          if npm run typecheck 2>&1 | tee /tmp/tsc.log; then
+            echo "typecheck OK"
+          else
+            rc=${PIPESTATUS[0]}
+            {
+              echo "## Typecheck FAILED (tsc)"
+              echo '```'
+              cat /tmp/tsc.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            grep -E 'error TS' /tmp/tsc.log | head -12 | while IFS= read -r l; do echo "::error::$l"; done
+            exit "$rc"
+          fi
 
       - name: Full test suite (existing + MCP + server.json)
         run: npm test

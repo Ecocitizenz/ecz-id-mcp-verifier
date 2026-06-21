@@ -41,7 +41,7 @@ export const checkTargetShape = {
     .boolean()
     .optional()
     .describe("If true, perform no network calls (deterministic offline projection).")
-} as const;
+};
 
 export const recheckResolverShape = {
   target: z
@@ -52,7 +52,7 @@ export const recheckResolverShape = {
     .boolean()
     .optional()
     .describe("If true, perform no network calls.")
-} as const;
+};
 
 export const explainResultShape = {
   reason_codes: z
@@ -65,4 +65,4 @@ export const explainResultShape = {
     .string()
     .optional()
     .describe("Optional canonical result_state to explain in public-safe terms.")
-} as const;
+};
