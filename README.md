@@ -60,9 +60,11 @@ npx @ecocitizenz/ecz-id-mcp-verifier check --target <mcp-url> --policy prefer
 `--report` for the human-readable soft report, or `--offline` to classify
 without any network call.
 
-> Note: this package is **not yet published**. The command above is the intended
-> first-use shape once local package proof and trusted publishing are complete.
-> See **Publication readiness** at the end of this document.
+> `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` is **published on npm** and installs from the
+> public registry. `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` is the current **GitHub Action**
+> reference. The default branch may carry preparation for a **future** npm release;
+> published package versions and Action release tags remain **immutable**. See
+> **Publication status** at the end of this document.
 
 ## Install (local)
 
@@ -418,7 +420,9 @@ Any reusable idea has been rewritten under current ECZ-ID canon.
 
 ## Status & licence
 
-Release candidate. The official, unmodified package and its bundled GitHub
+**Published.** `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` is live on npm and
+`Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` is the current GitHub Action release on the
+GitHub Actions Marketplace. The official, unmodified package and its bundled GitHub
 Action are **free forever** under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`) — free to install and run for personal, organisational,
 development, CI/CD, and internal business use.
@@ -428,23 +432,27 @@ or installation) grants no redistribution, modification, derivative, or
 competing-product rights — see `LICENSE.md`.
 
 - Licensed proprietary limited-use; free of charge, now and in future.
-- Not yet published to npm or the GitHub Action Marketplace — publication is a
-  separate, controlled step.
-- No GitHub release has been cut yet.
+- **Published:** npm `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` and GitHub Action
+  `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` are public; GitHub Releases `v0.7.0` and
+  `v0.7.1` are cut.
+- Published package versions and Action release tags are **immutable**; the default
+  branch may carry preparation for a future npm release.
 
-## Publication readiness
+## Publication status
 
-Publication proceeds once these are complete:
-
-- **Local package proof:** `npm run build`, `npm test`, `npm run scan:public`,
-  and `npm pack --dry-run` content review pass.
-- **External action proof:** the bundled GitHub Action (`dist/action.js`) runs
-  green on a sample workflow with real `with:` inputs.
-- **Trusted publishing:** the canonical Git remote
+- **Published:** npm `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` (live on the public
+  registry) and the GitHub Action `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` (GitHub
+  Actions Marketplace). GitHub Releases `v0.7.0` and `v0.7.1` are cut and immutable.
+- **Local package proof:** `npm run build`, `npm test`, `npm run scan:public`, and
+  `npm pack --dry-run` content review pass.
+- **External action proof:** the bundled GitHub Action (`dist/action.js`) runs green
+  on a hosted workflow with real `with:` inputs.
+- **Future-release trusted publishing (remaining step):** the npm Trusted Publisher
+  (OIDC) and a protected GitHub `npm-release` environment are configured before any
+  *future* version is published. The canonical Git remote
   (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and
-  `package.json` carries `repository` and `bugs` fields whose URLs match it
-  exactly (npm provenance/OIDC rejects any casing mismatch). The npm trusted
-  publisher (OIDC) is connected as the publish-side step.
+  `package.json` `repository`/`bugs` URLs match it exactly (npm provenance/OIDC rejects
+  any casing mismatch).
 - **No-overclaim review:** forbidden wording absent from listing copy.
 
 Backend writes truth. TrustOps handles setup. Resolver proves. Machines re-check.

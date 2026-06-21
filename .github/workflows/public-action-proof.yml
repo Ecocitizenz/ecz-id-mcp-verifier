@@ -1,6 +1,6 @@
 name: public-action-proof
 
-# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
 # runs on a GitHub-hosted runner with least privilege. Read-only, reports only.
 # Does not rebuild the action, does not use ./ or main, does not mutate the repo.
 
@@ -22,7 +22,7 @@ jobs:
 
       - name: OPEN (valid parent, offline)
         id: open
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "OPEN"
@@ -30,7 +30,7 @@ jobs:
 
       - name: PREFER (valid child AGENT, offline)
         id: prefer
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
         with:
           target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A"
           policy: "PREFER"
@@ -39,7 +39,7 @@ jobs:
       - name: REQUIRE (valid parent — fail-closed expected)
         id: require
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "REQUIRE"
@@ -48,7 +48,7 @@ jobs:
       - name: INVALID input (exit 4 expected)
         id: invalid
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.0
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
         with:
           target: "ECZ-GB-EXAMPLE"
           no-network: "true"
@@ -102,7 +102,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.7.0"
+            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.7.1"
             echo ""
             echo "| Check | Result |"
             echo "| --- | --- |"
@@ -115,4 +115,68 @@ jobs:
             echo "| Permissions | contents: read (no write) |"
             echo ""
             echo "The verifier Action also writes its own step summary under each invocation above."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  public-npm-install:
+    name: public npm 0.7.0 clean-install proof
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js 20 (public registry)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Clean-install @0.7.0 from the public npm registry and prove behaviour
+        run: |
+          set -uo pipefail
+          fail() { echo "FAIL: $1"; echo "| $1 | FAIL |" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+          TMP="$(mktemp -d)"; cd "$TMP"
+          npm init -y >/dev/null 2>&1
+          echo "Installing @ecocitizenz/ecz-id-mcp-verifier@0.7.0 from the public registry (no token)..."
+          npm install @ecocitizenz/ecz-id-mcp-verifier@0.7.0 --no-audit --no-fund || fail "public npm install failed"
+
+          PKG="node_modules/@ecocitizenz/ecz-id-mcp-verifier"
+          BIN="$PKG/dist/cli.js"
+          [ -f "$BIN" ] || fail "CLI binary missing"
+          VER="$(node -p "require('./$PKG/package.json').version")"
+          [ "$VER" = "0.7.0" ] || fail "installed version $VER != 0.7.0"
+          node "$BIN" --version | grep -q "v0.7.0" || fail "--version wrong"
+          node "$BIN" --help | grep -qi "Usage" || fail "--help missing"
+          node "$BIN" --help | grep -q "resolver.ecocitizenz.org" || fail "Resolver route not documented"
+
+          node "$BIN" --target ECZ-CC-ABC123 --policy OPEN    --offline --json > open.json; OPEN=$?
+          node "$BIN" --target ECZ-CC-ABC123 --policy PREFER  --offline --json > /dev/null; PREFER=$?
+          node "$BIN" --target ECZ-CC-ABC123 --policy REQUIRE --offline --json > /dev/null; REQUIRE=$?
+          node "$BIN" --target ECZ-GB-EXAMPLE --no-network --json > /dev/null; INVALID=$?
+          [ "$OPEN" = "0" ]     || fail "OPEN not 0 (got $OPEN)"
+          [ "$PREFER" = "0" ]   || fail "PREFER not 0 (got $PREFER)"
+          [ "$REQUIRE" != "0" ] || fail "REQUIRE not fail-closed (got $REQUIRE)"
+          [ "$INVALID" != "0" ] || fail "INVALID not rejected (got $INVALID)"
+
+          grep -q '"result_state"' open.json || fail "result_state missing"
+          grep -q '"reason_codes"' open.json || fail "reason_codes missing"
+          grep -q '"recheck_before_reliance": true' open.json || fail "recheck_before_reliance not true"
+          grep -q '"verifier_writes_truth": false' open.json || fail "writes_truth not false"
+          grep -q '"verifier_marks_bound": false' open.json || fail "marks_bound not false"
+          grep -q '"no_source_uploaded": true' open.json || fail "source upload not denied"
+          grep -q '"no_secrets_uploaded": true' open.json || fail "secrets upload not denied"
+          grep -q '"no_telemetry": true' open.json || fail "telemetry not denied"
+          grep -q 'trustops.ecocitizenz.com/start' open.json || fail "TrustOps /start route missing"
+          grep -q 'developers.ecocitizenz.com' open.json || fail "Developer Gateway route missing"
+
+          echo "ALL PUBLIC NPM ASSERTIONS PASSED (installed version 0.7.0)"
+          {
+            echo "## public-npm-install — @ecocitizenz/ecz-id-mcp-verifier@0.7.0"
+            echo ""
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| installed version | $VER |"
+            echo "| OPEN offline exit | $OPEN |"
+            echo "| PREFER offline exit | $PREFER |"
+            echo "| REQUIRE offline (fail-closed) exit | $REQUIRE |"
+            echo "| INVALID input exit | $INVALID |"
+            echo "| result_state / reason_codes / recheck_before_reliance | present |"
+            echo "| no truth / no BOUND / no source / no secrets / no telemetry | proven |"
+            echo "| canonical Resolver + TrustOps /start + Developer Gateway routes | present |"
           } >> "$GITHUB_STEP_SUMMARY"
