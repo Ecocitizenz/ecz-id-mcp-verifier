@@ -20,8 +20,13 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const ajvMod = require("ajv/dist/2020.js");
-const Ajv2020 = ajvMod.Ajv2020 || ajvMod.default || ajvMod;
+// Ajv build is chosen from the fetched schema's declared draft: the default
+// Ajv handles draft-07 (the current official MCP schema), Ajv2020 handles
+// 2020-12 / 2019-09. This keeps validation correct if the schema draft changes.
+const ajvDefaultMod = require("ajv");
+const AjvDraft07 = ajvDefaultMod.default || ajvDefaultMod;
+const ajv2020Mod = require("ajv/dist/2020.js");
+const Ajv2020 = ajv2020Mod.Ajv2020 || ajv2020Mod.default || ajv2020Mod;
 const formatsMod = require("ajv-formats");
 const addFormats = formatsMod.default || formatsMod;
 
@@ -34,6 +39,8 @@ const ok = (m) => console.log("  ok:   " + m);
 const fail = (m) => {
   failures++;
   console.error("  FAIL: " + m);
+  // Surface into the run annotations (single line) for read-only inspection.
+  console.log("::error::validate-server-json: " + String(m).split(/\r?\n/).join(" | "));
 };
 
 // --- 1. Identity / ownership invariants (TASK 7) ---------------------------
@@ -97,16 +104,21 @@ if (typeof schemaUrl !== "string" || !/^https:\/\//.test(schemaUrl)) {
       );
     } else {
       const schema = await res.json();
-      const ajv = new Ajv2020({ allErrors: true, strict: false });
+      const draft = String(schema.$schema || "");
+      const AjvCtor = /2020-12|2019-09/.test(draft) ? Ajv2020 : AjvDraft07;
+      const ajv = new AjvCtor({ allErrors: true, strict: false });
       addFormats(ajv);
       const validate = ajv.compile(schema);
-      if (validate(server)) {
-        ok(`server.json validates against official schema (${schemaUrl})`);
+      // Validate the metadata itself, without the local $schema pointer (it is
+      // a meta-reference, not server data — the official publisher ignores it).
+      const { $schema: _schemaPtr, ...serverData } = server;
+      if (validate(serverData)) {
+        ok(`server.json validates against official schema (draft "${draft || "default"}") at ${schemaUrl}`);
       } else {
         const errs = (validate.errors || [])
-          .map((e) => `    ${e.instancePath || "(root)"} ${e.message}`)
-          .join("\n");
-        fail(`server.json does NOT validate against the official schema:\n${errs}`);
+          .map((e) => `${e.instancePath || "(root)"} ${e.message}`)
+          .join(" ; ");
+        fail(`server.json does NOT validate against the official schema: ${errs}`);
       }
     }
   } catch (e) {
