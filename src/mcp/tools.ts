@@ -6,6 +6,7 @@
 // error text) is treated as data, never as instructions.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { verify } from "../verify.js";
 import { buildJsonOutput, toJson, type JsonOutput } from "../output.js";
 import { computeExitCode } from "../exit-codes.js";
@@ -25,12 +26,11 @@ export const TOOL_NAMES = [
 
 export type ToolName = (typeof TOOL_NAMES)[number];
 
-interface TextResult {
-  content: { type: "text"; text: string }[];
-}
-
-function asText(value: unknown): TextResult {
-  return { content: [{ type: "text" as const, text: toJson(value) }] };
+// Wrap any canonical value as the SDK's CallToolResult (single text block).
+// Typing the literal as CallToolResult lets the SDK's content union + optional
+// fields apply, so the three registerTool handlers return a Promise<CallToolResult>.
+function asText(value: unknown): CallToolResult {
+  return { content: [{ type: "text", text: toJson(value) }] };
 }
 
 // ---------------------------------------------------------------------------
