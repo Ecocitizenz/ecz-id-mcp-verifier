@@ -1,0 +1,141 @@
+name: npm-release-matrix
+
+# Phase 4 complete release proof matrix. Read-only. Proves the EXACT 0.8.0
+# candidate tarball as an installed npm package across Windows/Linux/macOS on
+# Node 22.14.0 (declared minimum) and Node 24 (current LTS). One tarball is built
+# once in Job 1 and tested unchanged in all six Job 2 cells.
+#
+# This workflow NEVER publishes npm, NEVER changes dist-tags, NEVER creates a tag
+# or GitHub Release, NEVER publishes to the MCP Registry, and NEVER writes the
+# repository. permissions: contents: read only.
+
+on:
+  push:
+    branches: [release/npm-0.8.0-hardening]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-proof-and-pack:
+    name: Job 1 — source-proof-and-pack (ubuntu, Node 24)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (no credentials persisted)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Print exact commit and tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "COMMIT=$(git rev-parse HEAD)"
+          echo "TREE=$(git rev-parse HEAD^{tree})"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install (clean, from lockfile)
+        run: npm ci
+
+      - name: Fail on lockfile drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --quiet -- package-lock.json || { echo '::error::npm ci modified package-lock.json'; exit 1; }
+
+      - name: Complete release gate
+        run: npm run release:full
+
+      - name: Pack the exact candidate tarball
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _dist_pack
+          npm pack --pack-destination _dist_pack >/dev/null
+          TGZ="$(ls _dist_pack/*.tgz | head -1)"
+          echo "tgz=$TGZ" >> "$GITHUB_OUTPUT"
+          node -e "const c=require('node:crypto'),fs=require('node:fs');const b=fs.readFileSync(process.argv[1]);console.log('TARBALL_SHA256='+c.createHash('sha256').update(b).digest('hex'))" "$TGZ" | tee _dist_pack/TARBALL_SHA256.txt
+          echo "TARBALL_NAME=$(basename "$TGZ")" | tee -a _dist_pack/TARBALL_SHA256.txt
+
+      - name: Inventory tarball + allowlist guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          TGZ="${{ steps.pack.outputs.tgz }}"
+          tar -tzf "$TGZ" | sort | tee _dist_pack/TARBALL_INVENTORY.txt >/dev/null
+          grep -q 'package/dist/bin/cli.js' _dist_pack/TARBALL_INVENTORY.txt || { echo '::error::dist/bin/cli.js missing'; exit 1; }
+          grep -q 'package/dist/mcp/stdio.js' _dist_pack/TARBALL_INVENTORY.txt || { echo '::error::dist/mcp/stdio.js missing'; exit 1; }
+          grep -q 'package/server.json' _dist_pack/TARBALL_INVENTORY.txt || { echo '::error::server.json missing'; exit 1; }
+          if grep -Eq 'package/(src/|tests/|_reference/|_EVIDENCE/)' _dist_pack/TARBALL_INVENTORY.txt; then echo '::error::forbidden path in tarball'; exit 1; fi
+          echo "inventory OK ($(wc -l < _dist_pack/TARBALL_INVENTORY.txt) files)"
+
+      - name: Upload candidate tarball + source-proof evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-tarball
+          path: |
+            _dist_pack/*.tgz
+            _dist_pack/TARBALL_SHA256.txt
+            _dist_pack/TARBALL_INVENTORY.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  packed-package-matrix:
+    name: Job 2 — packed ${{ matrix.os }} / Node ${{ matrix.node }}
+    needs: source-proof-and-pack
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ["22.14.0", "24"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout (harness only, no credentials persisted)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Download the exact candidate tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: candidate-tarball
+          path: _dl
+
+      - name: Run packed-package matrix harness
+        shell: bash
+        env:
+          ECZ_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TGZ="$(ls _dl/*.tgz | head -1)"
+          echo "Testing tarball: $TGZ"
+          SAFE="$(echo '${{ matrix.os }}-node${{ matrix.node }}' | tr '/.' '--')"
+          node scripts/packed-matrix-proof.mjs --tarball "$TGZ" --out "matrix-result-$SAFE.json"
+
+      - name: Upload matrix cell result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-result-${{ matrix.os }}-node-${{ matrix.node }}
+          path: matrix-result-*.json
+          if-no-files-found: warn
+          retention-days: 7
