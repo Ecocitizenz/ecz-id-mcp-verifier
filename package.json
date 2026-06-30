@@ -2,7 +2,7 @@
   "name": "@ecocitizenz/ecz-id-mcp-verifier",
   "version": "0.8.0",
   "mcpName": "io.github.ecocitizenz/ecz-id-mcp-verifier",
-  "description": "ECZ-ID MCP Verifier(TM). Local-first, privacy-first verifier for MCP servers, agents, APIs, packages, repos, container images, and ECZ-IDs. Reports only. Does not write truth, activate proof, or mark BOUND.",
+  "description": "ECZ-ID MCP Verifier(TM). Local-first, privacy-first. Classifies MCP, agent, API, package, repo, image and ECZ-ID targets and checks their public ECZ-ID Resolver posture where available. Reports, explains and routes only; never inspects artifact contents, writes truth, activates proof, or marks BOUND.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,8 +13,8 @@
     }
   },
   "bin": {
-    "ecz-id-mcp-verifier": "dist/cli.js",
-    "ecz-mcp-verify": "dist/cli.js",
+    "ecz-id-mcp-verifier": "dist/bin/cli.js",
+    "ecz-mcp-verify": "dist/bin/cli.js",
     "ecz-id-mcp-server": "dist/mcp/stdio.js"
   },
   "files": [
@@ -36,12 +36,17 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "scan:public": "node scripts/scan-public.mjs",
+    "scan:secrets": "node scripts/scan-secrets.mjs",
     "harness:action": "node scripts/action-harness.mjs",
     "proof:mcp-stdio": "node scripts/mcp-stdio-proof.mjs",
+    "proof:cli-bin": "node scripts/cli-bin-proof.mjs",
     "validate:server-json": "node scripts/validate-server-json.mjs",
+    "check:workflow-policy": "node scripts/check-workflow-policy.mjs",
+    "check:pack": "node scripts/check-pack-allowlist.mjs",
     "release:check": "npm run typecheck && npm run test && npm run build && npm run scan:public",
+    "release:full": "npm run typecheck && npm run test && npm run build && npm run scan:public && npm run scan:secrets && npm run harness:action && npm run proof:mcp-stdio && npm run validate:server-json && npm run proof:cli-bin && npm run check:workflow-policy && npm run check:pack",
     "pack:inspect": "npm pack --dry-run",
-    "prepublishOnly": "npm run release:check"
+    "prepublishOnly": "npm run release:full"
   },
   "keywords": [
     "ecz-id",
@@ -77,6 +82,6 @@
     "ajv-formats": "^3.0.1"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.14.0"
   }
 }

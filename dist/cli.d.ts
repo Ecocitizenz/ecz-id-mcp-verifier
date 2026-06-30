@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { type ActionEnvelope } from "./action-envelope.js";
 export interface CliResult {
     exit_code: number;

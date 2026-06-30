@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // CLI for ECZ-ID MCP Verifier.
 // Local-first. Privacy-first. Reports only.
 // - Does not write truth.
@@ -276,19 +275,11 @@ export async function main(argv = process.argv.slice(2)) {
     }
     return result.exit_code;
 }
-// Run only when invoked as a script, not when imported by tests.
-import { fileURLToPath } from "node:url";
-const invokedPath = (process.argv[1] ?? "").replace(/\\/g, "/");
-let runAsScript = false;
-try {
-    const here = fileURLToPath(import.meta.url).replace(/\\/g, "/");
-    runAsScript = here === invokedPath;
-}
-catch {
-    runAsScript = false;
-}
-if (runAsScript) {
-    main().then((code) => {
-        process.exit(code);
-    });
-}
+// NOTE: This module is import-only and has NO self-execution side effect.
+// The executable entrypoint is `src/bin/cli.ts` (compiled to `dist/bin/cli.js`),
+// the sole target of the `ecz-id-mcp-verifier` and `ecz-mcp-verify` bins. That
+// wrapper invokes the exported entry function directly, so execution is
+// independent of how the bin path was resolved (symlink, junction, relative
+// path, npm bin shim). The previous fragile path-equality self-execution guard
+// is intentionally removed — it caused a silent zero-exit under symlinked bins.
+// Importing this module (e.g. via the package index) never runs the CLI.

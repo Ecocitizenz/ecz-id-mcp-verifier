@@ -1,0 +1,65 @@
+name: npm-release-proof
+
+# Read-only release proof for the 0.8.0 hardening branch. Runs the complete
+# release gate from the checked-out immutable commit. This workflow NEVER writes
+# the repository, commits, pushes, regenerates/writes the lockfile, publishes to
+# npm, publishes to the MCP Registry, or moves a tag/release. It replaces the
+# historical branch-writing "bootstrap-lock" workflow (which held contents:write
+# and committed/pushed package-lock.json). Publication is a separate, gated path
+# (.github/workflows/publish-npm.yml — PREPARED/DISABLED).
+
+on:
+  push:
+    branches: [release/npm-0.8.0-hardening]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release-proof-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-proof:
+    name: release:full (read-only, immutable commit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (no credentials persisted)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install (clean, from lockfile)
+        # npm ci fails when package.json and package-lock.json are out of sync.
+        run: npm ci
+
+      - name: Fail on any lockfile drift introduced by install
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- package-lock.json; then
+            echo '::error::npm ci modified package-lock.json — checked-in lockfile is inconsistent'
+            git --no-pager diff -- package-lock.json | head -50
+            exit 1
+          fi
+
+      - name: Complete release gate (read-only)
+        run: npm run release:full
+
+      - name: Upload release-proof artifacts (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-release-proof
+          path: |
+            *.tgz
+          if-no-files-found: ignore

@@ -15,19 +15,28 @@ describe("package metadata: intentionally publishable (release candidate)", () =
     expect(pkg.publishConfig?.provenance).toBe(true);
   });
 
-  it("replaces the deliberate publish-blocker with a real release gate", () => {
+  it("replaces the deliberate publish-blocker with the complete release gate", () => {
     const pre = String(pkg.scripts?.prepublishOnly ?? "");
-    expect(pre).toMatch(/release:check/);
+    expect(pre).toMatch(/release:full/);
     expect(pre).not.toMatch(/publishing is disabled/i);
     // The release gate must not recursively call npm pack from a lifecycle hook.
     expect(pre).not.toMatch(/npm pack|pack:inspect/);
     expect(String(pkg.scripts?.["release:check"] ?? "")).not.toMatch(/npm pack/);
+    expect(String(pkg.scripts?.["release:full"] ?? "")).not.toMatch(/npm pack\b|pack:inspect/);
   });
 
-  it("exposes the required release scripts", () => {
-    for (const s of ["build", "typecheck", "test", "scan:public", "release:check", "pack:inspect"]) {
+  it("exposes the required release scripts (incl. the complete gate)", () => {
+    for (const s of [
+      "build", "typecheck", "test", "scan:public", "scan:secrets",
+      "release:check", "release:full", "pack:inspect",
+      "check:workflow-policy", "check:pack", "proof:mcp-stdio", "proof:cli-bin", "validate:server-json"
+    ]) {
       expect(typeof pkg.scripts?.[s], `missing script ${s}`).toBe("string");
     }
+  });
+
+  it("requires Node >= 22.14.0", () => {
+    expect(pkg.engines?.node).toBe(">=22.14.0");
   });
 
   it("keeps the canonical package name and version", () => {
@@ -50,8 +59,8 @@ describe("package metadata: intentionally publishable (release candidate)", () =
   });
 
   it("preserves correct bin / main / types / exports", () => {
-    expect(pkg.bin?.["ecz-mcp-verify"]).toBe("dist/cli.js");
-    expect(pkg.bin?.["ecz-id-mcp-verifier"]).toBe("dist/cli.js");
+    expect(pkg.bin?.["ecz-mcp-verify"]).toBe("dist/bin/cli.js");
+    expect(pkg.bin?.["ecz-id-mcp-verifier"]).toBe("dist/bin/cli.js");
     expect(pkg.main).toBe("dist/index.js");
     expect(pkg.types).toBe("dist/index.d.ts");
     expect(pkg.exports?.["."]?.default).toBe("./dist/index.js");
