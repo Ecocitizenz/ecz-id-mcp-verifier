@@ -1,60 +1,319 @@
 name: Publish to npm (OIDC trusted publishing)
 
-# PREPARED — DISABLED. This workflow performs a real npm publish and MUST NOT run in
-# this phase. It is the CONTINUING-RELEASE path (Stage B) for FUTURE versions only.
+# MANUAL, GATED — the SINGLE sanctioned npm publication path (Stage B / continuing release).
 #
-# Current state: the package ALREADY EXISTS — npm @ecocitizenz/ecz-id-mcp-verifier@0.7.0
-# is published and the first manual bootstrap publication is COMPLETE. This workflow does
-# NOT republish 0.7.0 and is not used to create the package.
+# Two operations, selected at dispatch:
+#   integrity-proof : build the EXACT candidate tarball from an EXACT commit, run the full
+#                     release gate, generate a CycloneDX SBOM, and create GitHub build-provenance
+#                     + SBOM attestations. It NEVER publishes. (Phase 5 proof path.)
+#   publish-next    : publish the already-prepared, hash-verified tarball under dist-tag `next`.
+#                     DISABLED unless the repository variable NPM_RELEASE_WRITE_ENABLED == 'true'
+#                     AND the protected environment `npm-release` approves the deployment.
 #
-# Future publishing stays DISABLED until BOTH are configured:
-#   1. the npm Trusted Publisher is registered for this package (org/user, repo, this
-#      workflow file name, environment `npm-release`); and
-#   2. the protected GitHub environment `npm-release` exists with required reviewers.
-# Only then add `release: { types: [published] }` to `on:` for a future tagged release.
-#
-# It uses npm Trusted Publishing (OIDC) — NOT a long-lived NPM_TOKEN. Trusted publishing
-# requires npm CLI >= 11.5.1 on the runner and a public repository for provenance
-# (provenance is automatic). No publication occurs in this phase.
+# Authentication is npm Trusted Publishing (OIDC) — there is NO long-lived NPM_TOKEN anywhere.
+# An ordinary push CANNOT trigger this workflow (workflow_dispatch only). It never publishes to
+# `latest`, never creates a Git tag, never creates a GitHub Release, never publishes to the MCP
+# Registry, and never publishes from the working source directory — only the prepared tarball.
 
 on:
-  # Manual, gated trigger only. Add `release: { types: [published] }` in Phase 2
-  # once the Trusted Publisher is registered and the environment is protected.
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Operation to perform
+        type: choice
+        required: true
+        default: integrity-proof
+        options:
+          - integrity-proof
+          - publish-next
+      release_commit:
+        description: Exact 40-character commit to check out
+        required: true
+        type: string
+      expected_version:
+        description: Exact version expected in package.json
+        required: true
+        default: "0.8.0"
+        type: string
+      expected_tarball_sha256:
+        description: Exact candidate tarball SHA-256
+        required: true
+        default: "090125e5a81aeba164548851c2952c587cb8b0b8c607371dfc5a8e341a872f41"
+        type: string
 
+# Global default: read-only. No repository-write permission is granted globally.
 permissions:
   contents: read
-  id-token: write # required for OIDC trusted publishing only
 
 concurrency:
   group: publish-npm
   cancel-in-progress: false
 
+env:
+  NODE_VERSION: "24"
+  NPM_VERSION: "11.17.0"
+  PKG_NAME: "@ecocitizenz/ecz-id-mcp-verifier"
+  PKG_REPO: "Ecocitizenz/ecz-id-mcp-verifier"
+  RELEASE_BRANCH_REF: "refs/heads/release/npm-0.8.0-hardening"
+  PHASE4_TARBALL_SHA256: "090125e5a81aeba164548851c2952c587cb8b0b8c607371dfc5a8e341a872f41"
+  SBOM_FILE: "ecz-id-mcp-verifier-0.8.0.cdx.json"
+  ARTIFACT_NAME: "ecz-id-prepared-0.8.0"
+
 jobs:
-  publish:
-    name: release-check · publish (provenance)
+  prepare:
+    # Runs for BOTH operations. Builds + proves + attests the exact artifact. Never publishes.
+    name: prepare · integrity · attest (no publish)
     runs-on: ubuntu-latest
-    environment: npm-release # protected: requires reviewer approval
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      tarball: ${{ steps.pack.outputs.tarball }}
+      tarball_sha256: ${{ steps.hash.outputs.tarball_sha256 }}
+      sbom_sha256: ${{ steps.sbom.outputs.sbom_sha256 }}
+      lock_sha256: ${{ steps.hash.outputs.lock_sha256 }}
     steps:
-      - name: Checkout (clean)
+      - name: Validate release_commit is a full 40-character lowercase SHA
+        run: |
+          COMMIT="${{ inputs.release_commit }}"
+          if ! printf '%s' "$COMMIT" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::release_commit must be a full 40-character lowercase hex SHA (got: $COMMIT)"
+            exit 1
+          fi
+          echo "release_commit OK: $COMMIT"
+
+      - name: Checkout exact release commit (clean, no persisted credentials)
         uses: actions/checkout@v4
-
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          ref: ${{ inputs.release_commit }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify checked-out SHA equals release_commit
+        run: |
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "checked_out_sha=$ACTUAL"
+          if [ "$ACTUAL" != "${{ inputs.release_commit }}" ]; then
+            echo "::error::checked-out SHA $ACTUAL != input ${{ inputs.release_commit }}"
+            exit 1
+          fi
+
+      - name: Set up Node 24 (no dependency cache)
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
 
-      - name: Ensure npm supports trusted publishing (>= 11.5.1)
-        run: npm install -g npm@latest
+      - name: Pin npm 11.17.0
+        run: |
+          npm install -g "npm@${NPM_VERSION}"
+          INSTALLED="$(npm --version)"
+          echo "npm=$INSTALLED"
+          if [ "$INSTALLED" != "$NPM_VERSION" ]; then
+            echo "::error::npm $INSTALLED != required $NPM_VERSION"
+            exit 1
+          fi
 
-      - name: Install (clean, from lockfile)
+      - name: Verify version, package name and repository identity
+        run: |
+          node -e '
+            const p = require("./package.json");
+            const fail = (m) => { console.error("::error::" + m); process.exit(1); };
+            const expVer = process.env.EXPECTED_VERSION;
+            if (p.version !== expVer) fail("package.json version " + p.version + " != input " + expVer);
+            if (p.version !== "0.8.0") fail("package.json version must be 0.8.0, got " + p.version);
+            if (p.name !== process.env.PKG_NAME) fail("package name " + p.name + " != " + process.env.PKG_NAME);
+            const url = (p.repository && p.repository.url) || "";
+            if (!url.includes("Ecocitizenz/ecz-id-mcp-verifier")) fail("repository.url does not identify the repo: " + url);
+            if (!p.publishConfig || p.publishConfig.access !== "public") fail("publishConfig.access must be public");
+            console.log("identity OK:", p.name, p.version, url);
+          '
+        env:
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+
+      - name: Clean install from lockfile
         run: npm ci
 
-      - name: Full release gate (typecheck · test · build · scan)
-        run: npm run release:check
+      - name: Fail on lockfile drift
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            echo "::error::package-lock.json changed during npm ci (lockfile drift)"
+            git --no-pager diff -- package-lock.json
+            exit 1
+          fi
+          echo "lockfile stable"
 
-      - name: Publish (public, provenance via OIDC trusted publishing)
-        # No NODE_AUTH_TOKEN / NPM_TOKEN. Authentication is short-lived OIDC.
-        # publishConfig.access=public and provenance:true are set in package.json.
-        run: npm publish
+      - name: Full release gate (release:full)
+        run: npm run release:full
+
+      - name: Pack the npm tarball once
+        id: pack
+        run: |
+          npm pack --json > pack.json
+          TARBALL="$(node -e 'console.log(require("./pack.json")[0].filename)')"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "packed: $TARBALL"
+          ls -l "$TARBALL"
+
+      - name: Inventory and scan the tarball
+        run: |
+          TARBALL="${{ steps.pack.outputs.tarball }}"
+          tar -tzf "$TARBALL" | sort > tarball-inventory.txt
+          echo "----- tarball inventory -----"
+          cat tarball-inventory.txt
+          if grep -Eq '(^|/)(src/|tests/|scripts/|_EVIDENCE/|\.github/|node_modules/)' tarball-inventory.txt; then
+            echo "::error::tarball contains disallowed paths (source/tests/scripts/evidence/workflows/node_modules)"
+            exit 1
+          fi
+          if grep -Eq '\.cdx\.json$|sbom' tarball-inventory.txt; then
+            echo "::error::SBOM must NOT be inside the npm tarball"
+            exit 1
+          fi
+
+      - name: Record and ENFORCE tarball + lockfile SHA-256
+        id: hash
+        run: |
+          TARBALL="${{ steps.pack.outputs.tarball }}"
+          SHA="$(sha256sum "$TARBALL" | awk '{print $1}')"
+          LOCK="$(sha256sum package-lock.json | awk '{print $1}')"
+          echo "tarball_sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "lock_sha256=$LOCK" >> "$GITHUB_OUTPUT"
+          echo "tarball_sha256=$SHA"
+          echo "lock_sha256=$LOCK"
+          if [ "$SHA" != "${{ inputs.expected_tarball_sha256 }}" ]; then
+            echo "::error::tarball sha256 $SHA != expected input ${{ inputs.expected_tarball_sha256 }}"
+            exit 1
+          fi
+          if [ "$SHA" != "${PHASE4_TARBALL_SHA256}" ]; then
+            echo "::error::tarball sha256 $SHA != inherited Phase 4 hash ${PHASE4_TARBALL_SHA256}"
+            exit 1
+          fi
+          printf '%s  %s\n' "$SHA" "$TARBALL" > tarball.sha256
+          printf '%s  %s\n' "$LOCK" "package-lock.json" > package-lock.sha256
+          echo "tarball + lockfile hashes enforced"
+
+      - name: Generate CycloneDX SBOM (runtime, omit dev)
+        id: sbom
+        run: |
+          npm sbom --sbom-format=cyclonedx --sbom-type=library --omit=dev > "${SBOM_FILE}"
+          node -e '
+            const s = require("./" + process.env.SBOM_FILE);
+            const fail = (m) => { console.error("::error::" + m); process.exit(1); };
+            if (s.bomFormat !== "CycloneDX") fail("SBOM bomFormat is not CycloneDX: " + s.bomFormat);
+            if (!s.specVersion) fail("SBOM missing specVersion");
+            if (!Array.isArray(s.components)) fail("SBOM missing components[]");
+            console.log("SBOM CycloneDX", s.specVersion, "components:", s.components.length);
+          '
+          SBSHA="$(sha256sum "${SBOM_FILE}" | awk '{print $1}')"
+          echo "sbom_sha256=$SBSHA" >> "$GITHUB_OUTPUT"
+          printf '%s  %s\n' "$SBSHA" "${SBOM_FILE}" > sbom.sha256
+          echo "sbom_sha256=$SBSHA"
+
+      - name: Attest build provenance for the exact tarball
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.pack.outputs.tarball }}
+
+      - name: Attest SBOM (bind the exact tarball to the CycloneDX SBOM)
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.pack.outputs.tarball }}
+          sbom-path: ${{ env.SBOM_FILE }}
+
+      - name: Upload one prepared artifact (tarball + SBOM + inventory + hashes)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            *.tgz
+            ${{ env.SBOM_FILE }}
+            tarball-inventory.txt
+            tarball.sha256
+            package-lock.sha256
+            sbom.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-next:
+    # DISABLED in Phase 5. Publishes ONLY the prepared tarball under `next`, never `latest`.
+    # Guarded by: operation == publish-next  AND  kill switch == 'true'  AND  release branch.
+    # The protected environment `npm-release` (required reviewer + branch restriction) is the
+    # human gate. NPM_RELEASE_WRITE_ENABLED is 'false' during Phase 5, so this job is SKIPPED.
+    name: publish · next (disabled unless kill switch enabled)
+    needs: prepare
+    if: >-
+      ${{
+        inputs.operation == 'publish-next' &&
+        vars.NPM_RELEASE_WRITE_ENABLED == 'true' &&
+        github.ref == 'refs/heads/release/npm-0.8.0-hardening'
+      }}
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Re-validate release_commit is a full 40-character lowercase SHA
+        run: |
+          COMMIT="${{ inputs.release_commit }}"
+          if ! printf '%s' "$COMMIT" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::release_commit must be a full 40-character lowercase hex SHA"
+            exit 1
+          fi
+
+      - name: Set up Node 24 (no dependency cache)
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Pin npm 11.17.0
+        run: |
+          npm install -g "npm@${NPM_VERSION}"
+          INSTALLED="$(npm --version)"
+          if [ "$INSTALLED" != "$NPM_VERSION" ]; then
+            echo "::error::npm $INSTALLED != required $NPM_VERSION"
+            exit 1
+          fi
+
+      - name: Download the exact prepared artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: prepared
+
+      - name: Re-verify tarball SHA-256 and version before publish
+        id: reverify
+        working-directory: prepared
+        run: |
+          TARBALL="$(ls *.tgz)"
+          SHA="$(sha256sum "$TARBALL" | awk '{print $1}')"
+          echo "reverify tarball=$TARBALL sha=$SHA"
+          if [ "$SHA" != "${{ inputs.expected_tarball_sha256 }}" ]; then
+            echo "::error::prepared tarball sha $SHA != expected ${{ inputs.expected_tarball_sha256 }}"
+            exit 1
+          fi
+          if [ "$SHA" != "${PHASE4_TARBALL_SHA256}" ]; then
+            echo "::error::prepared tarball sha $SHA != Phase 4 ${PHASE4_TARBALL_SHA256}"
+            exit 1
+          fi
+          if ! tar -xzO -f "$TARBALL" package/package.json > extracted-package.json 2>/dev/null; then
+            echo "::error::could not extract package/package.json from $TARBALL"
+            exit 1
+          fi
+          VER="$(node -e 'const fs=require("fs");const s=fs.readFileSync("extracted-package.json","utf8");if(!s.trim()){console.error("::error::empty package.json in tarball");process.exit(1)}console.log(JSON.parse(s).version)')"
+          echo "tarball_version=$VER"
+          if [ "$VER" != "${{ inputs.expected_version }}" ] || [ "$VER" != "0.8.0" ]; then
+            echo "::error::tarball version $VER is not 0.8.0 / expected"
+            exit 1
+          fi
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the downloaded tarball under dist-tag next (NEVER latest)
+        working-directory: prepared
+        # OIDC trusted publishing — no NODE_AUTH_TOKEN / NPM_TOKEN. Provenance is automatic.
+        run: |
+          npm publish "${{ steps.reverify.outputs.tarball }}" --tag next --access public
