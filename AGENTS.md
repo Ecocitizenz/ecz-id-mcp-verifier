@@ -36,8 +36,8 @@ npx @ecocitizenz/ecz-id-mcp-verifier --capabilities      # machine-readable capa
 Pin the exact release only when reproducibility is required:
 
 ```sh
-npm install @ecocitizenz/ecz-id-mcp-verifier@0.8.1
-npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --doctor
+npm install @ecocitizenz/ecz-id-mcp-verifier@0.8.2
+npx @ecocitizenz/ecz-id-mcp-verifier@0.8.2 --doctor
 ```
 
 ## MCP tools (stdio, read-only)
@@ -46,7 +46,7 @@ npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --doctor
 - `ecz_recheck_resolver` — read-only re-check of the public Resolver posture (GET only).
 - `ecz_explain_result` — public-safe explanation of an existing `result_state` / `reason_codes`.
 
-Server identity: `io.github.ecocitizenz/ecz-id-mcp-verifier`, transport `stdio`, no secret.
+Server identity: `io.github.Ecocitizenz/ecz-id-mcp-verifier`, transport `stdio`, no secret.
 
 ## Canonical machine discovery — discovery only, never proof
 

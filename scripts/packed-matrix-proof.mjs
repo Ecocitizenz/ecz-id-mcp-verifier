@@ -26,7 +26,7 @@ const TARBALL_ARG = arg("--tarball", "");
 const SPEC = arg("--spec", "");                 // registry spec, e.g. @ecocitizenz/ecz-id-mcp-verifier@0.8.1
 const TARBALL = TARBALL_ARG ? resolve(TARBALL_ARG) : "";
 const OUT = arg("--out", "");
-const EXPECT_VERSION = arg("--expect-version", "0.8.1");
+const EXPECT_VERSION = arg("--expect-version", "0.8.2");
 const INSTALL_FROM_REGISTRY = SPEC !== "";
 const PKG_NAME = "@ecocitizenz/ecz-id-mcp-verifier";
 const node = process.execPath;

@@ -4,6 +4,30 @@ All notable changes to the ECZ-ID MCP Verifier™ are documented here.
 This project is free-forever under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`); it is **not** open source.
 
+## [0.8.2] — Official Registry Edition
+
+Canonical GitHub namespace alignment for Official MCP Registry discovery, with
+unified latest-first onboarding. Verifier behaviour, MCP contracts, privacy
+boundaries and local-policy control remain consistent.
+
+### Changed
+- **MCP Registry identity** now uses the canonical GitHub login casing:
+  `package.json.mcpName` and `server.json.name` are
+  `io.github.Ecocitizenz/ecz-id-mcp-verifier`, matching the GitHub namespace for
+  Official MCP Registry publishing. The runtime MCP server name
+  (`ecz-id-mcp-verifier`) and the npm package name
+  (`@ecocitizenz/ecz-id-mcp-verifier`) are unchanged.
+- Version synchronised to `0.8.2` across package metadata, the runtime constant,
+  `--version`, the MCP initialize version, capabilities, tests and examples.
+- Public documentation ships the latest-first onboarding (plain `npm install` /
+  `npx` primary; exact `@0.8.2` pin is secondary reproducibility guidance).
+
+### Unchanged
+- Classifier, target-shape rules, Resolver requests, result states, reason codes,
+  policy modes, exit codes, the three read-only MCP tools and their schemas, and
+  the GitHub Action behaviour are byte-for-byte preserved. No telemetry; no
+  source/secret/prompt/tool-payload upload.
+
 ## [0.8.1] — Launch Edition
 
 Adoption and onboarding release. The deterministic Resolver-posture model,
@@ -11,10 +35,9 @@ result states, reason codes, policy modes, privacy boundaries and local-policy
 behaviour are unchanged and fully preserved.
 
 ### Added
-- **Timeless release-channel guidance** across the README and examples: use the
-  package name without a tag for the stable release, `@next` for the current
-  candidate, or `@<version>` for exact reproducibility — accurate in every
-  registry state.
+- **Clear release-channel guidance** across the README and examples: install with
+  the package name for the current release, or pin an exact `@<version>` for
+  reproducibility.
 - **`--doctor`** — a local self-test (no network, no secret) that confirms a
   healthy install: version, CLI aliases, MCP server, offline verify and privacy
   posture.
@@ -43,8 +66,8 @@ Added a read-only MCP stdio server exposing exactly three tools
 delegating to the same canonical verifier core. Pinned MCP SDK + Zod, added
 `server.json` Registry metadata, a hardened OIDC trusted-publishing workflow with
 published provenance and a CycloneDX SBOM, and a cross-platform installed-package
-proof matrix (Windows/Linux/macOS on Node 22.14 and 24). Published to npm on the
-`next` channel with provenance; `latest` stays on the current stable release.
+proof matrix (Windows/Linux/macOS on Node 22.14 and 24). Published to npm with
+published provenance.
 
 ## [0.7.1] — GitHub Marketplace metadata-compliance patch
 
@@ -137,6 +160,7 @@ baseline for the ECZ-ID Resolver-posture verifier.
 - No source maps, secrets, absolute paths, or internal material in the npm
   tarball. No telemetry. No source/secret/prompt/tool-payload upload.
 
+[0.8.2]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.1
 [0.8.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.0
 [0.7.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.7.1

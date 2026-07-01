@@ -45,7 +45,7 @@ describe("latest-first public copy gate", () => {
       /\bprepared but\b[^.]*\bnot\b[^.]*\bpublish/i,
       /\bplain\b[^.]*\bnpx\b[^.]*\breturns?\b[^.]*\bnext\b/i,
       /\bcandidate\b[^.]*\bbecomes\b[^.]*\blatest\b/i,
-      /\b0\.8\.2\b/,
+      /@v?0\.8\.1\b/,
       /earlier builds could exit silently/i,
       /Backend key \(internal\)/i
     ];

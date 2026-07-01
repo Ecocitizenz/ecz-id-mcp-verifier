@@ -80,7 +80,8 @@ const LATEST_FIRST_FORBIDDEN = [
   { name: "choose-a-channel", re: /\bchoose a channel\b/i },
   { name: "promotion-to-latest", re: /\bpromotion to latest\b/i },
   { name: "backend-key-internal", re: /Backend key \(internal\)/i },
-  { name: "version-0-8-2", re: /\b0\.8\.2\b/ }
+  // Forbid a STALE exact pin to the previous release (0.8.2 is the current version).
+  { name: "stale-version-pin-0-8-1", re: /@v?0\.8\.1\b/ }
 ];
 
 const findings = [];

@@ -8,7 +8,7 @@ const server = JSON.parse(readFileSync(join(ROOT, "server.json"), "utf8"));
 
 describe("server.json: Registry metadata invariants", () => {
   it("mcpName equals server.json name (reverse-DNS Registry identity)", () => {
-    expect(pkg.mcpName).toBe("io.github.ecocitizenz/ecz-id-mcp-verifier");
+    expect(pkg.mcpName).toBe("io.github.Ecocitizenz/ecz-id-mcp-verifier");
     expect(server.name).toBe(pkg.mcpName);
   });
 

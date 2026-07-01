@@ -8,7 +8,7 @@ const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 const server = JSON.parse(readFileSync(join(ROOT, "server.json"), "utf8"));
 const lock = JSON.parse(readFileSync(join(ROOT, "package-lock.json"), "utf8"));
 
-const EXPECTED = "0.8.1";
+const EXPECTED = "0.8.2";
 
 describe("version invariants (single source of truth across all surfaces)", () => {
   it("package.json version is the target release version", () => {
@@ -29,7 +29,7 @@ describe("version invariants (single source of truth across all surfaces)", () =
 describe("identity invariants (mcpName === server.json.name)", () => {
   it("package.json.mcpName equals server.json.name", () => {
     expect(pkg.mcpName).toBe(server.name);
-    expect(pkg.mcpName).toBe("io.github.ecocitizenz/ecz-id-mcp-verifier");
+    expect(pkg.mcpName).toBe("io.github.Ecocitizenz/ecz-id-mcp-verifier");
   });
   it("server.json declares the npm package identity at the same version", () => {
     const npmPkg = (server.packages || []).find(

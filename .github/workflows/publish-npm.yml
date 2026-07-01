@@ -33,12 +33,12 @@ on:
       expected_version:
         description: Exact version expected in package.json
         required: true
-        default: "0.8.1"
+        default: "0.8.2"
         type: string
       expected_tarball_sha256:
         description: Exact candidate tarball SHA-256
         required: true
-        default: "8e9a8542f6559335838fa95de627c03c01bbc55cbc02da32ce19de96e05f990c"
+        default: "312a59bb1bc4ce678af6d8780f02cddf80cd877f283ab7c25741e165b5251043"
         type: string
 
 # Global default: read-only. No repository-write permission is granted globally.
@@ -54,10 +54,10 @@ env:
   NPM_VERSION: "11.17.0"
   PKG_NAME: "@ecocitizenz/ecz-id-mcp-verifier"
   PKG_REPO: "Ecocitizenz/ecz-id-mcp-verifier"
-  RELEASE_BRANCH_REF: "refs/heads/release/npm-0.8.1-launch"
-  CANDIDATE_TARBALL_SHA256: "8e9a8542f6559335838fa95de627c03c01bbc55cbc02da32ce19de96e05f990c"
-  SBOM_FILE: "ecz-id-mcp-verifier-0.8.1.cdx.json"
-  ARTIFACT_NAME: "ecz-id-prepared-0.8.1"
+  RELEASE_BRANCH_REF: "refs/heads/release/npm-0.8.2-registry-edition"
+  CANDIDATE_TARBALL_SHA256: "312a59bb1bc4ce678af6d8780f02cddf80cd877f283ab7c25741e165b5251043"
+  SBOM_FILE: "ecz-id-mcp-verifier-0.8.2.cdx.json"
+  ARTIFACT_NAME: "ecz-id-prepared-0.8.2"
 
 jobs:
   prepare:
@@ -123,7 +123,7 @@ jobs:
             const fail = (m) => { console.error("::error::" + m); process.exit(1); };
             const expVer = process.env.EXPECTED_VERSION;
             if (p.version !== expVer) fail("package.json version " + p.version + " != input " + expVer);
-            if (p.version !== "0.8.1") fail("package.json version must be 0.8.1, got " + p.version);
+            if (p.version !== "0.8.2") fail("package.json version must be 0.8.2, got " + p.version);
             if (p.name !== process.env.PKG_NAME) fail("package name " + p.name + " != " + process.env.PKG_NAME);
             const url = (p.repository && p.repository.url) || "";
             if (!url.includes("Ecocitizenz/ecz-id-mcp-verifier")) fail("repository.url does not identify the repo: " + url);
@@ -247,7 +247,7 @@ jobs:
       ${{
         inputs.operation == 'publish-next' &&
         vars.NPM_RELEASE_WRITE_ENABLED == 'true' &&
-        github.ref == 'refs/heads/release/npm-0.8.1-launch'
+        github.ref == 'refs/heads/release/npm-0.8.2-registry-edition'
       }}
     runs-on: ubuntu-latest
     environment: npm-release
@@ -306,8 +306,8 @@ jobs:
           fi
           VER="$(node -e 'const fs=require("fs");const s=fs.readFileSync("extracted-package.json","utf8");if(!s.trim()){console.error("::error::empty package.json in tarball");process.exit(1)}console.log(JSON.parse(s).version)')"
           echo "tarball_version=$VER"
-          if [ "$VER" != "${{ inputs.expected_version }}" ] || [ "$VER" != "0.8.1" ]; then
-            echo "::error::tarball version $VER is not 0.8.1 / expected"
+          if [ "$VER" != "${{ inputs.expected_version }}" ] || [ "$VER" != "0.8.2" ]; then
+            echo "::error::tarball version $VER is not 0.8.2 / expected"
             exit 1
           fi
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"

@@ -48,7 +48,7 @@ pkg.mcpName === server.name
   ? ok(`mcpName === server.json.name (${server.name})`)
   : fail(`mcpName (${pkg.mcpName}) !== server.json.name (${server.name})`);
 
-server.name === "io.github.ecocitizenz/ecz-id-mcp-verifier"
+server.name === "io.github.Ecocitizenz/ecz-id-mcp-verifier"
   ? ok("Registry name exact")
   : fail(`Registry name unexpected: ${server.name}`);
 
