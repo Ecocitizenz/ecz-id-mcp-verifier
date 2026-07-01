@@ -1,6 +1,6 @@
 name: public-action-proof
 
-# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
+# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.8.2
 # runs on a GitHub-hosted runner with least privilege. Read-only, reports only.
 # Does not rebuild the action, does not use ./ or main, does not mutate the repo.
 
@@ -22,7 +22,7 @@ jobs:
 
       - name: OPEN (valid parent, offline)
         id: open
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.2
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "OPEN"
@@ -30,7 +30,7 @@ jobs:
 
       - name: PREFER (valid child AGENT, offline)
         id: prefer
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.2
         with:
           target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A"
           policy: "PREFER"
@@ -39,7 +39,7 @@ jobs:
       - name: REQUIRE (valid parent — fail-closed expected)
         id: require
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.2
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "REQUIRE"
@@ -48,7 +48,7 @@ jobs:
       - name: INVALID input (exit 4 expected)
         id: invalid
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.2
         with:
           target: "ECZ-GB-EXAMPLE"
           no-network: "true"
@@ -102,7 +102,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.8.1"
+            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.8.2"
             echo ""
             echo "| Check | Result |"
             echo "| --- | --- |"
@@ -118,7 +118,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   public-npm-install:
-    name: public npm 0.7.0 clean-install proof
+    name: public npm 0.8.2 clean-install proof (accelerators + SARIF + no-secret)
     runs-on: ubuntu-latest
     steps:
       - name: Set up Node.js 20 (public registry)
@@ -127,23 +127,34 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Clean-install @0.7.0 from the public npm registry and prove behaviour
+      - name: Clean-install the current latest from the public npm registry and prove behaviour
         run: |
           set -euo pipefail
           fail() { echo "FAIL: $1"; echo "| $1 | FAIL |" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
           TMP="$(mktemp -d)"; cd "$TMP"
           npm init -y >/dev/null 2>&1
-          echo "Installing @ecocitizenz/ecz-id-mcp-verifier@0.7.0 from the public registry (no token)..."
-          npm install @ecocitizenz/ecz-id-mcp-verifier@0.7.0 --no-audit --no-fund || fail "public npm install failed"
+          echo "Installing @ecocitizenz/ecz-id-mcp-verifier@0.8.2 from the public registry (no token)..."
+          npm install @ecocitizenz/ecz-id-mcp-verifier@0.8.2 --no-audit --no-fund || fail "public npm install failed"
 
           PKG="node_modules/@ecocitizenz/ecz-id-mcp-verifier"
-          BIN="$PKG/dist/cli.js"
+          BIN="$PKG/dist/bin/cli.js"
           [ -f "$BIN" ] || fail "CLI binary missing"
           VER="$(node -p "require('./$PKG/package.json').version")"
-          [ "$VER" = "0.7.0" ] || fail "installed version $VER != 0.7.0"
-          node "$BIN" --version | grep -q "v0.7.0" || fail "--version wrong"
+          [ "$VER" = "0.8.2" ] || fail "installed version $VER != 0.8.2"
+          node "$BIN" --version | grep -q "v0.8.2" || fail "--version wrong"
           node "$BIN" --help | grep -qi "Usage" || fail "--help missing"
           node "$BIN" --help | grep -q "resolver.ecocitizenz.org" || fail "Resolver route not documented"
+
+          # Registry identity carries the canonical GitHub login casing (capital E).
+          MCPNAME="$(node -p "require('./$PKG/package.json').mcpName")"
+          [ "$MCPNAME" = "io.github.Ecocitizenz/ecz-id-mcp-verifier" ] || fail "mcpName casing $MCPNAME != canonical"
+
+          # Deterministic offline accelerators (no network, no secret).
+          node "$BIN" --doctor          > doctor.json    || fail "--doctor failed"
+          node "$BIN" --capabilities    > caps.json      || fail "--capabilities failed"
+          node "$BIN" --print-mcp-config > mcpcfg.txt     || fail "--print-mcp-config failed"
+          grep -q '"ecz-resolver-posture-v1"' caps.json || fail "capability profile missing"
+          grep -q 'io.github.Ecocitizenz/ecz-id-mcp-verifier' caps.json || fail "registry identity absent in capabilities"
 
           # OPEN and PREFER MUST return 0, so direct execution is safe under `set -e`
           # (OPEN writes open.json, reused by the contract checks below).
@@ -177,19 +188,35 @@ jobs:
           grep -q 'trustops.ecocitizenz.com/start' open.json || fail "TrustOps /start route missing"
           grep -q 'developers.ecocitizenz.com' open.json || fail "Developer Gateway route missing"
 
-          echo "ALL PUBLIC NPM ASSERTIONS PASSED (installed version 0.7.0)"
+          # SARIF 2.1.0 emission (code-scanning-compatible, offline).
+          node "$BIN" --target ECZ-CC-ABC123 --policy OPEN --offline --json --sarif out.sarif > /dev/null || fail "SARIF run failed"
+          [ -f out.sarif ] || fail "SARIF file not written"
+          node -e "const s=require('$TMP/out.sarif');if(s.version!=='2.1.0')throw new Error('sarif version');if(!/sarif/.test(s['\$schema']||''))throw new Error('sarif schema');if(!s.runs||!s.runs.length)throw new Error('sarif runs');if(s.runs[0].tool.driver.name!=='ECZ-ID MCP Verifier')throw new Error('sarif tool');" || fail "SARIF structure invalid"
+
+          # No-secret proof: nothing the verifier wrote may contain a token/secret/cookie value.
+          if grep -RniE '(authorization|npm_token|node_auth_token|bearer |ghp_|github_pat_|set-cookie|x-access-token)' \
+               open.json prefer.json require.json invalid.json doctor.json caps.json mcpcfg.txt out.sarif; then
+            fail "secret-like material found in verifier output"
+          fi
+
+          echo "ALL PUBLIC NPM ASSERTIONS PASSED (installed version 0.8.2)"
           {
-            echo "## public-npm-install — @ecocitizenz/ecz-id-mcp-verifier@0.7.0"
+            echo "## public-npm-install — @ecocitizenz/ecz-id-mcp-verifier@0.8.2"
             echo ""
             echo "| Check | Result |"
             echo "| --- | --- |"
             echo "| installed version | $VER |"
-            echo "| public npm registry install (@0.7.0) | success |"
+            echo "| Registry identity (mcpName) | $MCPNAME |"
+            echo "| public npm registry install (@0.8.2) | success |"
+            echo "| --doctor / --capabilities / --print-mcp-config | success |"
+            echo "| capability profile ecz-resolver-posture-v1 | present |"
             echo "| OPEN offline exit | $OPEN |"
             echo "| PREFER offline exit | $PREFER |"
             echo "| REQUIRE offline (fail-closed) exit | $REQUIRE |"
             echo "| INVALID input exit | $INVALID |"
             echo "| result_state / reason_codes / recheck_before_reliance | present |"
             echo "| no truth / no BOUND / no source / no secrets / no telemetry | proven |"
+            echo "| SARIF 2.1.0 (ECZ-ID MCP Verifier driver) | emitted + validated |"
+            echo "| secret-like material in any output | none |"
             echo "| canonical Resolver + TrustOps /start + Developer Gateway routes | present |"
           } >> "$GITHUB_STEP_SUMMARY"
