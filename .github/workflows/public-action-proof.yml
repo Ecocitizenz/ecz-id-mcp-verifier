@@ -1,6 +1,6 @@
 name: public-action-proof
 
-# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
+# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
 # runs on a GitHub-hosted runner with least privilege. Read-only, reports only.
 # Does not rebuild the action, does not use ./ or main, does not mutate the repo.
 
@@ -22,7 +22,7 @@ jobs:
 
       - name: OPEN (valid parent, offline)
         id: open
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "OPEN"
@@ -30,7 +30,7 @@ jobs:
 
       - name: PREFER (valid child AGENT, offline)
         id: prefer
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
         with:
           target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A"
           policy: "PREFER"
@@ -39,7 +39,7 @@ jobs:
       - name: REQUIRE (valid parent — fail-closed expected)
         id: require
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "REQUIRE"
@@ -48,7 +48,7 @@ jobs:
       - name: INVALID input (exit 4 expected)
         id: invalid
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
         with:
           target: "ECZ-GB-EXAMPLE"
           no-network: "true"
@@ -102,7 +102,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.7.1"
+            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.8.1"
             echo ""
             echo "| Check | Result |"
             echo "| --- | --- |"
