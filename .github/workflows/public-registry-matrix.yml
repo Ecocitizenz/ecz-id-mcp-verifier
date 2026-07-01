@@ -1,6 +1,6 @@
 name: public-registry-matrix
 
-# Post-publication PUBLIC proof for @ecocitizenz/ecz-id-mcp-verifier@0.8.1.
+# Post-publication PUBLIC proof for @ecocitizenz/ecz-id-mcp-verifier@0.8.2.
 # Read-only. Installs the ALREADY-PUBLISHED package straight from the public npm
 # registry and proves it as a real consumer install across Windows/Linux/macOS on
 # Node 22.14.0 and Node 24, including the convenience accelerators.
@@ -11,7 +11,7 @@ name: public-registry-matrix
 
 on:
   push:
-    branches: [release/npm-0.8.1-launch]
+    branches: [release/npm-0.8.2-registry-edition]
   workflow_dispatch: {}
 
 permissions:
@@ -22,9 +22,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PKG_SPEC: "@ecocitizenz/ecz-id-mcp-verifier@0.8.1"
-  EXPECT_VERSION: "0.8.1"
-  CANONICAL_SHA256: "8e9a8542f6559335838fa95de627c03c01bbc55cbc02da32ce19de96e05f990c"
+  PKG_SPEC: "@ecocitizenz/ecz-id-mcp-verifier@0.8.2"
+  EXPECT_VERSION: "0.8.2"
+  CANONICAL_SHA256: "312a59bb1bc4ce678af6d8780f02cddf80cd877f283ab7c25741e165b5251043"
 
 jobs:
   fetch-and-verify-public-artifact:
@@ -41,7 +41,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - name: Prove public dist-tags (0.8.1 present, next=0.8.1)
+      - name: Prove public dist-tags (0.8.2 present, next=0.8.2)
         shell: bash
         run: |
           set -euo pipefail
@@ -50,8 +50,8 @@ jobs:
             https.get("https://registry.npmjs.org/@ecocitizenz%2fecz-id-mcp-verifier",r=>{let d="";r.on("data",c=>d+=c);r.on("end",()=>{
               const j=JSON.parse(d); const t=j["dist-tags"]||{};
               const fail=m=>{console.error("::error::"+m);process.exit(1);};
-              if(!j.versions||!j.versions["0.8.1"]) fail("0.8.1 not present in registry");
-              if(t.next!=="0.8.1") fail("next != 0.8.1 (got "+t.next+")");
+              if(!j.versions||!j.versions["0.8.2"]) fail("0.8.2 not present in registry");
+              if(t.next!=="0.8.2") fail("next != 0.8.2 (got "+t.next+")");
               console.log("dist-tags OK", JSON.stringify(t));
             });}).on("error",e=>{console.error("::error::"+e.message);process.exit(1);});
           '
@@ -71,7 +71,7 @@ jobs:
       - name: Upload public artifact evidence
         uses: actions/upload-artifact@v4
         with:
-          name: public-registry-artifact-0.8.1
+          name: public-registry-artifact-0.8.2
           path: |
             _pub/*.tgz
             _pub/PUBLIC_TARBALL_SHA256.txt
