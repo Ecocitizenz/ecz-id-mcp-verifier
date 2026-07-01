@@ -191,7 +191,7 @@ jobs:
           # SARIF 2.1.0 emission (code-scanning-compatible, offline).
           node "$BIN" --target ECZ-CC-ABC123 --policy OPEN --offline --json --sarif out.sarif > /dev/null || fail "SARIF run failed"
           [ -f out.sarif ] || fail "SARIF file not written"
-          node -e "const s=require('$TMP/out.sarif');if(s.version!=='2.1.0')throw new Error('sarif version');if(!/sarif/.test(s['\$schema']||''))throw new Error('sarif schema');if(!s.runs||!s.runs.length)throw new Error('sarif runs');if(s.runs[0].tool.driver.name!=='ECZ-ID MCP Verifier')throw new Error('sarif tool');" || fail "SARIF structure invalid"
+          node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('out.sarif','utf8'));if(s.version!=='2.1.0')throw new Error('sarif version');if(!/sarif/.test(s['\$schema']||''))throw new Error('sarif schema');if(!s.runs||!s.runs.length)throw new Error('sarif runs');if(s.runs[0].tool.driver.name!=='ECZ-ID MCP Verifier')throw new Error('sarif tool');" || fail "SARIF structure invalid"
 
           # No-secret proof: nothing the verifier wrote may contain a token/secret/cookie value.
           if grep -RniE '(authorization|npm_token|node_auth_token|bearer |ghp_|github_pat_|set-cookie|x-access-token)' \
