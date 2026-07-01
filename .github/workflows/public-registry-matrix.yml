@@ -1,0 +1,148 @@
+name: public-registry-matrix
+
+# Post-publication PUBLIC proof for @ecocitizenz/ecz-id-mcp-verifier@0.8.0.
+# Read-only. Installs the ALREADY-PUBLISHED package straight from the public npm
+# registry (registry.npmjs.org) and proves it as a real consumer install across
+# Windows / Linux / macOS on Node 22.14.0 (declared minimum) and Node 24.
+#
+# This workflow NEVER publishes npm, NEVER changes dist-tags, NEVER creates a tag
+# or GitHub Release, NEVER publishes to the MCP Registry, and NEVER writes the
+# repository. permissions: contents: read only. It does not change any published
+# package bytes — it only downloads and exercises them.
+
+on:
+  push:
+    branches: [release/npm-0.8.0-hardening]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-registry-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PKG_SPEC: "@ecocitizenz/ecz-id-mcp-verifier@0.8.0"
+  EXPECT_VERSION: "0.8.0"
+  CANONICAL_SHA256: "090125e5a81aeba164548851c2952c587cb8b0b8c607371dfc5a8e341a872f41"
+
+jobs:
+  fetch-and-verify-public-artifact:
+    name: Job 1 — fetch + verify public registry artifact (ubuntu, Node 24)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout harness (no credentials persisted)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Prove public dist-tags (0.8.0 public, next=0.8.0, latest=0.7.0)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e '
+            const https=require("node:https");
+            https.get("https://registry.npmjs.org/@ecocitizenz%2fecz-id-mcp-verifier",r=>{let d="";r.on("data",c=>d+=c);r.on("end",()=>{
+              const j=JSON.parse(d); const t=j["dist-tags"]||{};
+              const fail=m=>{console.error("::error::"+m);process.exit(1);};
+              if(!j.versions||!j.versions["0.8.0"]) fail("0.8.0 not present in registry");
+              if(t.next!=="0.8.0") fail("next != 0.8.0 (got "+t.next+")");
+              if(t.latest!=="0.7.0") fail("latest != 0.7.0 (got "+t.latest+")");
+              console.log("dist-tags OK", JSON.stringify(t));
+            });}).on("error",e=>{console.error("::error::"+e.message);process.exit(1);});
+          '
+
+      - name: Download the exact public tarball via npm pack (registry)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _pub
+          ( cd _pub && npm pack "$PKG_SPEC" >/dev/null )
+          TGZ="$(ls _pub/*.tgz | head -1)"
+          SHA="$(node -e "const c=require('node:crypto'),fs=require('node:fs');console.log(c.createHash('sha256').update(fs.readFileSync(process.argv[1])).digest('hex'))" "$TGZ")"
+          echo "public tarball: $TGZ sha256=$SHA"
+          if [ "$SHA" != "$CANONICAL_SHA256" ]; then echo "::error::public tarball sha256 $SHA != canonical $CANONICAL_SHA256"; exit 1; fi
+          echo "$SHA  $(basename "$TGZ")" > _pub/PUBLIC_TARBALL_SHA256.txt
+          tar -tzf "$TGZ" | sort > _pub/PUBLIC_TARBALL_INVENTORY.txt
+          if grep -Eq 'package/(src/|tests/|scripts/|_EVIDENCE/|\.github/)' _pub/PUBLIC_TARBALL_INVENTORY.txt; then echo '::error::forbidden path in public tarball'; exit 1; fi
+          echo "public tarball inventory OK ($(wc -l < _pub/PUBLIC_TARBALL_INVENTORY.txt) files)"
+
+      - name: Upload public artifact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-registry-artifact
+          path: |
+            _pub/*.tgz
+            _pub/PUBLIC_TARBALL_SHA256.txt
+            _pub/PUBLIC_TARBALL_INVENTORY.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  public-installed-matrix:
+    name: Job 2 — public install ${{ matrix.os }} / Node ${{ matrix.node }}
+    needs: fetch-and-verify-public-artifact
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ["22.14.0", "24"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout harness only (no credentials persisted)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Prove the public installed package (registry, no source fallback)
+        shell: bash
+        env:
+          ECZ_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          SAFE="$(echo '${{ matrix.os }}-node${{ matrix.node }}' | tr '/.' '--')"
+          node scripts/packed-matrix-proof.mjs --spec "$PKG_SPEC" --expect-version "$EXPECT_VERSION" --out "public-matrix-$SAFE.json"
+
+      - name: Upload public matrix cell result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-matrix-result-${{ matrix.os }}-node-${{ matrix.node }}
+          path: public-matrix-*.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  public-provenance:
+    name: Job 3 — public provenance (ubuntu, Node 24)
+    needs: fetch-and-verify-public-artifact
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install public package and verify provenance/signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _prov && cd _prov
+          echo '{"name":"prov","version":"1.0.0","private":true}' > package.json
+          npm install "$PKG_SPEC" --no-fund --no-audit
+          npm audit signatures | tee ../public-audit-signatures.txt
