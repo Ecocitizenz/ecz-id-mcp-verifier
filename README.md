@@ -12,17 +12,17 @@ npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q --offline
 
 `check` is an accepted leading subcommand; `--target` does the work. Add `--report` for the human-readable soft report, `--policy REQUIRE` to fail closed when proof is missing, or drop `--offline` to perform the read-only Resolver lookup.
 
-> Publication note: `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` is the version currently on npm, so a plain `npx …` resolves to it today. `0.8.0` (this branch — adds the MCP stdio server) is the prepared candidate; **after `0.8.0` is published**, the same command resolves to it. See **Publication status** below.
+> **First useful result in under a minute:** run the command above, read a real JSON result, and follow the routed next action. No sign-in, no account, no config. See [Release channels](#release-channels) to choose stable, candidate, or an exact version.
 
 ### Representative result
 
-Real output from the `0.8.0` packed candidate for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative excerpt; the full JSON also includes `setup_handoff`, `request_to_resolve` and additional boundary flags):
+Real output for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative excerpt; the full JSON also includes `setup_handoff`, `request_to_resolve` and additional boundary flags):
 
 ```json
 {
   "schema_version": 1,
   "verifier": "ECZ-ID MCP Verifier",
-  "verifier_version": "0.8.0",
+  "verifier_version": "0.8.1",
   "target": "ECZ-GB-A93K7Q",
   "target_type": "ecz_id",
   "policy_mode": "OPEN",
@@ -52,6 +52,39 @@ Real output from the `0.8.0` packed candidate for `--target ECZ-GB-A93K7Q --poli
 | **Node library** | `import { verify } from "@ecocitizenz/ecz-id-mcp-verifier"` |
 
 Next actions: check a target · add to CI · add to an MCP host · inspect public Resolver proof · improve the posture of a target you operate · build an integration.
+
+## Common workflows
+
+| You are… | Do this | You get |
+| --- | --- | --- |
+| A developer checking a target | `npx @ecocitizenz/ecz-id-mcp-verifier check --target <value>` | Deterministic classification + public Resolver posture, with routing. |
+| A CI owner adding a gate | Add the [GitHub Action](#github-action) with a `policy`, or run the CLI with `--policy REQUIRE` | A deterministic exit code + JSON/SARIF for your pipeline. |
+| An MCP-host user | `--print-mcp-config` → paste into your host | Three read-only MCP tools over stdio. |
+| A Node developer | `import { verify } from "@ecocitizenz/ecz-id-mcp-verifier"` | The canonical result contract in-process, no side effects. |
+| A platform reviewer | `--capabilities` and inspect public Resolver posture | An honest, machine-readable statement of scope and limits. |
+| An operator improving your own target | Follow the TrustOps route from the result | Guidance to improve the target's public Resolver posture. |
+| A machine or agent | Read `--capabilities` and the [canonical machine discovery](#public-routes) pointer | Agent-readable capabilities and discovery, never treated as proof. |
+
+## Release channels
+
+Pick a channel by how you reference the package — the wording is the same before, during, and after any release:
+
+```sh
+# Stable (current default release):
+npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q
+
+# Candidate (current pre-release under the next tag):
+npx @ecocitizenz/ecz-id-mcp-verifier@next check --target ECZ-GB-A93K7Q
+
+# Exact (pin a specific version for reproducibility):
+npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 check --target ECZ-GB-A93K7Q
+```
+
+- **No tag** → the current **stable** release (npm `latest`).
+- **`@next`** → the current **candidate** (npm `next` dist-tag), for early adopters.
+- **`@<version>`** → an **exact** version, for reproducible CI and audits.
+
+Promotion of a candidate to stable is a separate, authorised step. `latest` and `next` are independent channels; a plain install always uses `latest`.
 
 ## Supported target shapes
 
@@ -172,6 +205,9 @@ Two equivalent command names are installed: `ecz-id-mcp-verifier` and `ecz-mcp-v
 | `--timeout-ms`      | `5000`                                 | Network timeout (ms).                    |
 | `--output <path>`   | stdout                                 | Write output to file.                    |
 | `--sarif <path>`    | off                                    | Also write a minimal SARIF 2.1.0 file.   |
+| `--capabilities`    |                                        | Print the machine-readable capability profile (JSON) and exit. |
+| `--print-mcp-config`|                                        | Print a ready-to-paste MCP host config (JSON) and exit. |
+| `--doctor`          |                                        | Run a local self-test (no network, no secret); add `--report` for human output. |
 | `--version`         |                                        | Print version and exit.                  |
 | `--help`            |                                        | Print help and exit.                     |
 
@@ -191,6 +227,23 @@ ecz-mcp-verify --target "https://github.com/org/repo" --report
 # Write JSON + SARIF files for CI
 ecz-mcp-verify --target "ECZ-GB-A93K7Q" --output result.json --sarif result.sarif
 ```
+
+### Self-test, capabilities, and MCP config
+
+Three deterministic, offline helpers make setup and integration fast — none require a target, a network call, or a secret:
+
+```sh
+# Confirm a healthy install (no network, no secret):
+ecz-id-mcp-verifier --doctor
+
+# Print the machine-readable capability profile (what it does and does not do):
+ecz-id-mcp-verifier --capabilities
+
+# Print a ready-to-paste MCP host configuration:
+ecz-id-mcp-verifier --print-mcp-config
+```
+
+`--capabilities` returns a stable `capability_profile` (`ecz-resolver-posture-v1`) with the supported target types, result states, outputs, exit codes, MCP tools, privacy posture, and explicit scope flags (`artifact_binding_performed: false`, `manifest_inspection_performed: false`, `runtime_protocol_inspection_performed: false`, `local_policy_decides: true`) — a truthful, agent-readable description of the tool.
 
 ### Operator modes
 
@@ -254,7 +307,7 @@ Importing the package has **no side effects** — it never runs the CLI and neve
 
 ## MCP stdio server
 
-`0.8.0` ships a read-only MCP server over stdio with **exactly three tools**, all delegating to the same canonical verifier core. No secret or environment variable is required to start it; it writes no truth and exposes no remote transport.
+The package ships a read-only MCP server over stdio with **exactly three tools**, all delegating to the same canonical verifier core. No secret or environment variable is required to start it; it writes no truth and exposes no remote transport. Run `ecz-id-mcp-verifier --print-mcp-config` to emit the block below for your host.
 
 | Tool | Purpose |
 | --- | --- |
@@ -290,7 +343,7 @@ Or via `npx` without a global install:
 }
 ```
 
-This is **local stdio** use. Future discovery via the Official MCP Registry (a separate lane) is not yet published, and Registry discovery is **not** ECZ-ID proof — proof comes only from the public Resolver.
+This is **local stdio** use. The Official MCP Registry is a separate discovery lane, and Registry discovery is **not** ECZ-ID proof — proof comes only from the public Resolver.
 
 ## GitHub Action
 
@@ -352,6 +405,7 @@ And the closing reminders: "Re-check before reliance." and "Local policy decides
 - **Resolver (public proof):** `https://resolver.ecocitizenz.org`
 - **Developer Gateway (docs/integration):** `https://developers.ecocitizenz.com`
 - **TrustOps (operator setup):** `https://trustops.ecocitizenz.com/start`
+- **Canonical machine discovery:** `https://machine.ecocitizenz.org/.well-known/ecz-machine.json` (a read-only pointer for agents and machines; discovery only, never proof)
 
 When setup is required, the verifier routes the operator to TrustOps; it never performs setup itself. When documentation or guidance is required, it routes to the Developer Gateway. The verifier only **GET**s from the Resolver, requires HTTPS, treats any non-2xx as missing proof rather than inventing proof, and never POSTs, PUTs, PATCHes, or DELETEs.
 
@@ -442,10 +496,11 @@ Report suspected vulnerabilities privately via the repository's **GitHub Securit
 
 ## Publication status
 
-- **Published:** npm `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` (live on the public registry) and the GitHub Action `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` (GitHub Actions Marketplace). GitHub Releases `v0.7.0` and `v0.7.1` are cut and immutable.
-- **Candidate:** `0.8.0` (this branch) adds the read-only MCP stdio server and hardening; it is prepared but **not yet published**. After `0.8.0` is published, a plain `npx @ecocitizenz/ecz-id-mcp-verifier …` resolves to it.
-- **Future-release trusted publishing (remaining step):** the npm Trusted Publisher (OIDC) and a protected GitHub `npm-release` environment are configured before any *future* version is published. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
-- Published package versions and Action release tags are **immutable**; the default branch may carry preparation for a future npm release.
+- **Stable channel (npm `latest`):** `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` is live on the public registry; an untagged install resolves to the current stable release.
+- **Candidate channel (npm `next`):** the current pre-release candidate is published under the `@next` dist-tag for early adopters — install it explicitly with `@next`. Candidate and stable are independent channels; promotion to stable is a separate, authorised step.
+- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` on the GitHub Actions Marketplace. GitHub Releases `v0.7.0` and `v0.7.1` are cut and immutable.
+- **Trusted publishing:** releases use npm Trusted Publishing (OIDC) with published provenance, through a protected GitHub `npm-release` environment. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
+- Published package versions and Action release tags are **immutable**.
 
 ## Licence
 

@@ -13,6 +13,12 @@ import { buildEnvelope, type ActionEnvelope } from "./action-envelope.js";
 import { buildMcpActionEnvelope, buildRequestToResolve } from "./result-actions.js";
 import { toHumanReport } from "./human-report.js";
 import {
+  buildCapabilities,
+  buildMcpConfig,
+  runDoctor,
+  toDoctorHuman
+} from "./capabilities.js";
+import {
   computeExitCode,
   EXIT_INTERNAL,
   EXIT_UNSUPPORTED_OR_INVALID
@@ -27,7 +33,8 @@ import {
   TRUSTOPS_START,
   DEVELOPER_GATEWAY,
   VERIFIER_NAME,
-  VERIFIER_VERSION
+  VERIFIER_VERSION,
+  PACKAGE_NAME
 } from "./constants.js";
 
 export interface CliResult {
@@ -63,8 +70,16 @@ Options:
   --timeout-ms <ms>          Network timeout in milliseconds (default: 5000)
   --output <path>            Write primary output to file instead of stdout
   --sarif <path>             Also write a minimal SARIF 2.1.0 file
+  --capabilities             Print the machine-readable capability profile (JSON) and exit
+  --print-mcp-config         Print a ready-to-paste MCP host config (JSON) and exit
+  --doctor                   Run a local self-test (no network, no secret) and exit
   --version                  Print version and exit
   --help                     Print this help and exit
+
+Release channels:
+  Stable:     npx ${PACKAGE_NAME} check --target <value>
+  Candidate:  npx ${PACKAGE_NAME}@next check --target <value>
+  Exact:      npx ${PACKAGE_NAME}@${VERIFIER_VERSION} check --target <value>
 
 Exit codes:
   0  OK / informational / resolver-verifiable / OPEN missing proof
@@ -143,6 +158,21 @@ export async function runCli(argv: string[]): Promise<CliResult> {
       stdout: `${VERIFIER_NAME} v${VERIFIER_VERSION}\n`,
       stderr: ""
     };
+  }
+
+  // Convenience surfaces — deterministic, local, no network, no secret, no
+  // truth-writing. Each prints and exits before any target is required.
+  if (flags.capabilities === true) {
+    return { exit_code: 0, stdout: toJson(buildCapabilities()) + "\n", stderr: "" };
+  }
+  if (flags["print-mcp-config"] === true) {
+    return { exit_code: 0, stdout: toJson(buildMcpConfig()) + "\n", stderr: "" };
+  }
+  if (flags.doctor === true) {
+    const report = await runDoctor();
+    const wantJson = flags.json === true || flags.report !== true;
+    const stdout = wantJson ? toJson(report) + "\n" : toDoctorHuman(report) + "\n";
+    return { exit_code: report.ok ? 0 : EXIT_INTERNAL, stdout, stderr: "" };
   }
 
   const target = strFlag(flags, "target") ?? "";

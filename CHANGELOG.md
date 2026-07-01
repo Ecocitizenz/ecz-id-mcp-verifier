@@ -4,6 +4,48 @@ All notable changes to the ECZ-ID MCP Verifier™ are documented here.
 This project is free-forever under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`); it is **not** open source.
 
+## [0.8.1] — Launch Edition
+
+Adoption and onboarding release. The deterministic Resolver-posture model,
+result states, reason codes, policy modes, privacy boundaries and local-policy
+behaviour are unchanged and fully preserved.
+
+### Added
+- **Timeless release-channel guidance** across the README and examples: use the
+  package name without a tag for the stable release, `@next` for the current
+  candidate, or `@<version>` for exact reproducibility — accurate in every
+  registry state.
+- **`--doctor`** — a local self-test (no network, no secret) that confirms a
+  healthy install: version, CLI aliases, MCP server, offline verify and privacy
+  posture.
+- **`--capabilities`** — a machine-readable capability profile
+  (`ecz-resolver-posture-v1`) describing supported target types, result states,
+  outputs, exit codes, MCP tools, privacy posture and explicit scope flags.
+- **`--print-mcp-config`** — prints a ready-to-paste MCP host configuration.
+- **Canonical machine-discovery pointer** in the public routes
+  (`https://machine.ecocitizenz.org/.well-known/ecz-machine.json`) — read-only
+  discovery, never proof.
+- **Release-state copy gate** (`check:release-state-copy`, part of
+  `release:full`) that keeps public release-channel wording timeless.
+- Common-workflows guide and expanded onboarding for CLI, CI, MCP hosts and the
+  Node library.
+
+### Unchanged
+- Verifier engine, classification, Resolver route/semantics, result states,
+  reason codes, policy modes, exit codes, MCP tool contracts and package/server
+  identity are byte-for-byte preserved. No telemetry; no source/secret/prompt/
+  tool-payload upload.
+
+## [0.8.0] — MCP stdio server
+
+Added a read-only MCP stdio server exposing exactly three tools
+(`ecz_check_target`, `ecz_recheck_resolver`, `ecz_explain_result`), each
+delegating to the same canonical verifier core. Pinned MCP SDK + Zod, added
+`server.json` Registry metadata, a hardened OIDC trusted-publishing workflow with
+published provenance and a CycloneDX SBOM, and a cross-platform installed-package
+proof matrix (Windows/Linux/macOS on Node 22.14 and 24). Published to npm on the
+`next` channel with provenance; `latest` stays on the current stable release.
+
 ## [0.7.1] — GitHub Marketplace metadata-compliance patch
 
 Metadata-only patch so the bundled GitHub Action passes GitHub Marketplace
@@ -24,10 +66,10 @@ bytes are unchanged.
   policy (OPEN/PREFER/REQUIRE), privacy, output, or setup-handoff changes.
 - `v0.7.0` tag/release/npm bytes are immutable and untouched.
 
-## [0.7.0] — Release candidate (unreleased)
+## [0.7.0] — Deterministic CLI and GitHub Action baseline
 
-Release-candidate closure of the deterministic CLI and the bundled GitHub Action.
-Not yet published to npm or the GitHub Action Marketplace.
+Established the deterministic CLI and the bundled GitHub Action as the stable
+baseline for the ECZ-ID Resolver-posture verifier.
 
 ### Changed
 - **Exact ECZ-ID format validation.** A single deterministic parser
@@ -95,5 +137,7 @@ Not yet published to npm or the GitHub Action Marketplace.
 - No source maps, secrets, absolute paths, or internal material in the npm
   tarball. No telemetry. No source/secret/prompt/tool-payload upload.
 
+[0.8.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.1
+[0.8.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.0
 [0.7.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.7.0

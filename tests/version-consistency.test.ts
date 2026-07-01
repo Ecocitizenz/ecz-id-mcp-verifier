@@ -8,7 +8,7 @@ const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 const server = JSON.parse(readFileSync(join(ROOT, "server.json"), "utf8"));
 const lock = JSON.parse(readFileSync(join(ROOT, "package-lock.json"), "utf8"));
 
-const EXPECTED = "0.8.0";
+const EXPECTED = "0.8.1";
 
 describe("version invariants (single source of truth across all surfaces)", () => {
   it("package.json version is the target release version", () => {

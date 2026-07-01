@@ -16,4 +16,5 @@ export * from "./exit-codes.js";
 export * from "./verify.js";
 export * from "./output.js";
 export * from "./human-report.js";
+export * from "./capabilities.js";
 export { runCli, parseArgs, HELP_TEXT } from "./cli.js";

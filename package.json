@@ -1,6 +1,6 @@
 {
   "name": "@ecocitizenz/ecz-id-mcp-verifier",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "mcpName": "io.github.ecocitizenz/ecz-id-mcp-verifier",
   "description": "Check public ECZ-ID Resolver posture from the CLI, CI or an MCP host. Local-first, privacy-first: classifies a target, checks its public ECZ-ID Resolver posture where available, reports, explains and routes. Never inspects artifact contents, writes truth, activates proof, or marks BOUND. Local policy decides.",
   "type": "module",
@@ -43,8 +43,9 @@
     "validate:server-json": "node scripts/validate-server-json.mjs",
     "check:workflow-policy": "node scripts/check-workflow-policy.mjs",
     "check:pack": "node scripts/check-pack-allowlist.mjs",
+    "check:release-state-copy": "node scripts/check-release-state-copy.mjs",
     "release:check": "npm run typecheck && npm run test && npm run build && npm run scan:public",
-    "release:full": "npm run typecheck && npm run test && npm run build && npm run scan:public && npm run scan:secrets && npm run harness:action && npm run proof:mcp-stdio && npm run validate:server-json && npm run proof:cli-bin && npm run check:workflow-policy && npm run check:pack",
+    "release:full": "npm run typecheck && npm run test && npm run build && npm run scan:public && npm run scan:secrets && npm run check:release-state-copy && npm run harness:action && npm run proof:mcp-stdio && npm run validate:server-json && npm run proof:cli-bin && npm run check:workflow-policy && npm run check:pack",
     "pack:inspect": "npm pack --dry-run",
     "prepublishOnly": "npm run release:full"
   },

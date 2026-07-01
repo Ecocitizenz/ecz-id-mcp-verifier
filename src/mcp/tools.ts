@@ -18,12 +18,10 @@ import {
   recheckResolverShape,
   explainResultShape
 } from "./schemas.js";
+import { MCP_TOOL_NAMES } from "../constants.js";
 
-export const TOOL_NAMES = [
-  "ecz_check_target",
-  "ecz_recheck_resolver",
-  "ecz_explain_result"
-] as const;
+// Single source of truth for the three canonical tool names lives in constants.
+export const TOOL_NAMES = MCP_TOOL_NAMES;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
 

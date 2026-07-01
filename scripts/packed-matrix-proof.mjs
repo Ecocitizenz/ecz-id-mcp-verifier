@@ -7,7 +7,10 @@
 // import (no side effects), and the MCP stdio server (initialise / tools-list /
 // call / adversarial / shutdown). Node built-ins only — no repo dependency.
 //
-// Usage: node scripts/packed-matrix-proof.mjs --tarball <abs.tgz> --out <result.json>
+// Usage:
+//   node scripts/packed-matrix-proof.mjs --tarball <abs.tgz> --out <result.json>
+//   node scripts/packed-matrix-proof.mjs --spec <name@version> --out <result.json>   (public registry install)
+// Optional: --expect-version <v> (default 0.8.1).
 
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, createReadStream } from "node:fs";
@@ -19,8 +22,12 @@ function arg(name, def) {
   const i = process.argv.indexOf(name);
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : def;
 }
-const TARBALL = resolve(arg("--tarball", ""));
+const TARBALL_ARG = arg("--tarball", "");
+const SPEC = arg("--spec", "");                 // registry spec, e.g. @ecocitizenz/ecz-id-mcp-verifier@0.8.1
+const TARBALL = TARBALL_ARG ? resolve(TARBALL_ARG) : "";
 const OUT = arg("--out", "");
+const EXPECT_VERSION = arg("--expect-version", "0.8.1");
+const INSTALL_FROM_REGISTRY = SPEC !== "";
 const PKG_NAME = "@ecocitizenz/ecz-id-mcp-verifier";
 const node = process.execPath;
 const isWin = platform() === "win32";
@@ -44,7 +51,7 @@ function run(cmd, args, opts = {}) {
   return { code: r.status, out: r.stdout || "", err: r.stderr || "" };
 }
 
-if (!TARBALL || !existsSync(TARBALL)) { console.error("[packed-matrix] tarball not found: " + TARBALL); process.exit(2); }
+if (!INSTALL_FROM_REGISTRY && (!TARBALL || !existsSync(TARBALL))) { console.error("[packed-matrix] tarball not found: " + TARBALL); process.exit(2); }
 
 const cell = {
   os: platform(),
@@ -53,8 +60,10 @@ const cell = {
   node_version: process.version,
   npm_version: run(npmCmd, ["--version"], { shell: isWin }).out.trim(),
   commit: process.env.ECZ_COMMIT || "",
-  tarball: TARBALL.split(/[\\/]/).pop(),
-  tarball_sha256: sha256(TARBALL)
+  install_source: INSTALL_FROM_REGISTRY ? "public-registry" : "tarball",
+  install_spec: INSTALL_FROM_REGISTRY ? SPEC : (TARBALL.split(/[\\/]/).pop() || ""),
+  expect_version: EXPECT_VERSION,
+  tarball_sha256: INSTALL_FROM_REGISTRY ? "" : sha256(TARBALL)
 };
 console.log("== cell ==", JSON.stringify(cell));
 
@@ -62,12 +71,19 @@ const consumer = mkdtempSync(join(tmpdir(), "ecz-cell-"));
 let installedPkg = "";
 try {
   writeFileSync(join(consumer, "package.json"), JSON.stringify({ name: "ecz-cell-consumer", version: "1.0.0", private: true }) + "\n");
-  console.log("== install tarball ==");
-  const inst = run(npmCmd, ["install", TARBALL, "--no-audit", "--no-fund"], { cwd: consumer, shell: isWin });
-  ok("npm install tarball", inst.code === 0, `exit ${inst.code}`);
+  const installTarget = INSTALL_FROM_REGISTRY ? SPEC : TARBALL;
+  console.log(`== install ${INSTALL_FROM_REGISTRY ? "from public registry" : "tarball"}: ${installTarget} ==`);
+  const inst = run(npmCmd, ["install", installTarget, "--no-audit", "--no-fund"], { cwd: consumer, shell: isWin });
+  ok(`npm install ${INSTALL_FROM_REGISTRY ? "(registry)" : "tarball"}`, inst.code === 0, `exit ${inst.code}`);
+  if (INSTALL_FROM_REGISTRY) {
+    let lock = {}; try { lock = JSON.parse(readFileSync(join(consumer, "package-lock.json"), "utf8")); } catch {}
+    const node_pkg = lock.packages && lock.packages["node_modules/@ecocitizenz/ecz-id-mcp-verifier"];
+    const resolvedUrl = node_pkg && node_pkg.resolved || "";
+    ok("resolved from public npm registry (no file:/link:/git)", /^https:\/\/registry\.npmjs\.org\//.test(resolvedUrl), resolvedUrl.slice(0, 80));
+  }
   installedPkg = join(consumer, "node_modules", "@ecocitizenz", "ecz-id-mcp-verifier");
   const installedPj = existsSync(join(installedPkg, "package.json")) ? JSON.parse(readFileSync(join(installedPkg, "package.json"), "utf8")) : {};
-  ok("installed version 0.8.0", installedPj.version === "0.8.0", `version ${installedPj.version}`);
+  ok(`installed version ${EXPECT_VERSION}`, installedPj.version === EXPECT_VERSION, `version ${installedPj.version}`);
   ok("installed name", installedPj.name === PKG_NAME, installedPj.name);
   ok("three bin declarations", installedPj.bin && installedPj.bin["ecz-id-mcp-verifier"] && installedPj.bin["ecz-mcp-verify"] && installedPj.bin["ecz-id-mcp-server"], JSON.stringify(installedPj.bin));
   ok("no package lifecycle install script", !(installedPj.scripts && (installedPj.scripts.install || installedPj.scripts.preinstall || installedPj.scripts.postinstall)), "scripts.{pre,post,}install absent");
@@ -84,7 +100,7 @@ try {
     const h = callBin(bin, ["--help"]);
     ok(`${label} --help non-empty exit0`, h.code === 0 && h.out.trim().length > 0, `exit ${h.code} bytes ${h.out.length}`);
     const v = callBin(bin, ["--version"]);
-    ok(`${label} --version 0.8.0`, v.code === 0 && /0\.8\.0/.test(v.out), v.out.trim());
+    ok(`${label} --version ${EXPECT_VERSION}`, v.code === 0 && v.out.includes(EXPECT_VERSION), v.out.trim());
   }
 
   // --- offline runtime matrix (via primary bin) ---
@@ -125,6 +141,18 @@ try {
   const jUns = callBin(binPrimary, ["--target", "mailto:x@y.z", "--offline"]);
   ok("unsupported target exit4", jUns.code === 4, `exit ${jUns.code}`);
 
+  // --- convenience accelerators (deterministic, offline, no secret) ---
+  console.log("== accelerators ==");
+  const jDoc = callBin(binPrimary, ["--doctor"]);
+  let docJson = null; try { docJson = JSON.parse(jDoc.out); } catch {}
+  ok("--doctor healthy exit0", jDoc.code === 0 && docJson && docJson.ok === true && docJson.type === "ecz.doctor", `exit ${jDoc.code}`);
+  const jCap = callBin(binPrimary, ["--capabilities"]);
+  let capJson = null; try { capJson = JSON.parse(jCap.out); } catch {}
+  ok("--capabilities profile + version + honest scope", jCap.code === 0 && capJson && capJson.capability_profile === "ecz-resolver-posture-v1" && capJson.version === EXPECT_VERSION && capJson.artifact_binding_performed === false, capJson ? capJson.version : "no-json");
+  const jCfg = callBin(binPrimary, ["--print-mcp-config"]);
+  let cfgJson = null; try { cfgJson = JSON.parse(jCfg.out); } catch {}
+  ok("--print-mcp-config valid stdio block", jCfg.code === 0 && cfgJson && cfgJson.mcpServers && cfgJson.mcpServers["ecz-id"] && cfgJson.mcpServers["ecz-id"].command === "npx", "config");
+
   // --- determinism: repeat offline OPEN, normalise timestamp, compare ---
   console.log("== determinism ==");
   const d1 = callBin(binPrimary, ["--target", "ECZ-GB-A93K7Q", "--policy", "OPEN", "--offline"]);
@@ -151,7 +179,7 @@ try {
   if (!mcpVerdict) { ok("MCP client ran", false, `exit ${mcp.code} err ${mcp.err.slice(0, 200)}`); }
   else {
     ok("MCP server identity name", mcpVerdict.server_name === "ecz-id-mcp-verifier", mcpVerdict.server_name);
-    ok("MCP server version 0.8.0", mcpVerdict.server_version === "0.8.0", mcpVerdict.server_version);
+    ok(`MCP server version ${EXPECT_VERSION}`, mcpVerdict.server_version === EXPECT_VERSION, mcpVerdict.server_version);
     ok("MCP exactly 3 tools", JSON.stringify(mcpVerdict.tools) === JSON.stringify(["ecz_check_target", "ecz_explain_result", "ecz_recheck_resolver"]), (mcpVerdict.tools || []).join(","));
     ok("MCP each tool callable", mcpVerdict.check_ok && mcpVerdict.recheck_ok && mcpVerdict.explain_ok, "3/3");
     ok("MCP invalid inputs rejected + session survives", mcpVerdict.unknown_rejected && mcpVerdict.missing_rejected && mcpVerdict.survives, "adversarial");

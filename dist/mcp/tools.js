@@ -11,11 +11,9 @@ import { REASON_CODES } from "../reason-codes.js";
 import { RESULT_STATES } from "../result-states.js";
 import { OUTPUT_PRIVACY_FIELDS } from "../privacy.js";
 import { checkTargetShape, recheckResolverShape, explainResultShape } from "./schemas.js";
-export const TOOL_NAMES = [
-    "ecz_check_target",
-    "ecz_recheck_resolver",
-    "ecz_explain_result"
-];
+import { MCP_TOOL_NAMES } from "../constants.js";
+// Single source of truth for the three canonical tool names lives in constants.
+export const TOOL_NAMES = MCP_TOOL_NAMES;
 // Wrap any canonical value as the SDK's CallToolResult (single text block).
 // Typing the literal as CallToolResult lets the SDK's content union + optional
 // fields apply, so the three registerTool handlers return a Promise<CallToolResult>.

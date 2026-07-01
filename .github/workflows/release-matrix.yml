@@ -1,9 +1,10 @@
 name: npm-release-matrix
 
-# Phase 4 complete release proof matrix. Read-only. Proves the EXACT 0.8.0
-# candidate tarball as an installed npm package across Windows/Linux/macOS on
-# Node 22.14.0 (declared minimum) and Node 24 (current LTS). One tarball is built
-# once in Job 1 and tested unchanged in all six Job 2 cells.
+# Complete release proof matrix. Read-only. Proves the EXACT candidate tarball as
+# an installed npm package across Windows/Linux/macOS on Node 22.14.0 (declared
+# minimum) and Node 24 (current LTS). One tarball is built once in Job 1 and tested
+# unchanged in all six Job 2 cells, including the convenience accelerators
+# (--doctor / --capabilities / --print-mcp-config).
 #
 # This workflow NEVER publishes npm, NEVER changes dist-tags, NEVER creates a tag
 # or GitHub Release, NEVER publishes to the MCP Registry, and NEVER writes the
@@ -11,7 +12,7 @@ name: npm-release-matrix
 
 on:
   push:
-    branches: [release/npm-0.8.0-hardening]
+    branches: [release/npm-0.8.1-launch]
   workflow_dispatch: {}
 
 permissions:
@@ -129,7 +130,7 @@ jobs:
           TGZ="$(ls _dl/*.tgz | head -1)"
           echo "Testing tarball: $TGZ"
           SAFE="$(echo '${{ matrix.os }}-node${{ matrix.node }}' | tr '/.' '--')"
-          node scripts/packed-matrix-proof.mjs --tarball "$TGZ" --out "matrix-result-$SAFE.json"
+          node scripts/packed-matrix-proof.mjs --tarball "$TGZ" --expect-version "0.8.1" --out "matrix-result-$SAFE.json"
 
       - name: Upload matrix cell result
         if: always()
