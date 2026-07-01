@@ -15,20 +15,29 @@ for normal checks. Local policy decides.
 ## Fastest safe command
 
 ```sh
-npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 check --target ECZ-GB-A93K7Q
+npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q
 ```
 
-## Package and version
+## Package
 
 - npm package: `@ecocitizenz/ecz-id-mcp-verifier`
-- Stable version: `0.8.1`
+- Install with a plain `npm install @ecocitizenz/ecz-id-mcp-verifier` (or `npx`) to use the current release.
 
 ## Helper commands (deterministic, offline, no secret)
 
 ```sh
-npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --doctor            # local self-test
-npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --print-mcp-config  # MCP host config
-npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --capabilities      # machine-readable capabilities
+npx @ecocitizenz/ecz-id-mcp-verifier --doctor            # local self-test
+npx @ecocitizenz/ecz-id-mcp-verifier --print-mcp-config  # MCP host config
+npx @ecocitizenz/ecz-id-mcp-verifier --capabilities      # machine-readable capabilities
+```
+
+## Reproducible version pinning
+
+Pin the exact release only when reproducibility is required:
+
+```sh
+npm install @ecocitizenz/ecz-id-mcp-verifier@0.8.1
+npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --doctor
 ```
 
 ## MCP tools (stdio, read-only)

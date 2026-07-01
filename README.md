@@ -7,12 +7,12 @@ A local-first, privacy-first tool that **classifies** a target, **checks** its p
 ## Quick start
 
 ```sh
-npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q --offline
+npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q
 ```
 
-`check` is an accepted leading subcommand; `--target` does the work. Add `--report` for the human-readable soft report, `--policy REQUIRE` to fail closed when proof is missing, or drop `--offline` to perform the read-only Resolver lookup.
+`check` is an accepted leading subcommand; `--target` does the work. Add `--report` for the human-readable soft report, `--policy REQUIRE` to fail closed when proof is missing, or `--offline` for classification and routing with no network call.
 
-> **First useful result in under a minute:** run the command above, read a real JSON result, and follow the routed next action. No sign-in, no account, no config. See [Release channels](#release-channels) to choose stable, candidate, or an exact version.
+> **First useful result in under a minute:** run the command above, read a real JSON result, and follow the routed next action. No sign-in, no account, no config. Install it with a plain `npm install @ecocitizenz/ecz-id-mcp-verifier`; pin an exact version only when you need reproducibility (see [Reproducible version pinning](#reproducible-version-pinning)).
 
 ### Representative result
 
@@ -64,27 +64,6 @@ Next actions: check a target · add to CI · add to an MCP host · inspect publi
 | A platform reviewer | `--capabilities` and inspect public Resolver posture | An honest, machine-readable statement of scope and limits. |
 | An operator improving your own target | Follow the TrustOps route from the result | Guidance to improve the target's public Resolver posture. |
 | A machine or agent | Read `--capabilities` and the [canonical machine discovery](#public-routes) pointer | Agent-readable capabilities and discovery, never treated as proof. |
-
-## Release channels
-
-Pick a channel by how you reference the package — the wording is the same before, during, and after any release:
-
-```sh
-# Stable (current default release):
-npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q
-
-# Candidate (current pre-release under the next tag):
-npx @ecocitizenz/ecz-id-mcp-verifier@next check --target ECZ-GB-A93K7Q
-
-# Exact (pin a specific version for reproducibility):
-npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 check --target ECZ-GB-A93K7Q
-```
-
-- **No tag** → the current **stable** release (npm `latest`).
-- **`@next`** → the current **candidate** (npm `next` dist-tag), for early adopters.
-- **`@<version>`** → an **exact** version, for reproducible CI and audits.
-
-Promotion of a candidate to stable is a separate, authorised step. `latest` and `next` are independent channels; a plain install always uses `latest`.
 
 ## Supported target shapes
 
@@ -155,17 +134,17 @@ Network is opt-out via `--offline` / `--no-network`. No sign-in is required for 
 
 ## Install
 
-From the public registry (CLI on demand, no install):
-
-```sh
-npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q
-```
-
-Or add it to a project / install globally:
+Install from the public registry (this gives you the current release):
 
 ```sh
 npm install @ecocitizenz/ecz-id-mcp-verifier
-# or: npm install -g @ecocitizenz/ecz-id-mcp-verifier
+# or global: npm install -g @ecocitizenz/ecz-id-mcp-verifier
+```
+
+Or run it on demand without installing:
+
+```sh
+npx @ecocitizenz/ecz-id-mcp-verifier check --target ECZ-GB-A93K7Q
 ```
 
 From source (contributors):
@@ -394,7 +373,7 @@ And the closing reminders: "Re-check before reliance." and "Local policy decides
 
 ## Troubleshooting
 
-- **Command prints nothing / exits 0 silently:** ensure you are on `0.8.0` or later. `0.8.0` introduced a dedicated bin wrapper (`dist/bin/cli.js`); earlier builds could exit silently when run through a symlinked bin.
+- **No output?** Run `npx @ecocitizenz/ecz-id-mcp-verifier --doctor` to confirm a healthy install; every command prints JSON (or a report with `--report`) and returns a deterministic exit code.
 - **`UNSUPPORTED_TARGET` (exit 4):** the target is empty, contains whitespace, or is a malformed ECZ-ID. Quote the target and check the supported-shapes table.
 - **`REQUIRE` exits 1 offline:** expected — `REQUIRE` fails closed when no public proof is confirmed; use `OPEN`/`PREFER` for informational runs, or drop `--offline`.
 - **A non-ECZ-ID target shows `resolver_url: null`:** expected — only ECZ-IDs are resolvable; other shapes are classified and routed, not resolved.
@@ -438,50 +417,50 @@ Only a strictly valid identifier classifies as `ecz_id`, builds a Resolver URL, 
 
 - `CC` is exactly two uppercase letters (operator country/class code).
 - `XXXXXX` and `YYYYYY` are each exactly six uppercase Base36 characters (`0-9A-Z`).
-- `PASSPORT_CODE` is one of the **33 public passport-number codes** below; it may contain hyphens, and the six-character instance suffix is split off the final hyphen. Backend semantic registry keys (e.g. `AGENT_CREDENTIAL`) and obsolete codes are **not** valid public child codes.
+- `PASSPORT_CODE` is one of the **33 public passport-number codes** below; it may contain hyphens, and the six-character instance suffix is split off the final hyphen. Only these public codes are valid; other identifiers and obsolete codes are **not** valid public child codes.
 
 Resolver routes: a parent resolves to `…/p/{parent}`; a child resolves to `…/p/{parent}/{passport_code}/{instance_suffix}`.
 
 <details>
 <summary>Public passport-number codes (33)</summary>
 
-| # | Passport | Public code | Backend key (internal) |
-| --- | --- | --- | --- |
-| 1 | Agent Credential | `AGENT` | `AGENT_CREDENTIAL` |
-| 2 | Cyber Resilience | `CYBER` | `CYBER` |
-| 3 | API Passport | `API` | `API` |
-| 4 | AI Model | `AI` | `AIMODEL` |
-| 5 | Dataset | `DATASET` | `DATASET` |
-| 6 | IoT Device | `IOT` | `IOT` |
-| 7 | Software Supply Chain | `SSCM` | `SOFTWARE_SUPPLY_CHAIN` |
-| 8 | Product | `PRODUCT` | `PRODUCT` |
-| 9 | Custody Transfer | `CUSTODY` | `CUSTODY` |
-| 10 | Risk Policy | `RISKPOL` | `RISK_POLICY` |
-| 11 | Industrial Robot | `ROBOT-IND` | `IROBOT` |
-| 12 | Public-Space Robot | `ROBOT-PUB` | `PROBOT` |
-| 13 | Domestic Robot | `ROBOT-DOM` | `DROBOT` |
-| 14 | Robotaxi | `ROBOTAXI` | `ROBOTAXI` |
-| 15 | Autonomous Car | `AUTO-CAR` | `AUTOCAR` |
-| 16 | Autonomous Haulage Truck | `AUTO-TRUCK` | `AUTOHAUL` |
-| 17 | Cross-Border Haulage Truck | `XHAUL` | `XBRDHAUL` |
-| 18 | High-Value Cargo Truck | `HV-CARGO` | `HVCARGO` |
-| 19 | D1 Drone | `D1-DRONE` | `D1` |
-| 20 | D2 Drone | `D2-DRONE` | `D2` |
-| 21 | D3 Drone | `D3-DRONE` | `D3` |
-| 22 | D4 Drone | `D4-DRONE` | `D4` |
-| 23 | Intermodal Transfer | `INTERMODAL` | `INTERMODAL` |
-| 24 | Industrial Site | `IND-SITE` | `INDUSTRIAL_SITE` |
-| 25 | Critical Infrastructure | `CRITICAL-INFRA` | `CRITICAL_INFRA` |
-| 26 | Financial Authority & Funds Flow | `FUNDS-FLOW` | `FUNDS_FLOW` |
-| 27 | Marine Vessel | `MARINE-VESSEL` | `MARINE_VESSEL` |
-| 28 | Cargo Container | `CARGO-CONTAINER` | `CONTAINER` |
-| 29 | Aircraft | `AIRCRAFT` | `AIRCRAFT` |
-| 30 | Aviation Component | `AVIATION-COMP` | `AVIATION_COMP` |
-| 31 | Platform Safe-Harbour | `SAFE-HARBOUR` | `SAFE_HARBOUR` |
-| 32 | Identity Continuity | `ID-CONTINUITY` | `ID_CONTINUITY` |
-| 33 | Licensed Infrastructure Operator | `LIC-INFRA` | `LICENSED_OPERATOR` |
+| # | Passport | Public code |
+| --- | --- | --- |
+| 1 | Agent Credential | `AGENT` |
+| 2 | Cyber Resilience | `CYBER` |
+| 3 | API Passport | `API` |
+| 4 | AI Model | `AI` |
+| 5 | Dataset | `DATASET` |
+| 6 | IoT Device | `IOT` |
+| 7 | Software Supply Chain | `SSCM` |
+| 8 | Product | `PRODUCT` |
+| 9 | Custody Transfer | `CUSTODY` |
+| 10 | Risk Policy | `RISKPOL` |
+| 11 | Industrial Robot | `ROBOT-IND` |
+| 12 | Public-Space Robot | `ROBOT-PUB` |
+| 13 | Domestic Robot | `ROBOT-DOM` |
+| 14 | Robotaxi | `ROBOTAXI` |
+| 15 | Autonomous Car | `AUTO-CAR` |
+| 16 | Autonomous Haulage Truck | `AUTO-TRUCK` |
+| 17 | Cross-Border Haulage Truck | `XHAUL` |
+| 18 | High-Value Cargo Truck | `HV-CARGO` |
+| 19 | D1 Drone | `D1-DRONE` |
+| 20 | D2 Drone | `D2-DRONE` |
+| 21 | D3 Drone | `D3-DRONE` |
+| 22 | D4 Drone | `D4-DRONE` |
+| 23 | Intermodal Transfer | `INTERMODAL` |
+| 24 | Industrial Site | `IND-SITE` |
+| 25 | Critical Infrastructure | `CRITICAL-INFRA` |
+| 26 | Financial Authority & Funds Flow | `FUNDS-FLOW` |
+| 27 | Marine Vessel | `MARINE-VESSEL` |
+| 28 | Cargo Container | `CARGO-CONTAINER` |
+| 29 | Aircraft | `AIRCRAFT` |
+| 30 | Aviation Component | `AVIATION-COMP` |
+| 31 | Platform Safe-Harbour | `SAFE-HARBOUR` |
+| 32 | Identity Continuity | `ID-CONTINUITY` |
+| 33 | Licensed Infrastructure Operator | `LIC-INFRA` |
 
-The backend-key column is an internal mapping only; those keys are never valid public child codes. Child `machine_json_url` is `null` (no proven child machine endpoint); the parent machine projection `…/api/p/{parent}.json` is read-only.
+Only the public passport names and codes are shown. Child `machine_json_url` is `null` (no proven child machine endpoint); the parent machine projection `…/api/p/{parent}.json` is read-only.
 
 </details>
 
@@ -494,12 +473,20 @@ Report suspected vulnerabilities privately via the repository's **GitHub Securit
 - **Support / issues:** <https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues>
 - **Uninstall:** `npm uninstall -g @ecocitizenz/ecz-id-mcp-verifier` (global) or remove it from your project and delete `node_modules`. For the GitHub Action, remove the `uses:` step. No background services, daemons, or cached credentials are left behind.
 
+## Reproducible version pinning
+
+A plain install uses the current release. Pin the exact release only when reproducibility is required:
+
+```sh
+npm install @ecocitizenz/ecz-id-mcp-verifier@0.8.1
+npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --doctor
+```
+
 ## Publication status
 
-- **Stable channel (npm `latest`):** `@ecocitizenz/ecz-id-mcp-verifier@0.8.1` is live on the public registry; an untagged install resolves to the current stable release.
-- **Candidate channel (npm `next`):** the current pre-release candidate is published under the `@next` dist-tag for early adopters — install it explicitly with `@next`. Candidate and stable are independent channels; promotion to stable is a separate, authorised step.
-- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.8.1` on the GitHub Actions Marketplace. GitHub Releases `v0.7.0`, `v0.7.1` and `v0.8.1` are cut and immutable.
-- **Trusted publishing:** releases use npm Trusted Publishing (OIDC) with published provenance, through a protected GitHub `npm-release` environment. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
+- **npm:** `@ecocitizenz/ecz-id-mcp-verifier` is live on the public registry; a plain `npm install` (or `npx`) uses the current release.
+- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.8.1` on the GitHub Actions Marketplace.
+- **Trusted publishing:** npm releases use protected OIDC trusted publishing with published provenance through a GitHub `npm-release` environment. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
 - Published package versions and Action release tags are **immutable**.
 
 ## Licence
