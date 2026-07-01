@@ -324,6 +324,14 @@ Or via `npx` without a global install:
 
 This is **local stdio** use. The Official MCP Registry is a separate discovery lane, and Registry discovery is **not** ECZ-ID proof — proof comes only from the public Resolver.
 
+### Official MCP Registry (discovery)
+
+Discoverable in the Official MCP Registry as `io.github.Ecocitizenz/ecz-id-mcp-verifier`:
+
+- <https://registry.modelcontextprotocol.io/v0/servers?search=ecz-id-mcp-verifier>
+
+Registry discovery is not ECZ-ID proof. Re-check the public [Resolver](https://resolver.ecocitizenz.org) before reliance.
+
 ## GitHub Action
 
 The repository ships a node20 action that wraps the same CLI.
