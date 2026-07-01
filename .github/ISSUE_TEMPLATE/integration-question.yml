@@ -1,0 +1,40 @@
+name: Integration question
+description: CLI, GitHub Action, or Node library integration question
+title: "[Integration] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For deeper integration guidance, see the [Developer Gateway](https://developers.ecocitizenz.com).
+
+        **Do not include secrets, credentials, private customer data, prompts, tool payloads or private logs.**
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      options:
+        - CLI
+        - GitHub Action / CI
+        - Node library
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or snippet you ran (redact anything sensitive)
+      render: shell
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have not included secrets, credentials, customer data, prompts, tool payloads or private logs.
+          required: true

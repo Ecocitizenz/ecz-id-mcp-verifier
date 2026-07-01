@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security / vulnerability report (private)
+    url: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/security
+    about: Report security concerns privately via the Security tab. Never post secrets or private data publicly.
+  - name: Verify public ECZ-ID Resolver proof
+    url: https://resolver.ecocitizenz.org
+    about: The Resolver is the public proof surface. Re-check before reliance.
+  - name: Operate a target? Improve its Resolver posture (TrustOps)
+    url: https://trustops.ecocitizenz.com/start
+    about: Operator setup and posture improvement.
+  - name: Developer Gateway (integration guidance)
+    url: https://developers.ecocitizenz.com
+    about: Schemas, docs and integration/routing guidance.

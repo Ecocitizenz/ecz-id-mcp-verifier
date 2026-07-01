@@ -47,7 +47,7 @@ Real output for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative
 | Surface | How |
 | --- | --- |
 | **CLI** | `npx @ecocitizenz/ecz-id-mcp-verifier check --target <value>` |
-| **CI / GitHub Action** | `uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` |
+| **CI / GitHub Action** | `uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1` |
 | **MCP host** | run the `ecz-id-mcp-server` stdio binary (three read-only tools) |
 | **Node library** | `import { verify } from "@ecocitizenz/ecz-id-mcp-verifier"` |
 
@@ -362,7 +362,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.7.1
+      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.1
         with:
           target: "ECZ-CC-ABC123"
           target-type: "ecz_id"
@@ -496,9 +496,9 @@ Report suspected vulnerabilities privately via the repository's **GitHub Securit
 
 ## Publication status
 
-- **Stable channel (npm `latest`):** `@ecocitizenz/ecz-id-mcp-verifier@0.7.0` is live on the public registry; an untagged install resolves to the current stable release.
+- **Stable channel (npm `latest`):** `@ecocitizenz/ecz-id-mcp-verifier@0.8.1` is live on the public registry; an untagged install resolves to the current stable release.
 - **Candidate channel (npm `next`):** the current pre-release candidate is published under the `@next` dist-tag for early adopters — install it explicitly with `@next`. Candidate and stable are independent channels; promotion to stable is a separate, authorised step.
-- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1` on the GitHub Actions Marketplace. GitHub Releases `v0.7.0` and `v0.7.1` are cut and immutable.
+- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.8.1` on the GitHub Actions Marketplace. GitHub Releases `v0.7.0`, `v0.7.1` and `v0.8.1` are cut and immutable.
 - **Trusted publishing:** releases use npm Trusted Publishing (OIDC) with published provenance, through a protected GitHub `npm-release` environment. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
 - Published package versions and Action release tags are **immutable**.
 

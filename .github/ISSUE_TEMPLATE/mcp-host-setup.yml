@@ -1,0 +1,44 @@
+name: MCP host setup
+description: Help configuring the ECZ-ID MCP stdio server in an MCP host
+title: "[MCP host] "
+labels: ["mcp", "question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for setting up the ECZ-ID MCP Verifier. Tip: run
+        `npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --print-mcp-config` for a ready-to-paste config.
+
+        **Do not include secrets, credentials, private customer data, prompts, tool payloads or private logs.**
+  - type: input
+    id: host
+    attributes:
+      label: MCP host / client
+      placeholder: e.g. Claude Desktop, an IDE MCP client, a custom agent
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Your mcpServers config (redact anything sensitive)
+      render: json
+      placeholder: |
+        { "mcpServers": { "ecz-id": { "command": "npx", "args": ["-y","-p","@ecocitizenz/ecz-id-mcp-verifier","ecz-id-mcp-server"] } } }
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens / expected behaviour
+    validations:
+      required: true
+  - type: input
+    id: doctor
+    attributes:
+      label: Output of `npx @ecocitizenz/ecz-id-mcp-verifier@0.8.1 --doctor`
+      placeholder: paste the ok/checks summary (no secrets)
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have not included secrets, credentials, customer data, prompts, tool payloads or private logs.
+          required: true

@@ -55,7 +55,7 @@ describe("copy guardrails: README", () => {
 
   it("documents a GitHub Action usage example with target and policy", () => {
     // v0.7.1 README pins the immutable tag with canonical owner casing
-    // (Ecocitizenz/ecz-id-mcp-verifier@v0.7.1); match case-insensitively.
+    // (Ecocitizenz/ecz-id-mcp-verifier@v0.8.1); match case-insensitively.
     expect(readme).toMatch(/uses:\s*ecocitizenz\/ecz-id-mcp-verifier/i);
     expect(readme).toMatch(/^\s*target:/m);
     expect(readme).toMatch(/^\s*policy:/m);
@@ -76,8 +76,8 @@ describe("copy guardrails: README", () => {
     expect(readme).toMatch(/not\b[^.]*open source/i);
     // README now asserts the published posture (the obsolete readiness heading was removed).
     expect(readme).toContain("## Publication status");
-    expect(readme).toContain("@ecocitizenz/ecz-id-mcp-verifier@0.7.0");
-    expect(readme).toContain("Ecocitizenz/ecz-id-mcp-verifier@v0.7.1");
+    expect(readme).toContain("@ecocitizenz/ecz-id-mcp-verifier@0.8.1");
+    expect(readme).toContain("Ecocitizenz/ecz-id-mcp-verifier@v0.8.1");
     expect(readme).toMatch(
       /Published package versions and Action release tags are[\s\S]{0,40}\*\*immutable\*\*/i
     );
