@@ -22,6 +22,12 @@ Verifier(TM) CLI and GitHub Action.
   - illustrative JSON output for a resolver-verifiable target (mock).
 - [action-envelope-output.json](action-envelope-output.json) -
   illustrative Action Envelope (routing metadata only).
+- [python-tulip-admission-gate/](python-tulip-admission-gate/) - a real,
+  worked example of a *local policy*: consumes the real public Resolver
+  posture (not a placeholder target) as one input into a real
+  [tulip-agents](https://tulipagents.ai) `admit()` decision, gating
+  whether an agent may connect to and be granted tools from an MCP
+  server. `tulip-agents` is a dependency of this one example only.
 
 ## Privacy posture
 
