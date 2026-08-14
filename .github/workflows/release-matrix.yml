@@ -30,7 +30,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout (no credentials persisted)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -106,7 +106,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout (harness only, no credentials persisted)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 

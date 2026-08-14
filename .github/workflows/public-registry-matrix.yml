@@ -34,7 +34,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout harness (no credentials persisted)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Set up Node.js 24
@@ -92,7 +92,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout harness only (no credentials persisted)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Set up Node.js ${{ matrix.node }}

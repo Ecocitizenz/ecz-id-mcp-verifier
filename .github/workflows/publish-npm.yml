@@ -84,7 +84,7 @@ jobs:
           echo "release_commit OK: $COMMIT"
 
       - name: Checkout exact release commit (clean, no persisted credentials)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.release_commit }}
           persist-credentials: false

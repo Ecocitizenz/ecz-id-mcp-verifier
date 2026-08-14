@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (read-only, to prove no source mutation)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: OPEN (valid parent, offline)
         id: open
