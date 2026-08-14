@@ -1,4 +1,4 @@
-# ECZ-ID MCP Verifier(TM)
+﻿# ECZ-ID MCP Verifier(TM)
 
 **Check public ECZ-ID Resolver posture from the CLI, CI or an MCP host. No sign-in, source upload or telemetry. Local policy decides.**
 
@@ -47,7 +47,7 @@ Real output for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative
 | Surface | How |
 | --- | --- |
 | **CLI** | `npx @ecocitizenz/ecz-id-mcp-verifier check --target <value>` |
-| **CI / GitHub Action** | `uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.2` |
+| **CI / GitHub Action** | `uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.3` |
 | **MCP host** | run the `ecz-id-mcp-server` stdio binary (three read-only tools) |
 | **Node library** | `import { verify } from "@ecocitizenz/ecz-id-mcp-verifier"` |
 
@@ -349,7 +349,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.2
+      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.3
         with:
           target: "ECZ-CC-ABC123"
           target-type: "ecz_id"
@@ -493,7 +493,7 @@ npx @ecocitizenz/ecz-id-mcp-verifier@0.8.2 --doctor
 ## Publication status
 
 - **npm:** `@ecocitizenz/ecz-id-mcp-verifier` is live on the public registry; a plain `npm install` (or `npx`) uses the current release.
-- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.8.2` on the GitHub Actions Marketplace.
+- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.8.3` on the GitHub Actions Marketplace.
 - **Trusted publishing:** npm releases use protected OIDC trusted publishing with published provenance through a GitHub `npm-release` environment. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
 - Published package versions and Action release tags are **immutable**.
 
