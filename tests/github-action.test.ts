@@ -35,8 +35,8 @@ describe("GitHub Action", () => {
       expect(action).toMatch(new RegExp(`^\\s{2}${k}:`, "m"));
     }
   });
-  it("uses node20 runtime and the dist/action.js adapter entrypoint", () => {
-    expect(action).toMatch(/using:\s*["']?node20["']?/);
+  it("uses node24 runtime and the dist/action.js adapter entrypoint", () => {
+    expect(action).toMatch(/using:\s*["']?node24["']?/);
     expect(action).toMatch(/main:\s*["']dist\/action\.js["']/);
     // Must NOT run the CLI directly: it parses argv, not INPUT_* env vars.
     expect(action).not.toMatch(/main:\s*["']dist\/cli\.js["']/);

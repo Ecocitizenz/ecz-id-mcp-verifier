@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 # Safe, read-only continuous integration. No publish, no deploy, no repo writes.
 on:
