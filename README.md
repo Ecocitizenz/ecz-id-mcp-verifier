@@ -334,7 +334,7 @@ Registry discovery is not ECZ-ID proof. Re-check the public [Resolver](https://r
 
 ## GitHub Action
 
-The repository ships a node20 action that wraps the same CLI.
+The repository ships a node24 action that wraps the same CLI.
 
 ```yaml
 name: ECZ-ID MCP Verifier
