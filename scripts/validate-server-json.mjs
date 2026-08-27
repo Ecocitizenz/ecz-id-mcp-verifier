@@ -96,11 +96,43 @@ if (typeof schemaUrl !== "string" || !/^https:\/\//.test(schemaUrl)) {
   fail(`server.json $schema is not an https URL: ${String(schemaUrl)}`);
 } else {
   try {
-    const res = await fetch(schemaUrl, { redirect: "follow" });
-    if (!res.ok) {
+    // Bounded retry with backoff. The gate stays FAIL-CLOSED — an unfetchable
+    // schema is still a failure — but a single transient network blip must not
+    // fail a release chain, and CI runs this on every OS/Node cell, multiplying
+    // the chance of a spurious red. Only transport errors and 5xx/429 are
+    // retried; a 404 (a genuinely wrong or stale $schema URL) fails at once.
+    const ATTEMPTS = 3;
+    let res = null;
+    let lastErr = null;
+    let used = 0;
+    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+      used = attempt;
+      try {
+        res = await fetch(schemaUrl, {
+          redirect: "follow",
+          signal: AbortSignal.timeout(15_000)
+        });
+        if (res.ok) break;
+        const retryable = res.status >= 500 || res.status === 429;
+        if (!retryable || attempt === ATTEMPTS) break;
+        lastErr = `HTTP ${res.status}`;
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e);
+        res = null;
+        if (attempt === ATTEMPTS) throw e;
+      }
+      const backoffMs = 500 * 2 ** (attempt - 1);
+      process.stderr.write(
+        `  retry ${attempt}/${ATTEMPTS - 1}: schema fetch failed (${lastErr}); waiting ${backoffMs}ms\n`
+      );
+      await new Promise((r) => setTimeout(r, backoffMs));
+    }
+
+    if (!res || !res.ok) {
       fail(
-        `could not fetch official schema (HTTP ${res.status}) at ${schemaUrl} — ` +
-          `set server.json $schema to the CURRENT official server.schema.json URL`
+        `could not fetch official schema (${res ? `HTTP ${res.status}` : lastErr}) at ${schemaUrl} ` +
+          `after ${used} attempt(s) — set server.json $schema to the CURRENT official ` +
+          `server.schema.json URL, or investigate network egress`
       );
     } else {
       const schema = await res.json();
