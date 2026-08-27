@@ -22,7 +22,7 @@ Real output for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative
 {
   "schema_version": 1,
   "verifier": "ECZ-ID MCP Verifier",
-  "verifier_version": "0.8.2",
+  "verifier_version": "0.9.0",
   "target": "ECZ-GB-A93K7Q",
   "target_type": "ecz_id",
   "policy_mode": "OPEN",

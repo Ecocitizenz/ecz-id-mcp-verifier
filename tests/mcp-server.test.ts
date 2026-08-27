@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { VERIFIER_VERSION } from "../src/constants.js";
 import {
   TOOL_NAMES,
   runCheckTarget,
@@ -28,7 +29,7 @@ describe("ecz_check_target returns the canonical contract verbatim", () => {
     expect(typeof out.result_state).toBe("string");
     expect(Array.isArray(out.reason_codes)).toBe(true);
     expect(out.verifier).toBe("ECZ-ID MCP Verifier");
-    expect(out.verifier_version).toBe("0.8.2");
+    expect(out.verifier_version).toBe(VERIFIER_VERSION);
     expect(out.schema_version).toBe(1);
     expect(out.verifier_writes_truth).toBe(false);
     expect(out.verifier_activates_proof).toBe(false);

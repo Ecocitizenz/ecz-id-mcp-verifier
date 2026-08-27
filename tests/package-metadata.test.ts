@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { VERIFIER_VERSION } from "../src/constants.js";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -41,7 +42,9 @@ describe("package metadata: intentionally publishable (release candidate)", () =
 
   it("keeps the canonical package name and version", () => {
     expect(pkg.name).toBe("@ecocitizenz/ecz-id-mcp-verifier");
-    expect(pkg.version).toBe("0.8.2");
+    // The release version is pinned in ONE place (version-consistency.test.ts).
+    // Here we only assert package.json agrees with the shipped runtime constant.
+    expect(pkg.version).toBe(VERIFIER_VERSION);
   });
 
   it("references the proprietary licence file (no invented SPDX id)", () => {

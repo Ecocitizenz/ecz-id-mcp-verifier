@@ -4,6 +4,64 @@ All notable changes to the ECZ-ID MCP Verifier™ are documented here.
 This project is free-forever under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`); it is **not** open source.
 
+## [0.9.0] — MCP 2026-07-28 Edition
+
+The MCP implementation moves from the monolithic `@modelcontextprotocol/sdk` v1
+line to the official SDK v2 packages, and MCP protocol revision `2026-07-28` is
+adopted explicitly.
+
+### Protocol
+
+- **MCP `2026-07-28` supported.** Previously a client requesting `2026-07-28` was
+  silently downgraded to `2025-11-25` with no error or warning. It is now served
+  at `2026-07-28`.
+- **Dual-era by design.** A modern opening (per-request `_meta`, no handshake) is
+  served statelessly at `2026-07-28`; an `initialize` opening is served at the
+  negotiated 2025-era revision exactly as before. All five previously supported
+  legacy revisions — `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05`,
+  `2024-10-07` — are retained.
+- **`server/discover` implemented**, as the revision requires of servers.
+- **Unsupported and malformed protocol revisions are now refused** with
+  `-32022 UnsupportedProtocolVersion`, naming the versions the server supports,
+  instead of being silently downgraded.
+- **`resultType`** on modern results.
+- **Cache hints** (`ttlMs` / `cacheScope`) on the two cacheable operations,
+  `server/discover` and `tools/list`, and on nothing else. Tool results are not
+  cacheable under the revision and carry no cache fields.
+
+### Tools
+
+- **`outputSchema` and `structuredContent`** on all three tools. The serialised
+  JSON text block is retained for backwards compatibility; there is one canonical
+  internal result object rendered twice, and the release gate asserts the two are
+  byte-identical.
+- The read-only boundary (`verifier_writes_truth`, `verifier_activates_proof`,
+  `verifier_marks_bound`) is now expressed as `const` constraints in the
+  **published** output schema, so a client can see it from `tools/list` alone.
+
+### Dependencies
+
+- `@modelcontextprotocol/sdk` `1.29.0` → `@modelcontextprotocol/server` `^2.0.0`.
+- `@modelcontextprotocol/client` `^2.0.0` added as a **dev** dependency (used only
+  by proof scripts, which are not packaged).
+- `zod` `3.25.76` → `^4.2.0`, required by SDK v2. Tool input schemas consequently
+  emit JSON Schema 2020-12 rather than draft-07; both are valid under the
+  specification.
+
+### Unchanged
+
+The three tool names, 18 ResultStates, 31 ReasonCodes, `OPEN`/`PREFER`/`REQUIRE`
+policy modes, Resolver GET-only access, `offline` zero-egress, stderr-only
+diagnostics, and the absence of resources, prompts, sampling, roots, logging and
+elicitation. A golden semantic suite covering every lifecycle state is
+byte-identical before and after the migration.
+
+### Release gates added
+
+- `proof:wire-matrix` — dual-era wire conformance against the built server.
+- `proof:golden` — golden semantic regression.
+- Bounded retry on the live official-schema fetch in `validate:server-json`.
+
 ## [0.8.2] — Official Registry Edition
 
 Canonical GitHub namespace alignment for Official MCP Registry discovery, with
@@ -160,6 +218,7 @@ baseline for the ECZ-ID Resolver-posture verifier.
 - No source maps, secrets, absolute paths, or internal material in the npm
   tarball. No telemetry. No source/secret/prompt/tool-payload upload.
 
+[0.9.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.9.0
 [0.8.2]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.1
 [0.8.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.0
