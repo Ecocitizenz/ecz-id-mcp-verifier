@@ -10,15 +10,26 @@ import { computeExitCode } from "../exit-codes.js";
 import { REASON_CODES } from "../reason-codes.js";
 import { RESULT_STATES } from "../result-states.js";
 import { OUTPUT_PRIVACY_FIELDS } from "../privacy.js";
-import { checkTargetShape, recheckResolverShape, explainResultShape } from "./schemas.js";
+import { checkTargetShape, recheckResolverShape, explainResultShape, checkTargetOutputSchema, recheckResolverOutputSchema, explainResultOutputSchema } from "./schemas.js";
+import { z } from "zod";
 import { MCP_TOOL_NAMES } from "../constants.js";
 // Single source of truth for the three canonical tool names lives in constants.
 export const TOOL_NAMES = MCP_TOOL_NAMES;
-// Wrap any canonical value as the SDK's CallToolResult (single text block).
-// Typing the literal as CallToolResult lets the SDK's content union + optional
-// fields apply, so the three registerTool handlers return a Promise<CallToolResult>.
-function asText(value) {
-    return { content: [{ type: "text", text: toJson(value) }] };
+// Render the ONE canonical result object twice: as `structuredContent` (MCP
+// 2026-07-28 / 2025-06-18+) and as the serialised JSON text block the
+// specification asks servers to keep for backwards compatibility. There is no
+// second source of truth — both views are the same object, so they cannot
+// disagree. Legacy-era clients that ignore `structuredContent` see exactly the
+// text they saw before.
+function asResult(value) {
+    return {
+        content: [{ type: "text", text: toJson(value) }],
+        // Every caller passes one of the three canonical result interfaces. They are
+        // plain JSON object literals with no index signature, so the widening below
+        // is a typing formality, not a loss of safety: the SDK independently
+        // validates this value against the declared outputSchema on every call.
+        structuredContent: value
+    };
 }
 export async function runCheckTarget(args) {
     const result = await verify({
@@ -150,34 +161,37 @@ export function registerTools(server) {
     server.registerTool("ecz_check_target", {
         title: "Check a target's public ECZ-ID posture",
         description: "Read-only. Returns the canonical ECZ-ID verifier result contract for a target (result_state, reason_codes, routing, and read-only boundary flags). Does not write truth, activate proof, mark BOUND, or decide global allow/deny. Local policy decides.",
-        inputSchema: checkTargetShape,
+        inputSchema: z.object(checkTargetShape),
+        outputSchema: checkTargetOutputSchema,
         annotations: {
             readOnlyHint: true,
             openWorldHint: true,
             destructiveHint: false,
             idempotentHint: true
         }
-    }, async (args) => asText(await runCheckTarget(args)));
+    }, async (args) => asResult(await runCheckTarget(args)));
     server.registerTool("ecz_recheck_resolver", {
         title: "Re-check the public Resolver",
         description: "Read-only public Resolver re-check using the canonical Resolver client (GET only). Returns the current public proof projection with recheck_before_reliance. Never writes truth or activates proof.",
-        inputSchema: recheckResolverShape,
+        inputSchema: z.object(recheckResolverShape),
+        outputSchema: recheckResolverOutputSchema,
         annotations: {
             readOnlyHint: true,
             openWorldHint: true,
             destructiveHint: false,
             idempotentHint: true
         }
-    }, async (args) => asText(await runRecheckResolver(args)));
+    }, async (args) => asResult(await runRecheckResolver(args)));
     server.registerTool("ecz_explain_result", {
         title: "Explain canonical result_state and reason_codes",
         description: "Read-only. Returns public-safe explanations for existing canonical result_state and reason_codes. Invents no new states or codes and emits no global allow/deny decision.",
-        inputSchema: explainResultShape,
+        inputSchema: z.object(explainResultShape),
+        outputSchema: explainResultOutputSchema,
         annotations: {
             readOnlyHint: true,
             openWorldHint: false,
             destructiveHint: false,
             idempotentHint: true
         }
-    }, async (args) => asText(runExplainResult(args)));
+    }, async (args) => asResult(runExplainResult(args)));
 }

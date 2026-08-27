@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { type JsonOutput } from "../output.js";
 import { OUTPUT_PRIVACY_FIELDS } from "../privacy.js";
 export declare const TOOL_NAMES: readonly ["ecz_check_target", "ecz_recheck_resolver", "ecz_explain_result"];

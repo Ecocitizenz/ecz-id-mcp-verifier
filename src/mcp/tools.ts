@@ -5,8 +5,7 @@
 // or emits background reporting. External content (target strings, Resolver
 // responses, error text) is treated as data, never as instructions.
 
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { McpServer, CallToolResult } from "@modelcontextprotocol/server";
 import { verify } from "../verify.js";
 import { buildJsonOutput, toJson, type JsonOutput } from "../output.js";
 import { computeExitCode } from "../exit-codes.js";
@@ -16,8 +15,12 @@ import { OUTPUT_PRIVACY_FIELDS } from "../privacy.js";
 import {
   checkTargetShape,
   recheckResolverShape,
-  explainResultShape
+  explainResultShape,
+  checkTargetOutputSchema,
+  recheckResolverOutputSchema,
+  explainResultOutputSchema
 } from "./schemas.js";
+import { z } from "zod";
 import { MCP_TOOL_NAMES } from "../constants.js";
 
 // Single source of truth for the three canonical tool names lives in constants.
@@ -25,11 +28,21 @@ export const TOOL_NAMES = MCP_TOOL_NAMES;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
 
-// Wrap any canonical value as the SDK's CallToolResult (single text block).
-// Typing the literal as CallToolResult lets the SDK's content union + optional
-// fields apply, so the three registerTool handlers return a Promise<CallToolResult>.
-function asText(value: unknown): CallToolResult {
-  return { content: [{ type: "text", text: toJson(value) }] };
+// Render the ONE canonical result object twice: as `structuredContent` (MCP
+// 2026-07-28 / 2025-06-18+) and as the serialised JSON text block the
+// specification asks servers to keep for backwards compatibility. There is no
+// second source of truth — both views are the same object, so they cannot
+// disagree. Legacy-era clients that ignore `structuredContent` see exactly the
+// text they saw before.
+function asResult(value: object): CallToolResult {
+  return {
+    content: [{ type: "text", text: toJson(value) }],
+    // Every caller passes one of the three canonical result interfaces. They are
+    // plain JSON object literals with no index signature, so the widening below
+    // is a typing formality, not a loss of safety: the SDK independently
+    // validates this value against the declared outputSchema on every call.
+    structuredContent: value as Record<string, unknown>
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +259,8 @@ export function registerTools(server: McpServer): void {
       title: "Check a target's public ECZ-ID posture",
       description:
         "Read-only. Returns the canonical ECZ-ID verifier result contract for a target (result_state, reason_codes, routing, and read-only boundary flags). Does not write truth, activate proof, mark BOUND, or decide global allow/deny. Local policy decides.",
-      inputSchema: checkTargetShape,
+      inputSchema: z.object(checkTargetShape),
+      outputSchema: checkTargetOutputSchema,
       annotations: {
         readOnlyHint: true,
         openWorldHint: true,
@@ -254,7 +268,7 @@ export function registerTools(server: McpServer): void {
         idempotentHint: true
       }
     },
-    async (args) => asText(await runCheckTarget(args as CheckTargetArgs))
+    async (args) => asResult(await runCheckTarget(args as CheckTargetArgs))
   );
 
   server.registerTool(
@@ -263,7 +277,8 @@ export function registerTools(server: McpServer): void {
       title: "Re-check the public Resolver",
       description:
         "Read-only public Resolver re-check using the canonical Resolver client (GET only). Returns the current public proof projection with recheck_before_reliance. Never writes truth or activates proof.",
-      inputSchema: recheckResolverShape,
+      inputSchema: z.object(recheckResolverShape),
+      outputSchema: recheckResolverOutputSchema,
       annotations: {
         readOnlyHint: true,
         openWorldHint: true,
@@ -271,7 +286,7 @@ export function registerTools(server: McpServer): void {
         idempotentHint: true
       }
     },
-    async (args) => asText(await runRecheckResolver(args as RecheckResolverArgs))
+    async (args) => asResult(await runRecheckResolver(args as RecheckResolverArgs))
   );
 
   server.registerTool(
@@ -280,7 +295,8 @@ export function registerTools(server: McpServer): void {
       title: "Explain canonical result_state and reason_codes",
       description:
         "Read-only. Returns public-safe explanations for existing canonical result_state and reason_codes. Invents no new states or codes and emits no global allow/deny decision.",
-      inputSchema: explainResultShape,
+      inputSchema: z.object(explainResultShape),
+      outputSchema: explainResultOutputSchema,
       annotations: {
         readOnlyHint: true,
         openWorldHint: false,
@@ -288,6 +304,6 @@ export function registerTools(server: McpServer): void {
         idempotentHint: true
       }
     },
-    async (args) => asText(runExplainResult(args as ExplainResultArgs))
+    async (args) => asResult(runExplainResult(args as ExplainResultArgs))
   );
 }

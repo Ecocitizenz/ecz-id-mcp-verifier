@@ -20,3 +20,6 @@ docs/flywheel/
 
 # npm pack artifacts (release evidence; preserved locally, not committed)
 *.tgz
+
+# Golden-suite output (evidence artefact, regenerated on demand)
+golden.json

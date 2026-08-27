@@ -45,9 +45,11 @@
     "check:pack": "node scripts/check-pack-allowlist.mjs",
     "check:release-state-copy": "node scripts/check-release-state-copy.mjs",
     "release:check": "npm run typecheck && npm run test && npm run build && npm run scan:public",
-    "release:full": "npm run typecheck && npm run test && npm run build && npm run scan:public && npm run scan:secrets && npm run check:release-state-copy && npm run harness:action && npm run proof:mcp-stdio && npm run validate:server-json && npm run proof:cli-bin && npm run check:workflow-policy && npm run check:pack",
+    "release:full": "npm run typecheck && npm run test && npm run build && npm run scan:public && npm run scan:secrets && npm run check:release-state-copy && npm run harness:action && npm run proof:mcp-stdio && npm run proof:wire-matrix && npm run proof:golden && npm run validate:server-json && npm run proof:cli-bin && npm run check:workflow-policy && npm run check:pack",
     "pack:inspect": "npm pack --dry-run",
-    "prepublishOnly": "npm run release:full"
+    "prepublishOnly": "npm run release:full",
+    "proof:wire-matrix": "node scripts/mcp-wire-matrix.mjs",
+    "proof:golden": "node scripts/golden-suite.mjs"
   },
   "keywords": [
     "ecz-id",
@@ -81,15 +83,16 @@
     "url": "https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
-    "zod": "3.25.76"
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "vitest": "^2.0.5",
+    "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^20.14.0",
     "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1"
+    "ajv-formats": "^3.0.1",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
   },
   "engines": {
     "node": ">=22.14.0"

@@ -35,3 +35,43 @@ export const MCP_TOOL_NAMES = [
     "ecz_recheck_resolver",
     "ecz_explain_result"
 ];
+// ---------------------------------------------------------------------------
+// MCP protocol revisions.
+//
+// The SDK's own default list is LEGACY-only, so 2026-07-28 is never put on the
+// wire unless it is declared here explicitly. Support is deliberately DUAL-ERA:
+// the modern revision first, then every legacy revision we choose to keep
+// serving. Dropping the legacy entries would make the server modern-only and
+// break the 2025-era hosts that use it today.
+// ---------------------------------------------------------------------------
+/** The MODERN revision this server implements (per-request `_meta`, stateless). */
+export const MCP_MODERN_PROTOCOL_VERSION = "2026-07-28";
+/** LEGACY (`initialize`-handshake) revisions deliberately retained. */
+export const MCP_LEGACY_PROTOCOL_VERSIONS = [
+    "2025-11-25",
+    "2025-06-18",
+    "2025-03-26",
+    "2024-11-05",
+    "2024-10-07"
+];
+/** Every revision this server accepts, newest first. Declared to the SDK. */
+export const MCP_SUPPORTED_PROTOCOL_VERSIONS = [
+    MCP_MODERN_PROTOCOL_VERSION,
+    ...MCP_LEGACY_PROTOCOL_VERSIONS
+];
+// ---------------------------------------------------------------------------
+// Cache policy for 2026-07-28 CacheableResult operations.
+//
+// The revision REQUIRES ttlMs (>= 0) and cacheScope on `server/discover` and
+// `tools/list`. The SDK default (ttlMs 0, private) is already protocol-correct;
+// the values below are a DELIBERATE choice, justified because both results are
+// byte-identical for every caller:
+//   - the tool catalogue is a fixed, compile-time set of three tools;
+//   - `server/discover` returns only static identity, capabilities and versions.
+// Neither depends on the caller, on authorization, or on any Resolver lookup,
+// so `public` cannot leak caller-specific data. Tool RESULTS are not cacheable
+// under the revision and never receive cache fields.
+// ---------------------------------------------------------------------------
+export const MCP_DISCOVER_TTL_MS = 3_600_000;
+export const MCP_TOOLS_LIST_TTL_MS = 300_000;
+export const MCP_CACHE_SCOPE = "public";
