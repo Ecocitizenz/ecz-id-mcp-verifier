@@ -124,6 +124,27 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      # The release publisher pins an exact tarball SHA-256, so which build
+      # environment produced the artefact is a release-relevant fact, not a
+      # curiosity. Emit the tarball itself from every cell so the archives can
+      # be compared forensically rather than by checksum alone.
+      - name: Produce the tarball for forensic comparison
+        shell: bash
+        run: |
+          mkdir -p tgz-out
+          npm pack --pack-destination tgz-out
+          ls -l tgz-out
+          node -e "const c=require('crypto'),f=require('fs'),p=require('path');const d='tgz-out';for(const n of f.readdirSync(d)){console.log(c.createHash('sha256').update(f.readFileSync(p.join(d,n))).digest('hex'),n);}"
+
+      - name: Upload tarball
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tarball-${{ matrix.os }}-node${{ matrix.node }}
+          path: tgz-out/*.tgz
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Cell summary
         if: always()
         shell: bash
