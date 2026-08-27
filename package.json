@@ -50,7 +50,8 @@
     "prepublishOnly": "npm run release:full",
     "proof:wire-matrix": "node scripts/mcp-wire-matrix.mjs",
     "proof:golden": "node scripts/golden-suite.mjs",
-    "proof:privacy": "node scripts/privacy-proof.mjs"
+    "proof:privacy": "node scripts/privacy-proof.mjs",
+    "proof:packed": "node scripts/packed-artifact-proof.mjs"
   },
   "keywords": [
     "ecz-id",

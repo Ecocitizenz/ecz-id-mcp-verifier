@@ -23,3 +23,6 @@ docs/flywheel/
 
 # Golden-suite output (evidence artefact, regenerated on demand)
 golden.json
+
+# Packed-artefact proof output (CI evidence artefact)
+packed-artifact-*.json

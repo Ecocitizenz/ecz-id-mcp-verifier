@@ -107,6 +107,23 @@ jobs:
       - name: Inspect package contents (dry-run, no publish)
         run: npm run pack:inspect
 
+      # The source tree passing is not sufficient. This packs the tree, installs
+      # the tarball into a fresh project outside the checkout, installs the
+      # OFFICIAL MCP client independently, and drives both protocol rails
+      # through it — so the evidence is about the artefact a consumer receives,
+      # proven by a client we did not write.
+      - name: Packed-artefact + independent official-client proof
+        run: npm run proof:packed -- --out packed-artifact-${{ matrix.os }}-node${{ matrix.node }}.json
+
+      - name: Upload packed-artefact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packed-artifact-${{ matrix.os }}-node${{ matrix.node }}
+          path: packed-artifact-*.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Cell summary
         if: always()
         shell: bash
