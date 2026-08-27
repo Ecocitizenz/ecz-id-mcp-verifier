@@ -1,0 +1,27 @@
+# Normalise line endings so the packed artefact is byte-identical on every build
+# platform.
+#
+# Why this exists: the release publisher pins an exact tarball SHA-256. Without
+# this file, a checkout on a runner with core.autocrlf=true (the Git for Windows
+# default, and the GitHub windows-latest default) converts LF to CRLF, and
+# `npm pack` then packs those CRLF bytes. The same commit produced two different
+# tarballs — 245 bytes apart across 15 text files, every byte of it a carriage
+# return.
+#
+# `eol=lf` forces LF in the working tree on every platform, so the artefact a
+# consumer receives does not depend on which machine built it.
+
+# Everything text-like is normalised to LF in the repository and the worktree.
+* text=auto eol=lf
+
+# Explicitly binary: never touched, never diffed as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.tgz binary
+*.vsix binary
