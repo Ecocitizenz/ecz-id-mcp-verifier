@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thanks for setting up the ECZ-ID MCP Verifier. Tip: run
-        `npx @ecocitizenz/ecz-id-mcp-verifier@0.8.2 --print-mcp-config` for a ready-to-paste config.
+        `npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --print-mcp-config` for a ready-to-paste config.
 
         **Do not include secrets, credentials, private customer data, prompts, tool payloads or private logs.**
   - type: input
@@ -33,7 +33,7 @@ body:
   - type: input
     id: doctor
     attributes:
-      label: Output of `npx @ecocitizenz/ecz-id-mcp-verifier@0.8.2 --doctor`
+      label: Output of `npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --doctor`
       placeholder: paste the ok/checks summary (no secrets)
   - type: checkboxes
     id: safety

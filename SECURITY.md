@@ -4,9 +4,9 @@
 
 | Version | Supported |
 |---|---|
-| 0.8.2 | ✅ |
+| 0.9.0 | ✅ |
 
-The current supported release is `0.8.2` (npm `latest`).
+The current supported release is `0.9.0` (npm `latest`).
 
 ## Reporting a vulnerability
 
