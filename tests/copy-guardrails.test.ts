@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { UNRESOLVED_PROOF_COPY, operateRouteLine } from "../src/copy.js";
 
+/** The one version this release ships; every public pin in README must match it. */
+const PKG_VERSION: string = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+).version;
+
 const ROOT = resolve(__dirname, "..");
 const readme = readFileSync(join(ROOT, "README.md"), "utf8");
 
@@ -55,7 +60,7 @@ describe("copy guardrails: README", () => {
 
   it("documents a GitHub Action usage example with target and policy", () => {
     // v0.7.1 README pins the immutable tag with canonical owner casing
-    // (Ecocitizenz/ecz-id-mcp-verifier@v0.8.4); match case-insensitively.
+    // (Ecocitizenz/ecz-id-mcp-verifier@v<version>); match case-insensitively.
     expect(readme).toMatch(/uses:\s*ecocitizenz\/ecz-id-mcp-verifier/i);
     expect(readme).toMatch(/^\s*target:/m);
     expect(readme).toMatch(/^\s*policy:/m);
@@ -76,8 +81,13 @@ describe("copy guardrails: README", () => {
     expect(readme).toMatch(/not\b[^.]*open source/i);
     // README now asserts the published posture (the obsolete readiness heading was removed).
     expect(readme).toContain("## Publication status");
-    expect(readme).toContain("@ecocitizenz/ecz-id-mcp-verifier@0.8.2");
-    expect(readme).toContain("Ecocitizenz/ecz-id-mcp-verifier@v0.8.4");
+    // Derived from package.json rather than hardcoded: a release must not be
+    // able to move the version and leave the README behind, and the guard must
+    // not have to be edited (and possibly weakened) at every release. This is
+    // strictly stronger than the previous literal — it now fails on drift in
+    // either direction.
+    expect(readme).toContain(`@ecocitizenz/ecz-id-mcp-verifier@${PKG_VERSION}`);
+    expect(readme).toContain(`Ecocitizenz/ecz-id-mcp-verifier@v${PKG_VERSION}`);
     expect(readme).toMatch(
       /Published package versions and Action release tags are[\s\S]{0,40}\*\*immutable\*\*/i
     );
