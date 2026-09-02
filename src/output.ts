@@ -8,6 +8,10 @@ import {
   buildSetupHandoff,
   type SetupHandoff
 } from "./setup-handoff.js";
+import {
+  buildPassportOpportunity,
+  type PassportOpportunity
+} from "./passport-opportunity.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import {
   buildMcpActionEnvelope,
@@ -53,6 +57,12 @@ export interface JsonOutputCore {
   agent_action_envelope: AgentActionEnvelope | null;
   request_to_resolve: RequestToResolve | null;
   reciprocal_reliance_envelope: ReciprocalRelianceEnvelope | null;
+  /**
+   * ADDITIVE. The free Passport offered at the point its absence was found, or null when a
+   * Passport is not the missing thing. Conversion plane only: nothing in here may alter
+   * any verification field, and consumers that ignore it see exactly what they saw before.
+   */
+  passport_opportunity: PassportOpportunity | null;
   backend_remains_final_authority: true;
   verifier_writes_truth: false;
   verifier_activates_proof: false;
@@ -104,6 +114,15 @@ export function buildJsonOutput(
     agent_action_envelope: buildAgentActionEnvelope(result),
     request_to_resolve: buildRequestToResolve(result),
     reciprocal_reliance_envelope: buildReciprocalRelianceEnvelope(result),
+    // Computed FROM the result, never fed back into it. Null whenever a Passport is not
+    // the missing thing - most results do not warrant an offer, and manufacturing one
+    // would turn a verification tool into a sales channel.
+    passport_opportunity: buildPassportOpportunity({
+      target_type: result.target_type,
+      result_state: result.result_state,
+      operator: result.operator,
+      trustops_action_url: flow.trustops_action_url
+    }),
     backend_remains_final_authority: true,
     verifier_writes_truth: false,
     verifier_activates_proof: false,

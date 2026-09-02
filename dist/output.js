@@ -2,6 +2,7 @@
 // Privacy fields are spread from OUTPUT_PRIVACY_FIELDS so this file never
 // has to spell out token names that would look like runtime call sites.
 import { buildSetupHandoff } from "./setup-handoff.js";
+import { buildPassportOpportunity } from "./passport-opportunity.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import { buildMcpActionEnvelope, buildAgentActionEnvelope, buildRequestToResolve, buildReciprocalRelianceEnvelope } from "./result-actions.js";
 import { SCHEMA_VERSION, VERIFIER_NAME, VERIFIER_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
@@ -39,6 +40,15 @@ export function buildJsonOutput(result, opts) {
         agent_action_envelope: buildAgentActionEnvelope(result),
         request_to_resolve: buildRequestToResolve(result),
         reciprocal_reliance_envelope: buildReciprocalRelianceEnvelope(result),
+        // Computed FROM the result, never fed back into it. Null whenever a Passport is not
+        // the missing thing - most results do not warrant an offer, and manufacturing one
+        // would turn a verification tool into a sales channel.
+        passport_opportunity: buildPassportOpportunity({
+            target_type: result.target_type,
+            result_state: result.result_state,
+            operator: result.operator,
+            trustops_action_url: flow.trustops_action_url
+        }),
         backend_remains_final_authority: true,
         verifier_writes_truth: false,
         verifier_activates_proof: false,

@@ -1,6 +1,7 @@
 import type { VerifyResult } from "./verify.js";
 import type { ActionEnvelope } from "./action-envelope.js";
 import { type SetupHandoff } from "./setup-handoff.js";
+import { type PassportOpportunity } from "./passport-opportunity.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import { type McpActionEnvelope, type AgentActionEnvelope, type RequestToResolve, type ReciprocalRelianceEnvelope } from "./result-actions.js";
 export interface JsonOutputOptions {
@@ -29,6 +30,12 @@ export interface JsonOutputCore {
     agent_action_envelope: AgentActionEnvelope | null;
     request_to_resolve: RequestToResolve | null;
     reciprocal_reliance_envelope: ReciprocalRelianceEnvelope | null;
+    /**
+     * ADDITIVE. The free Passport offered at the point its absence was found, or null when a
+     * Passport is not the missing thing. Conversion plane only: nothing in here may alter
+     * any verification field, and consumers that ignore it see exactly what they saw before.
+     */
+    passport_opportunity: PassportOpportunity | null;
     backend_remains_final_authority: true;
     verifier_writes_truth: false;
     verifier_activates_proof: false;
