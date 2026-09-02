@@ -53,6 +53,44 @@ export function developerGuidanceUrlFor(targetType, developerBase = DEVELOPER_GA
     const base = developerBase.replace(/\/+$/, "");
     return base + (DEVELOPER_PATH_BY_TYPE[targetType] ?? "/mcp");
 }
+/**
+ * Requested passport type, derived from the target we have ALREADY classified.
+ *
+ * Owner decision 2026-09-02: ECZ-ID MCP Passport (`MCP_PASSPORT`) and ECZ-ID Agent
+ * Passport (`AGENT_PASSPORT`) are canonical FREE child Passports, minimum Parent
+ * DECLARED, with no sellable SKU.
+ *
+ * Why this exists: the live TrustOps door already accepts `requested_passport_type`
+ * and preserves it across login in a signed, HttpOnly, 30-minute context cookie
+ * (verified 2026-09-02 against production: `GET /api/acquisition/start
+ * ?requested_passport_type=mcp` returns 302 and sets `ecz_acq_ctx` whose payload
+ * decodes to `{"ctx":{"requested_passport_type":"mcp",...}}`). The verifier could not
+ * emit the field, so the one thing we already knew - what the operator was looking at -
+ * was discarded at the door and had to be re-chosen by hand on the other side.
+ *
+ * The accepted vocabulary is the closed set the acquisition engine declares
+ * (`REQUESTED_PASSPORT_TYPES = ['agent','mcp']`). We emit nothing outside it, and we
+ * emit nothing at all for a target type that maps to neither - guessing would be worse
+ * than staying silent.
+ *
+ * This carries INTENT, not identity. It says "an MCP server was checked"; it does not
+ * assert who owns it, and it never mints anything. Ownership is settled by the
+ * operator routing (`self` / `third_party` / `unknown`) and by authentication on the
+ * TrustOps side.
+ */
+export const REQUESTED_PASSPORT_TYPES = ["agent", "mcp"];
+const PASSPORT_TYPE_BY_TARGET = {
+    mcp_server: "mcp",
+    agent_manifest: "agent"
+};
+/**
+ * The passport a target of this shape would need, or undefined when the target is not
+ * one of the two free machine-identity shapes. Pure; no network, no inference beyond
+ * the classification already performed.
+ */
+export function requestedPassportTypeFor(targetType) {
+    return PASSPORT_TYPE_BY_TARGET[targetType];
+}
 const ALLOWED_TRUSTOPS_PARAMS = [
     "source",
     "intent",
@@ -63,7 +101,12 @@ const ALLOWED_TRUSTOPS_PARAMS = [
     "reason_codes",
     "return_to",
     "verifier",
-    "v"
+    "v",
+    // Added 2026-09-02. Both are accepted and preserved by the live TrustOps
+    // acquisition door today; emitting them is what makes the handoff zero-retype
+    // for the two free machine Passports.
+    "requested_passport_type",
+    "requested_product"
 ];
 export function allowedTrustopsParams() {
     return ALLOWED_TRUSTOPS_PARAMS;
@@ -150,6 +193,14 @@ export function buildTrustopsUrl(input) {
     const safeReturnTo = sanitizeReturnToUrl(input.return_to);
     if (safeReturnTo) {
         params.set("return_to", safeReturnTo);
+    }
+    // Carry the passport the target would need, so the operator is not asked to choose
+    // a product we have already identified. Omitted entirely for target shapes that map
+    // to neither free Passport - an absent parameter is honest, a guessed one is not.
+    const requestedPassportType = requestedPassportTypeFor(input.target_type);
+    if (requestedPassportType !== undefined) {
+        params.set("requested_passport_type", requestedPassportType);
+        params.set("requested_product", `${requestedPassportType}-passport`);
     }
     params.set("verifier", "ecz_id_mcp_verifier");
     params.set("v", HANDOFF_VERSION);

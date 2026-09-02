@@ -7,6 +7,8 @@ import {
   NEXT_ACTIONS,
   OPERATOR_MODES,
   allowedTrustopsParams,
+  requestedPassportTypeFor,
+  REQUESTED_PASSPORT_TYPES,
   buildSetupHandoff,
   buildTrustopsUrl,
   developerGuidanceUrlFor,
@@ -186,6 +188,68 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"]
     });
     expect(url.startsWith(TRUSTOPS_START)).toBe(true);
+  });
+
+  it("carries the requested passport type for the two free machine shapes", () => {
+    // The live TrustOps door accepts requested_passport_type and preserves it across
+    // login in a signed context cookie. Emitting it is what makes the handoff
+    // zero-retype: the operator is never asked to choose a product we already know.
+    const mcp = new URL(
+      buildTrustopsUrl({
+        intent: "setup",
+        target_type: "mcp_server",
+        policy_mode: "PREFER",
+        operator: "self",
+        result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+        reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"]
+      })
+    );
+    expect(mcp.searchParams.get("requested_passport_type")).toBe("mcp");
+    expect(mcp.searchParams.get("requested_product")).toBe("mcp-passport");
+
+    const agent = new URL(
+      buildTrustopsUrl({
+        intent: "setup",
+        target_type: "agent_manifest",
+        policy_mode: "PREFER",
+        operator: "self",
+        result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+        reason_codes: ["AGENT_CREDENTIAL_NOT_FOUND"]
+      })
+    );
+    expect(agent.searchParams.get("requested_passport_type")).toBe("agent");
+    expect(agent.searchParams.get("requested_product")).toBe("agent-passport");
+  });
+
+  it("omits the passport type entirely for target shapes that map to neither", () => {
+    // An absent parameter is honest. A guessed one would send the operator to the
+    // wrong product, which is worse than sending them to none.
+    for (const targetType of ["npm_package", "github_repo", "api_url", "ecz_id"] as const) {
+      const url = new URL(
+        buildTrustopsUrl({
+          intent: "setup",
+          target_type: targetType,
+          policy_mode: "OPEN",
+          operator: "unknown",
+          result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+          reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"]
+        })
+      );
+      expect(url.searchParams.has("requested_passport_type")).toBe(false);
+      expect(url.searchParams.has("requested_product")).toBe(false);
+    }
+  });
+
+  it("never emits a passport type outside the accepted vocabulary", () => {
+    // The acquisition engine declares a closed set. Anything else would be rejected
+    // at the door, silently losing the context we went to the trouble of carrying.
+    const mapped = (["mcp_server", "agent_manifest"] as const).map((t) =>
+      requestedPassportTypeFor(t)
+    );
+    for (const value of mapped) {
+      expect(REQUESTED_PASSPORT_TYPES).toContain(value);
+    }
+    expect(requestedPassportTypeFor("unsupported_target")).toBeUndefined();
   });
 
   it("only emits params from the allow-list", () => {

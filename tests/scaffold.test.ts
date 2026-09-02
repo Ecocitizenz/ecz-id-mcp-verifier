@@ -144,13 +144,64 @@ describe("scaffold: forbidden operations", () => {
   }
 });
 
-describe("scaffold: no passport concepts", () => {
+describe("scaffold: no passport MINTING (narrowed 2026-09-02)", () => {
   const sources = readAllSourceFiles();
-  it("does not introduce MCP Passport or Reciprocity Passport", () => {
+
+  /**
+   * HISTORY, because narrowing a safety guard deserves an explanation in the guard.
+   *
+   * This assertion used to be a blanket text ban: any occurrence of "MCP Passport" in
+   * any source file failed the build. It encoded the then-current canon that ECZ-ID MCP
+   * Passport was REJECTED as a product.
+   *
+   * An explicit owner decision on 2026-09-02 superseded that: ECZ-ID MCP Passport
+   * (`MCP_PASSPORT`) and ECZ-ID Agent Passport (`AGENT_PASSPORT`) are canonical FREE
+   * child Passports, minimum Parent DECLARED, no sellable SKU - and the verifier is
+   * required to offer their acquisition at the point of need.
+   *
+   * A blanket ban would now block a requirement rather than protect one. So the guard is
+   * NARROWED, not removed, and the property it defends is stated precisely:
+   *
+   *   the verifier may NAME and ROUTE TO a Passport.
+   *   the verifier may NEVER CREATE, ISSUE, MINT or FABRICATE one.
+   *
+   * That is the boundary that always mattered. TrustOps and Backend/Core issue canonical
+   * truth; this package initiates and reports. Naming a product in order to route to it
+   * was never the risk - minting one is.
+   */
+  it("no source creates, issues or mints a Passport", () => {
+    const mintingPatterns = [
+      /\b(create|issue|mint|generate|allocate|provision)[A-Za-z]*Passport\b/i,
+      /\bPassport[A-Za-z]*\.(create|issue|mint)\b/i,
+      /\bnew\s+[A-Za-z]*Passport\b/,
+      /passport_state\s*=/i,
+      /\bissuePassport\b/i
+    ];
     for (const { path, content } of sources) {
-      expect(/MCP[_ ]?Passport/i.test(content), `MCP Passport in ${path}`).toBe(false);
-      expect(/Reciprocity[_ ]?Passport/i.test(content), `Reciprocity Passport in ${path}`).toBe(false);
+      for (const re of mintingPatterns) {
+        expect(re.test(content), `passport minting (${re}) in ${path}`).toBe(false);
+      }
     }
+  });
+
+  it("still forbids Reciprocity Passport outright", () => {
+    // No owner decision has adopted this. The blanket ban stands.
+    for (const { path, content } of sources) {
+      expect(
+        /Reciprocity[_ ]?Passport/i.test(content),
+        `Reciprocity Passport in ${path}`
+      ).toBe(false);
+    }
+  });
+
+  it("keeps the read-only boundary flags false", () => {
+    // The positive form of the same property: whatever the verifier says about a
+    // Passport, it must keep asserting that it does not write truth or mark BOUND.
+    const handoff = sources.find((s) => s.path.endsWith("setup-handoff.ts"));
+    expect(handoff, "setup-handoff.ts must exist").toBeDefined();
+    expect(handoff!.content).toMatch(/verifier_writes_truth:\s*false/);
+    expect(handoff!.content).toMatch(/verifier_activates_proof:\s*false/);
+    expect(handoff!.content).toMatch(/verifier_marks_bound:\s*false/);
   });
 });
 
