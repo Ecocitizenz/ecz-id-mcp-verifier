@@ -105,8 +105,23 @@ describe("README documentation", () => {
     expect(readme).toMatch(/https:\/\/trustops\.ecocitizenz\.com\/start/);
     expect(readme).toMatch(/https:\/\/developers\.ecocitizenz\.com/);
   });
-  it("does not introduce MCP Passport or Reciprocity Passport", () => {
-    expect(/MCP[_ ]?Passport/i.test(readme)).toBe(false);
-    expect(/Reciprocity[_ ]?Passport/i.test(readme)).toBe(false);
+  it("does not claim the README issues a Passport (narrowed 2026-09-02)", () => {
+    // This was a blanket ban on the words "MCP Passport" in the README, encoding the
+    // superseded position that the product was REJECTED. An owner decision on 2026-09-02
+    // made ECZ-ID MCP Passport and ECZ-ID Agent Passport canonical FREE child Passports
+    // and required the verifier to offer them, so a blanket ban would now block a
+    // requirement rather than protect one.
+    //
+    // Narrowed to the property that always mattered: the README may TELL you a Passport
+    // exists and where to get one; it must never claim this package issues one.
+    expect(readme).not.toMatch(/this (package|action|verifier) (issues|creates|mints)/i);
+    expect(readme).not.toMatch(/we (issue|create|mint) (a |your )?passport/i);
+    expect(readme).not.toMatch(/passport (issued|created|minted) (by|here)/i);
+
+    // Reciprocity Passport has not been adopted. The blanket ban stands.
+    expect(readme).not.toMatch(/Reciprocity[_ ]?Passport/i);
+
+    // And the README must keep saying who DOES issue.
+    expect(readme).toMatch(/Core issues identity/i);
   });
 });

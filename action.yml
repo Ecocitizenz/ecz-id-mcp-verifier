@@ -62,6 +62,8 @@ outputs:
     description: "Deterministic TrustOps action URL (no secrets, allow-list params)."
   developer-guidance-url:
     description: "Deterministic Developer Gateway guidance URL for this target type."
+  passport-opportunity-json:
+    description: "Free ECZ-ID Passport opportunity JSON (routing only, never a finding). Null unless the target is an MCP server or agent with no public proof."
 
 runs:
   using: "node24"

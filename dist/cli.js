@@ -8,6 +8,7 @@
 import { writeFileSync, appendFileSync } from "node:fs";
 import { verify } from "./verify.js";
 import { buildJsonOutput, buildSarif, toJson } from "./output.js";
+import { buildPassportOpportunity } from "./passport-opportunity.js";
 import { buildEnvelope } from "./action-envelope.js";
 import { buildMcpActionEnvelope, buildRequestToResolve } from "./result-actions.js";
 import { toHumanReport } from "./human-report.js";
@@ -233,6 +234,12 @@ export async function runCli(argv) {
         }
         const mcpActionEnvelope = buildMcpActionEnvelope(result);
         const requestToResolve = buildRequestToResolve(result);
+        const passportOpportunity = buildPassportOpportunity({
+            target_type: result.target_type,
+            result_state: result.result_state,
+            operator: result.operator,
+            trustops_action_url: envelope.trustops_action_url
+        });
         const gh_outputs = `result-state=${result.result_state}\n` +
             `reason-codes=${result.reason_codes.join(",")}\n` +
             `action-envelope-json=${JSON.stringify(envelope)}\n` +
@@ -241,13 +248,17 @@ export async function runCli(argv) {
             `request-to-resolve-json=${JSON.stringify(requestToResolve)}\n` +
             `primary-action=${envelope.primary_action}\n` +
             `trustops-action-url=${envelope.trustops_action_url}\n` +
-            `developer-guidance-url=${envelope.developer_guidance_url}\n`;
+            `developer-guidance-url=${envelope.developer_guidance_url}\n` +
+            // Additive. Null whenever a Passport is not the missing thing, which is most of the
+            // time. A workflow that ignores it behaves exactly as before.
+            `passport-opportunity-json=${JSON.stringify(passportOpportunity)}\n`;
         return {
             exit_code,
             stdout: stdoutParts.join("\n"),
             stderr: stderrParts.join("\n"),
             gh_outputs,
-            action_envelope: envelope
+            action_envelope: envelope,
+            passport_opportunity: passportOpportunity
         };
     }
     catch (e) {
@@ -290,7 +301,32 @@ export async function main(argv = process.argv.slice(2)) {
                 `| Exit code | \`${result.exit_code}\` |\n\n` +
                 `Reports only. Does not write truth, activate proof, or mark BOUND. ` +
                 `Local policy decides. Re-check before reliance.\n`;
-            appendFileSync(summaryPath, md, "utf8");
+            // Passport route, appended AFTER the doctrine sentence so it can never be read as
+            // part of the finding. A missing Passport does NOT fail the build: absence is not a
+            // defect, and a CI system that treats it as one would punish every project that has
+            // simply never heard of ECZ-ID.
+            const opportunity = result.passport_opportunity;
+            let summaryMd = md;
+            if (opportunity) {
+                const claim = opportunity.next_actions.find((a) => a.action.startsWith("ACQUIRE_"));
+                const request = opportunity.next_actions.find((a) => a.action === "REQUEST_PASSPORT");
+                summaryMd +=
+                    `\n#### Free ECZ-ID Passport\n\n` +
+                        `No public ECZ-ID Resolver proof was found. **This does not mean the target is ` +
+                        `unsafe or untrustworthy**, and it has not affected the result above.\n\n` +
+                        (claim
+                            ? `- If you operate this target: **${claim.label}** - free, DECLARED Parent, one sign-in.\n`
+                            : "") +
+                        (request
+                            ? `- If you do not operate it: **${request.label}**. A request is not proof, ownership or authority.\n`
+                            : "") +
+                        (!claim && !request
+                            ? `- Do you operate this target? A free ECZ-ID Passport is available if so.\n`
+                            : "") +
+                        `\nA free Passport gives a machine a persistent ECZ-ID identity. It does not mean ` +
+                        `verified, assured, compliant or approved.\n`;
+            }
+            appendFileSync(summaryPath, summaryMd, "utf8");
         }
         catch {
             /* never crash on step-summary write */

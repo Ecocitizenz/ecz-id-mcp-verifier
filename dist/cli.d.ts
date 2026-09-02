@@ -1,3 +1,4 @@
+import { type PassportOpportunity } from "./passport-opportunity.js";
 import { type ActionEnvelope } from "./action-envelope.js";
 export interface CliResult {
     exit_code: number;
@@ -5,6 +6,8 @@ export interface CliResult {
     stderr: string;
     gh_outputs?: string;
     action_envelope?: ActionEnvelope;
+    /** Routing only. Null unless a Passport is genuinely the missing thing. */
+    passport_opportunity?: PassportOpportunity | null;
 }
 export declare const HELP_TEXT: string;
 interface ParsedArgs {
