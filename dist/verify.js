@@ -6,14 +6,14 @@
 // - Never calls Backend/Core. Never calls TrustOps as a backend.
 import { classifyTarget } from "./classify-target.js";
 import { lookup } from "./resolver-client.js";
-import { RESOLVER_BASE, TRUSTOPS_START, DEVELOPER_GATEWAY, DEFAULT_TIMEOUT_MS } from "./constants.js";
+import { RESOLVER_BASE, TRUSTOPS_START, DEVELOPER_GATEWAY } from "./constants.js";
 export async function verify(opts) {
     const policy_mode = opts.policy ?? "OPEN";
     const operator = opts.operator ?? "unknown";
     const resolverBase = opts.resolverBase ?? RESOLVER_BASE;
     const trustopsUrl = opts.trustopsUrl ?? TRUSTOPS_START;
     const developerBase = opts.developerBase ?? DEVELOPER_GATEWAY;
-    const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const timeoutMs = opts.timeoutMs;
     const target_type = classifyTarget(opts.target, opts.targetType);
     const base = {
         target: opts.target,
