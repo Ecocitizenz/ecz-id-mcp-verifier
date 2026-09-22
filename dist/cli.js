@@ -38,7 +38,11 @@ Options:
   --developer-base <url>     Override Developer Gateway (default: ${DEVELOPER_GATEWAY})
   --offline                  Offline mode (no network calls)
   --no-network               Same as --offline
-  --timeout-ms <ms>          Network timeout in milliseconds (default: 5000)
+  --timeout-ms <ms>          Per-ATTEMPT lookup timeout in milliseconds
+                             (default: 10000, up to 3 attempts inside a
+                             32000 ms total budget). Setting it pins every
+                             attempt; a low value can report a good record
+                             as unavailable when Core is cold.
   --output <path>            Write primary output to file instead of stdout
   --sarif <path>             Also write a minimal SARIF 2.1.0 file
   --capabilities             Print the machine-readable capability profile (JSON) and exit

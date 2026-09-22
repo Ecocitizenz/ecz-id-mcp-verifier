@@ -34,7 +34,7 @@ jobs:
           operator: "third_party"
           resolver-base: "https://resolver.ecocitizenz.org"
           no-network: "false"
-          timeout-ms: "5000"
+          # timeout-ms: left unset so the bounded-retry defaults apply
 
       - name: Print result
         run: |

@@ -38,10 +38,20 @@ inputs:
     description: "If true, emit JSON output to the log (CLI default)."
     required: false
     default: "true"
+  # NO DEFAULT, DELIBERATELY. A declared default is always materialised into
+  # INPUT_TIMEOUT-MS by the runner, so the adapter would always pass
+  # `--timeout-ms`, and the caller would silently pin the per-attempt timeout
+  # back to the value this input declared. That is exactly how the 5 s
+  # single-attempt cold-Core failure reached every Action user: measured against
+  # a 28.7 s cold start, a pinned 5 s made three attempts fail instead of one.
+  # Left unset, the verifier's own bounded-retry defaults apply.
   timeout-ms:
-    description: "Timeout for resolver lookups, in milliseconds."
+    description: >-
+      Per-ATTEMPT timeout for the resolver lookup, in milliseconds. Leave it
+      unset unless you have a reason: the default is the verifier's own bounded
+      retry, which is sized for a cold Core. Setting it low pins every attempt
+      and can report a good record as unavailable.
     required: false
-    default: "5000"
 
 outputs:
   result-state:

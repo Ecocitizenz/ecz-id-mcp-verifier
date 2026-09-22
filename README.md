@@ -181,7 +181,7 @@ Two equivalent command names are installed: `ecz-id-mcp-verifier` and `ecz-mcp-v
 | `--developer-base`  | `https://developers.ecocitizenz.com`   | Override Developer Gateway.              |
 | `--offline`         | off                                    | Offline mode (no network).               |
 | `--no-network`      | off                                    | Same as `--offline`.                     |
-| `--timeout-ms`      | `5000`                                 | Network timeout (ms).                    |
+| `--timeout-ms`      | `10000` per attempt                    | Per-**attempt** lookup timeout (ms). Up to 3 attempts inside a 32 s total budget. Pinning it low can report a good record as unavailable when Core is cold. |
 | `--output <path>`   | stdout                                 | Write output to file.                    |
 | `--sarif <path>`    | off                                    | Also write a minimal SARIF 2.1.0 file.   |
 | `--capabilities`    |                                        | Print the machine-readable capability profile (JSON) and exit. |
@@ -356,7 +356,7 @@ jobs:
           policy: "PREFER"
           resolver-base: "https://resolver.ecocitizenz.org"
           no-network: "false"
-          timeout-ms: "5000"
+          # timeout-ms: left unset so the bounded-retry defaults apply
 ```
 
 Outputs: `result-state`, `reason-codes`, `action-envelope-json`, `setup-handoff-json`, `mcp-action-envelope-json`, `request-to-resolve-json`, `primary-action`, `trustops-action-url`, `developer-guidance-url`. The Action also writes a concise GitHub **step summary**.
@@ -385,7 +385,7 @@ And the closing reminders: "Re-check before reliance." and "Local policy decides
 - **`UNSUPPORTED_TARGET` (exit 4):** the target is empty, contains whitespace, or is a malformed ECZ-ID. Quote the target and check the supported-shapes table.
 - **`REQUIRE` exits 1 offline:** expected — `REQUIRE` fails closed when no public proof is confirmed; use `OPEN`/`PREFER` for informational runs, or drop `--offline`.
 - **A non-ECZ-ID target shows `resolver_url: null`:** expected — only ECZ-IDs are resolvable; other shapes are classified and routed, not resolved.
-- **Network errors under `REQUIRE`:** exit 5; raise `--timeout-ms` or run `--offline`.
+- **Network errors under `REQUIRE`:** exit 5. The lookup already retries a cold or transient Core up to 3 times within a 32 s budget, so a failure here means it was unavailable for the whole budget. Raise `--timeout-ms` only if your Core is slower than that; or run `--offline`. An unavailable result is never a judgment about the identity.
 
 ## Public routes
 
