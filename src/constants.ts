@@ -14,7 +14,7 @@ export const MACHINE_DISCOVERY_URL =
 
 export const PACKAGE_NAME = "@ecocitizenz/ecz-id-mcp-verifier" as const;
 export const VERIFIER_NAME = "ECZ-ID MCP Verifier" as const;
-export const VERIFIER_VERSION = "0.9.0" as const;
+export const VERIFIER_VERSION = "0.9.1" as const;
 export const SCHEMA_VERSION = 1 as const;
 export const DEFAULT_TIMEOUT_MS = 5000 as const;
 // ---------------------------------------------------------------------------

@@ -4,6 +4,61 @@ All notable changes to the ECZ-ID MCP Verifier™ are documented here.
 This project is free-forever under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`); it is **not** open source.
 
+## [0.9.1] — Cold-Core Reliability
+
+A verification that could not reach Core reported `unavailable`. That is the
+truthful state and it has not changed. What was wrong is that Core was reachable
+— it was simply cold — and the lookup gave up before it answered.
+
+### Fixed
+
+- **A cold Core no longer loses a good projection.** Core's public projection was
+  measured at **28.7 s cold** and 1.1–3.1 s warm, against a single attempt with a
+  **5 s** timeout. The first verification a new developer ever ran — the one most
+  likely to find Core cold — reported `unavailable` for a record that was
+  perfectly good. Three warm production reads measured 4,984 / 2,879 / 3,126 ms:
+  the first came within **16 ms** of the old limit, so the margin was gone in
+  ordinary operation, not only on a cold start.
+
+- **The lookup is now retried under three simultaneous bounds**: a **10 s**
+  per-attempt timeout (an attempt is clipped to whatever remains of the budget),
+  at most **3** attempts, and a **32 s** overall wall-clock budget that is never
+  exceeded. The lookup is a pure, side-effect-free GET with no body and no
+  credentials, so re-issuing it is not a write and violates no idempotency
+  contract.
+
+- **A definite answer is never re-requested.** Only transport failures and the
+  transient codes `429`, `502`, `503` and `504` are retried. `2xx`, `404`, `410`
+  and a `500` the server chose to return are each reported on the first attempt,
+  exactly as before.
+
+- **Proof interpretation is untouched.** Retrying cannot turn a revoked,
+  suspended or expired record into proof, and when every attempt fails the state
+  is still the truthful `unavailable`, with no proof claimed either way.
+
+- **Callers no longer silently pin the timeout.** `verify.ts` resolved an absent
+  `--timeout-ms` to the old 5 s constant and passed it down explicitly, so a new
+  transport default would have been overridden by its own caller. `action.yml`
+  did the same by another route: a declared Action input default is always
+  materialised by the runner, so the adapter always passed `--timeout-ms 5000`
+  and **every GitHub Action user kept a 5 s attempt**. Measured against the real
+  28.7 s cold start, that pin turned one wasted provider call into three and
+  still answered `unavailable`. The input keeps its name and still works when set
+  deliberately; it no longer declares a default.
+
+### Changed
+
+- `--timeout-ms` is documented, in the CLI help and the README, as the
+  **per-attempt** timeout, alongside the attempt cap and the total budget. The
+  previous copy advertised a 5,000 ms network timeout, which told a relying party
+  the lookup gives up after 5 s — so an `unavailable` result read as a settled
+  answer rather than a budget that can be raised.
+
+### Cost
+
+The fix costs **no extra provider call when Core answers**: a warm read is one
+call, exactly as before. The worst case is bounded at **3 calls within 32 s**.
+
 ## [0.9.0] — MCP 2026-07-28 Edition
 
 The MCP implementation moves from the monolithic `@modelcontextprotocol/sdk` v1

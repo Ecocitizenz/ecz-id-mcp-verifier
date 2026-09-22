@@ -1,6 +1,6 @@
 {
   "name": "@ecocitizenz/ecz-id-mcp-verifier",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "mcpName": "io.github.Ecocitizenz/ecz-id-mcp-verifier",
   "description": "Check public ECZ-ID Resolver posture from the CLI, CI or an MCP host. Local-first, privacy-first: classifies a target, checks its public ECZ-ID Resolver posture where available, reports, explains and routes. Never inspects artifact contents, writes truth, activates proof, or marks BOUND. Local policy decides.",
   "type": "module",
