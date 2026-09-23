@@ -38,7 +38,7 @@ on:
       expected_tarball_sha256:
         description: Exact candidate tarball SHA-256
         required: true
-        default: "0000000000000000000000000000000000000000000000000000000000000000"
+        default: "7b124f4190f17833a91c83c63a4661672bd585c968a41e72daf928332a83e929"
         type: string
 
 # Global default: read-only. No repository-write permission is granted globally.
@@ -55,7 +55,7 @@ env:
   PKG_NAME: "@ecocitizenz/ecz-id-mcp-verifier"
   PKG_REPO: "Ecocitizenz/ecz-id-mcp-verifier"
   RELEASE_BRANCH_REF: "refs/heads/release/npm-0.9.1-cold-core"
-  CANDIDATE_TARBALL_SHA256: "0000000000000000000000000000000000000000000000000000000000000000"
+  CANDIDATE_TARBALL_SHA256: "7b124f4190f17833a91c83c63a4661672bd585c968a41e72daf928332a83e929"
   SBOM_FILE: "ecz-id-mcp-verifier-0.9.1.cdx.json"
   ARTIFACT_NAME: "ecz-id-prepared-0.9.1"
 
