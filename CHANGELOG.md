@@ -273,6 +273,7 @@ baseline for the ECZ-ID Resolver-posture verifier.
 - No source maps, secrets, absolute paths, or internal material in the npm
   tarball. No telemetry. No source/secret/prompt/tool-payload upload.
 
+[0.9.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.9.1
 [0.9.0]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.9.0
 [0.8.2]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Ecocitizenz/ecz-id-mcp-verifier/releases/tag/v0.8.1

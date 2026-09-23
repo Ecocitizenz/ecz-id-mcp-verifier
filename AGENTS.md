@@ -36,8 +36,8 @@ npx @ecocitizenz/ecz-id-mcp-verifier --capabilities      # machine-readable capa
 Pin the exact release only when reproducibility is required:
 
 ```sh
-npm install @ecocitizenz/ecz-id-mcp-verifier@0.9.0
-npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --doctor
+npm install @ecocitizenz/ecz-id-mcp-verifier@0.9.1
+npx @ecocitizenz/ecz-id-mcp-verifier@0.9.1 --doctor
 ```
 
 ## MCP tools (stdio, read-only)
