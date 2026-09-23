@@ -16,7 +16,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "mcp/**"]
+    branches: [main, "mcp/**", "release/**"]
   pull_request:
   workflow_dispatch:
 

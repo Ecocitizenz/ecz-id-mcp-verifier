@@ -1,6 +1,6 @@
 name: public-action-proof
 
-# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.8.4
+# Proves the PUBLIC immutable Action tag Ecocitizenz/ecz-id-mcp-verifier@v0.9.0
 # runs on a GitHub-hosted runner with least privilege. Read-only, reports only.
 # Does not rebuild the action, does not use ./ or main, does not mutate the repo.
 
@@ -22,7 +22,7 @@ jobs:
 
       - name: OPEN (valid parent, offline)
         id: open
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.4
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.0
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "OPEN"
@@ -30,7 +30,7 @@ jobs:
 
       - name: PREFER (valid child AGENT, offline)
         id: prefer
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.4
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.0
         with:
           target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A"
           policy: "PREFER"
@@ -39,7 +39,7 @@ jobs:
       - name: REQUIRE (valid parent — fail-closed expected)
         id: require
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.4
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.0
         with:
           target: "ECZ-GB-A93K7Q"
           policy: "REQUIRE"
@@ -48,7 +48,7 @@ jobs:
       - name: INVALID input (exit 4 expected)
         id: invalid
         continue-on-error: true
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.8.4
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.0
         with:
           target: "ECZ-GB-EXAMPLE"
           no-network: "true"
@@ -102,7 +102,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.8.4"
+            echo "## public-action-proof — Ecocitizenz/ecz-id-mcp-verifier@v0.9.0"
             echo ""
             echo "| Check | Result |"
             echo "| --- | --- |"
@@ -118,7 +118,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   public-npm-install:
-    name: public npm 0.8.2 clean-install proof (accelerators + SARIF + no-secret)
+    name: public npm 0.9.0 clean-install proof (accelerators + SARIF + no-secret)
     runs-on: ubuntu-latest
     steps:
       - name: Set up Node.js 24 (public registry)
@@ -133,15 +133,15 @@ jobs:
           fail() { echo "FAIL: $1"; echo "| $1 | FAIL |" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
           TMP="$(mktemp -d)"; cd "$TMP"
           npm init -y >/dev/null 2>&1
-          echo "Installing @ecocitizenz/ecz-id-mcp-verifier@0.8.2 from the public registry (no token)..."
-          npm install @ecocitizenz/ecz-id-mcp-verifier@0.8.2 --no-audit --no-fund || fail "public npm install failed"
+          echo "Installing @ecocitizenz/ecz-id-mcp-verifier@0.9.0 from the public registry (no token)..."
+          npm install @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --no-audit --no-fund || fail "public npm install failed"
 
           PKG="node_modules/@ecocitizenz/ecz-id-mcp-verifier"
           BIN="$PKG/dist/bin/cli.js"
           [ -f "$BIN" ] || fail "CLI binary missing"
           VER="$(node -p "require('./$PKG/package.json').version")"
-          [ "$VER" = "0.8.2" ] || fail "installed version $VER != 0.8.2"
-          node "$BIN" --version | grep -q "v0.8.2" || fail "--version wrong"
+          [ "$VER" = "0.9.0" ] || fail "installed version $VER != 0.9.0"
+          node "$BIN" --version | grep -q "v0.9.0" || fail "--version wrong"
           node "$BIN" --help | grep -qi "Usage" || fail "--help missing"
           node "$BIN" --help | grep -q "resolver.ecocitizenz.org" || fail "Resolver route not documented"
 
@@ -199,9 +199,9 @@ jobs:
             fail "secret-like material found in verifier output"
           fi
 
-          echo "ALL PUBLIC NPM ASSERTIONS PASSED (installed version 0.8.2)"
+          echo "ALL PUBLIC NPM ASSERTIONS PASSED (installed version 0.9.0)"
           {
-            echo "## public-npm-install — @ecocitizenz/ecz-id-mcp-verifier@0.8.2"
+            echo "## public-npm-install — @ecocitizenz/ecz-id-mcp-verifier@0.9.0"
             echo ""
             echo "| Check | Result |"
             echo "| --- | --- |"
