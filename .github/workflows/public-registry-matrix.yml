@@ -1,6 +1,6 @@
 name: public-registry-matrix
 
-# Post-publication PUBLIC proof for @ecocitizenz/ecz-id-mcp-verifier@0.8.2.
+# Post-publication PUBLIC proof for @ecocitizenz/ecz-id-mcp-verifier@0.9.1.
 # Read-only. Installs the ALREADY-PUBLISHED package straight from the public npm
 # registry and proves it as a real consumer install across Windows/Linux/macOS on
 # Node 22.14.0 and Node 24, including the convenience accelerators.
@@ -8,10 +8,29 @@ name: public-registry-matrix
 # NEVER publishes npm, NEVER changes dist-tags, NEVER creates a tag/Release, NEVER
 # publishes to the MCP Registry, NEVER writes the repository. contents: read only.
 # It does not change any published package bytes.
+#
+# RETARGETED 2026-09-23, from 0.8.2 to 0.9.1. This workflow had been silently
+# unrunnable since 2026-08-28, when publishing 0.9.0 moved the registry-global
+# `next` tag off 0.8.2 — not since 0.9.1. It went unnoticed for 26 days because
+# its only automatic trigger was a push to release/npm-0.8.2-registry-edition,
+# a branch that has not moved since 2026-07-01. Two structural corrections were
+# made with the retarget so it cannot rot the same way again:
+#
+#   1. ONE PIN PER FACT. The version was previously written in four places
+#      (PKG_SPEC, EXPECT_VERSION, and twice inline in the dist-tag script).
+#      The inline literals now read EXPECT_VERSION, so a retarget is one edit.
+#   2. NO PRE-PUBLICATION TRIGGER. A post-publication proof cannot be driven by
+#      a push, because the branch is pushed BEFORE the artifact exists. The dead
+#      branch trigger is removed; workflow_dispatch is the honest shape and is
+#      how this proof was actually invoked for 0.8.0 and 0.8.1.
+#
+# `latest` is REPORTED, never asserted. As of 2026-09-23 the registry serves
+# latest: 0.9.0 and next: 0.9.1; promoting latest is a Founder action in the
+# npmjs.com UI, and no workflow in this repository may change a dist-tag. An
+# assertion here would hard-fail this proof over a decision it must not make.
 
 on:
-  push:
-    branches: [release/npm-0.8.2-registry-edition]
+  # Manual only — see RETARGETED note above. Run this AFTER a publish completes.
   workflow_dispatch: {}
 
 permissions:
@@ -22,9 +41,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PKG_SPEC: "@ecocitizenz/ecz-id-mcp-verifier@0.8.2"
-  EXPECT_VERSION: "0.8.2"
-  CANONICAL_SHA256: "312a59bb1bc4ce678af6d8780f02cddf80cd877f283ab7c25741e165b5251043"
+  # The only three values a retarget touches.
+  PKG_SPEC: "@ecocitizenz/ecz-id-mcp-verifier@0.9.1"
+  EXPECT_VERSION: "0.9.1"
+  # Locally packed, CI packed and npm-served tarballs were all this hash.
+  CANONICAL_SHA256: "7b124f4190f17833a91c83c63a4661672bd585c968a41e72daf928332a83e929"
 
 jobs:
   fetch-and-verify-public-artifact:
@@ -41,18 +62,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - name: Prove public dist-tags (0.8.2 present, next=0.8.2)
+      - name: Prove public dist-tags (EXPECT_VERSION present, next=EXPECT_VERSION)
         shell: bash
         run: |
           set -euo pipefail
           node -e '
+            const want=process.env.EXPECT_VERSION;
             const https=require("node:https");
             https.get("https://registry.npmjs.org/@ecocitizenz%2fecz-id-mcp-verifier",r=>{let d="";r.on("data",c=>d+=c);r.on("end",()=>{
               const j=JSON.parse(d); const t=j["dist-tags"]||{};
               const fail=m=>{console.error("::error::"+m);process.exit(1);};
-              if(!j.versions||!j.versions["0.8.2"]) fail("0.8.2 not present in registry");
-              if(t.next!=="0.8.2") fail("next != 0.8.2 (got "+t.next+")");
+              if(!want) fail("EXPECT_VERSION is not set");
+              if(!j.versions||!j.versions[want]) fail(want+" not present in registry");
+              if(t.next!==want) fail("next != "+want+" (got "+t.next+")");
               console.log("dist-tags OK", JSON.stringify(t));
+              if(t.latest!==want) console.log("::notice::latest is "+t.latest+", not "+want+". Reported, not asserted: promoting latest is a Founder action in the npmjs.com UI and no workflow here may change a dist-tag.");
             });}).on("error",e=>{console.error("::error::"+e.message);process.exit(1);});
           '
       - name: Download the exact public tarball via npm pack (registry)
@@ -71,7 +95,7 @@ jobs:
       - name: Upload public artifact evidence
         uses: actions/upload-artifact@v4
         with:
-          name: public-registry-artifact-0.8.2
+          name: public-registry-artifact-${{ env.EXPECT_VERSION }}
           path: |
             _pub/*.tgz
             _pub/PUBLIC_TARBALL_SHA256.txt
