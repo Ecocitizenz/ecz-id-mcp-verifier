@@ -1,6 +1,6 @@
 name: npm-release-proof
 
-# Read-only release proof for the 0.8.0 hardening branch. Runs the complete
+# Read-only release proof for release/** branches. Runs the complete
 # release gate from the checked-out immutable commit. This workflow NEVER writes
 # the repository, commits, pushes, regenerates/writes the lockfile, publishes to
 # npm, publishes to the MCP Registry, or moves a tag/release. It replaces the
@@ -10,7 +10,7 @@ name: npm-release-proof
 
 on:
   push:
-    branches: [release/npm-0.8.0-hardening]
+    branches: ["release/**"]
   workflow_dispatch: {}
 
 permissions:

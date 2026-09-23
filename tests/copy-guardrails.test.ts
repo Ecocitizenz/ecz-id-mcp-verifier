@@ -118,3 +118,53 @@ describe("copy guardrails: README", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Every exact pin of this package on a public surface must be the version this
+// tree ships. 0.8.2 -> 0.9.0 -> 0.9.1 each left at least one stale @<old> pin
+// behind (the 0.9.1 tarball itself shipped a README that still said 0.8.2 and
+// v0.8.4), so the rule is derived from package.json and covers every surface a
+// reader installs from, not only README.
+// ---------------------------------------------------------------------------
+describe("copy guardrails: every public pin tracks package.json", () => {
+  const esc = (v: string) => v.replace(/\./g, "\\.");
+  const PIN = /ecz-id-mcp-verifier@v?(\d+\.\d+\.\d+)\b/g;
+  const surfaces: Record<string, string> = {
+    "README.md": readme,
+    "AGENTS.md": readFileSync(join(ROOT, "AGENTS.md"), "utf8"),
+    "SUPPORT.md": readFileSync(join(ROOT, "SUPPORT.md"), "utf8"),
+    ".github/ISSUE_TEMPLATE/mcp-host-setup.yml": readFileSync(
+      join(ROOT, ".github", "ISSUE_TEMPLATE", "mcp-host-setup.yml"),
+      "utf8"
+    ),
+    "examples/github-action.yml": readFileSync(join(ROOT, "examples", "github-action.yml"), "utf8")
+  };
+
+  it("the shipped GitHub Action example pins the immutable release tag for this version", () => {
+    expect(surfaces["examples/github-action.yml"]).toMatch(
+      new RegExp(`uses:\\s*Ecocitizenz/ecz-id-mcp-verifier@v${esc(PKG_VERSION)}\\b`)
+    );
+  });
+
+  it("no public surface carries an exact pin of any other version (drift in either direction)", () => {
+    for (const [name, text] of Object.entries(surfaces)) {
+      const versions = [...text.matchAll(PIN)].map((m) => m[1]);
+      expect(versions.length, `${name}: expected at least one exact pin`).toBeGreaterThan(0);
+      expect(new Set(versions), `${name}: pinned versions`).toEqual(new Set([PKG_VERSION]));
+    }
+  });
+
+  it("SECURITY.md names this version as the supported release", () => {
+    const security = readFileSync(join(ROOT, "SECURITY.md"), "utf8");
+    expect(security).toMatch(new RegExp(`\\|\\s*${esc(PKG_VERSION)}\\s*\\|\\s*✅`));
+    expect(security).toContain(`The current supported release is \`${PKG_VERSION}\`.`);
+  });
+
+  it("the shipped example outputs report this version", () => {
+    for (const f of ["json-output-missing-proof.json", "json-output-resolver-verifiable.json"]) {
+      const ex = JSON.parse(readFileSync(join(ROOT, "examples", f), "utf8"));
+      expect(ex.verifier_version, `examples/${f}`).toBe(PKG_VERSION);
+    }
+    expect(readme).toContain(`"verifier_version": "${PKG_VERSION}"`);
+  });
+});

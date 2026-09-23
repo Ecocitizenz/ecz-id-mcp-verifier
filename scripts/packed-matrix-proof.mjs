@@ -10,12 +10,13 @@
 // Usage:
 //   node scripts/packed-matrix-proof.mjs --tarball <abs.tgz> --out <result.json>
 //   node scripts/packed-matrix-proof.mjs --spec <name@version> --out <result.json>   (public registry install)
-// Optional: --expect-version <v> (default 0.8.1).
+// Optional: --expect-version <v> (default: the version this checkout declares in package.json).
 
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, createReadStream } from "node:fs";
 import { tmpdir, arch, platform } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
 function arg(name, def) {
@@ -26,7 +27,16 @@ const TARBALL_ARG = arg("--tarball", "");
 const SPEC = arg("--spec", "");                 // registry spec, e.g. @ecocitizenz/ecz-id-mcp-verifier@0.8.1
 const TARBALL = TARBALL_ARG ? resolve(TARBALL_ARG) : "";
 const OUT = arg("--out", "");
-const EXPECT_VERSION = arg("--expect-version", "0.8.2");
+// Default to the version this checkout declares, so the harness cannot rot at a
+// release: the version is pinned in exactly one place (package.json). Callers
+// proving a PUBLISHED artefact still pass --expect-version explicitly.
+const REPO_PKG_VERSION = (() => {
+  try {
+    const p = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+    return JSON.parse(readFileSync(p, "utf8")).version || "";
+  } catch { return ""; }
+})();
+const EXPECT_VERSION = arg("--expect-version", REPO_PKG_VERSION);
 const INSTALL_FROM_REGISTRY = SPEC !== "";
 const PKG_NAME = "@ecocitizenz/ecz-id-mcp-verifier";
 const node = process.execPath;
