@@ -33,6 +33,7 @@ function collectDocs(dir, acc) {
   }
 }
 
+let pkgVersion = "";
 const surfaces = [];
 const add = (label, text) => { if (text) surfaces.push({ label, text }); };
 
@@ -43,6 +44,7 @@ add("action.yml", read(join(ROOT, "action.yml")));
 
 try {
   const pkg = JSON.parse(read(join(ROOT, "package.json")) || "{}");
+  pkgVersion = typeof pkg.version === "string" ? pkg.version : "";
   add("package.json:description", pkg.description || "");
   add("package.json:keywords", (pkg.keywords || []).join(" "));
 } catch { /* ignore */ }
@@ -79,10 +81,14 @@ const LATEST_FIRST_FORBIDDEN = [
   { name: "pre-release", re: /\bpre-?release\b/i },
   { name: "choose-a-channel", re: /\bchoose a channel\b/i },
   { name: "promotion-to-latest", re: /\bpromotion to latest\b/i },
-  { name: "backend-key-internal", re: /Backend key \(internal\)/i },
-  // Forbid a STALE exact pin to the previous release (0.8.2 is the current version).
-  { name: "stale-version-pin-0-8-1", re: /@v?0\.8\.1\b/ }
+  { name: "backend-key-internal", re: /Backend key \(internal\)/i }
 ];
+// Every exact pin of THIS package on an acquisition surface must be the version this
+// tree ships. Derived from package.json rather than a hand-edited literal: 0.8.2 -> 0.9.0
+// -> 0.9.1 each left a stale @<old> pin behind at least once, and a literal rule here
+// had to be edited (and could be loosened) at every release. Anchored on the package
+// name so third-party pins (actions/checkout@v4 etc.) are never matched.
+const PACKAGE_PIN = /ecz-id-mcp-verifier@v?(\d+\.\d+\.\d+)\b/g;
 
 const findings = [];
 for (const { label, text } of surfaces) {
@@ -98,6 +104,15 @@ for (const { label, text } of surfaces) {
         if (re.test(lines[i])) findings.push(`${label}:${i + 1} :: latest-first:${name} :: ${lines[i].trim().slice(0, 120)}`);
       }
     }
+    if (pkgVersion) {
+      for (let i = 0; i < lines.length; i++) {
+        for (const m of lines[i].matchAll(PACKAGE_PIN)) {
+          if (m[1] !== pkgVersion) {
+            findings.push(`${label}:${i + 1} :: latest-first:stale-version-pin (${m[1]} != package.json ${pkgVersion}) :: ${lines[i].trim().slice(0, 120)}`);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -109,5 +124,5 @@ if (findings.length) {
 }
 console.log(
   `[check:release-state-copy] PASS — ${surfaces.length} public surface(s) scanned; ` +
-    "acquisition copy is latest-first (plain install primary, exact pin secondary, no next/candidate machinery)."
+    `acquisition copy is latest-first (plain install primary, exact pin secondary and equal to package.json ${pkgVersion || "?"}, no next/candidate machinery).`
 );

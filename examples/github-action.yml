@@ -25,8 +25,8 @@ jobs:
 
       - name: Run ECZ-ID MCP Verifier
         id: ecz_verify
-        # Placeholder ref. Replace with the published action ref once available.
-        uses: ecocitizenz/ecz-id-mcp-verifier@v0
+        # Pin the immutable release tag (canonical owner casing).
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.1
         with:
           target: "ECZ-GB-A93K7Q"
           target-type: "ecz_id"
@@ -34,7 +34,7 @@ jobs:
           operator: "third_party"
           resolver-base: "https://resolver.ecocitizenz.org"
           no-network: "false"
-          timeout-ms: "5000"
+          # timeout-ms: left unset so the bounded-retry defaults apply
 
       - name: Print result
         run: |

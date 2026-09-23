@@ -10,12 +10,13 @@
 // Usage:
 //   node scripts/packed-matrix-proof.mjs --tarball <abs.tgz> --out <result.json>
 //   node scripts/packed-matrix-proof.mjs --spec <name@version> --out <result.json>   (public registry install)
-// Optional: --expect-version <v> (default 0.8.1).
+// Optional: --expect-version <v> (default: the version this checkout declares in package.json).
 
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, createReadStream } from "node:fs";
 import { tmpdir, arch, platform } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
 function arg(name, def) {
@@ -26,7 +27,16 @@ const TARBALL_ARG = arg("--tarball", "");
 const SPEC = arg("--spec", "");                 // registry spec, e.g. @ecocitizenz/ecz-id-mcp-verifier@0.8.1
 const TARBALL = TARBALL_ARG ? resolve(TARBALL_ARG) : "";
 const OUT = arg("--out", "");
-const EXPECT_VERSION = arg("--expect-version", "0.8.2");
+// Default to the version this checkout declares, so the harness cannot rot at a
+// release: the version is pinned in exactly one place (package.json). Callers
+// proving a PUBLISHED artefact still pass --expect-version explicitly.
+const REPO_PKG_VERSION = (() => {
+  try {
+    const p = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+    return JSON.parse(readFileSync(p, "utf8")).version || "";
+  } catch { return ""; }
+})();
+const EXPECT_VERSION = arg("--expect-version", REPO_PKG_VERSION);
 const INSTALL_FROM_REGISTRY = SPEC !== "";
 const PKG_NAME = "@ecocitizenz/ecz-id-mcp-verifier";
 const node = process.execPath;
@@ -169,8 +179,15 @@ try {
   const impClean = imp.out.trim();
   ok("ESM import + verify() + no side effects", imp.code === 0 && /^IMPORT_OK\|function\|/.test(impClean) && impClean.endsWith("|18"), impClean.slice(0, 80));
 
-  // --- MCP stdio server (drive via a client using the consumer's bundled SDK) ---
+  // --- MCP stdio server (driven by the OFFICIAL client, installed independently) ---
+  // The consumer only carries the server SDK as a dependency of the package under
+  // test. The client is installed separately so the proof never imports anything
+  // the package itself ships. This section had imported the retired v1 path
+  // (@modelcontextprotocol/sdk) since the SDK v2 migration, and had not run in CI
+  // because its only triggers were pinned to dead release branches.
   console.log("== MCP stdio server ==");
+  const cli = run(npmCmd, ["install", "@modelcontextprotocol/client@^2.0.0", "--no-audit", "--no-fund"], { cwd: consumer, shell: isWin });
+  ok("official MCP client installs independently", cli.code === 0, (cli.err || "").slice(0, 200));
   const serverEntry = join(installedPkg, "dist", "mcp", "stdio.js");
   const clientFile = join(consumer, "mcp-client.mjs");
   writeFileSync(clientFile, mcpClientSource());
@@ -200,16 +217,17 @@ process.exit(pass ? 0 : 1);
 
 function mcpClientSource() {
   return [
-    'import { Client } from "@modelcontextprotocol/sdk/client/index.js";',
-    'import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";',
+    'import { Client } from "@modelcontextprotocol/client";',
+    'import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";',
     'const entry = process.argv[2];',
     'const v = { started_no_secret:false, server_name:null, server_version:null, tools:null, check_ok:false, recheck_ok:false, explain_ok:false, unknown_rejected:false, missing_rejected:false, survives:false, shutdown_ok:false };',
     'const t = new StdioClientTransport({ command: process.execPath, args:[entry], stderr:"pipe", env:{ PATH: process.env.PATH } });',
-    'const c = new Client({ name:"phase4-matrix-client", version:"0.0.0" }, { capabilities:{} });',
+    // Pinned to the modern revision: the packed-artefact proof covers the legacy rail.
+    'const c = new Client({ name:"phase4-matrix-client", version:"0.0.0" }, { capabilities:{}, versionNegotiation:{ mode:{ pin:"2026-07-28" } } });',
     'function txt(r){ const b=(r?.content??[]).find(x=>x.type==="text"); return b?JSON.parse(b.text):null; }',
     'try {',
     '  await c.connect(t); v.started_no_secret=true;',
-    '  const info=c.getServerVersion(); v.server_name=info?.name; v.server_version=info?.version;',
+    '  const info=c.getServerVersion?.(); v.server_name=info?.name; v.server_version=info?.version;',
     '  const list=await c.listTools(); v.tools=(list.tools??[]).map(x=>x.name).sort();',
     '  const r1=await c.callTool({name:"ecz_check_target",arguments:{target:"ECZ-GB-A93K7Q",policy:"OPEN",offline:true}}); const j1=txt(r1); v.check_ok=typeof j1?.result_state==="string" && j1.verifier_writes_truth===false;',
     '  const r2=await c.callTool({name:"ecz_recheck_resolver",arguments:{target:"ECZ-GB-A93K7Q",offline:true}}); const j2=txt(r2); v.recheck_ok=j2?.type==="ecz.resolver_recheck";',

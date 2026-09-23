@@ -14,9 +14,38 @@ export const MACHINE_DISCOVERY_URL =
 
 export const PACKAGE_NAME = "@ecocitizenz/ecz-id-mcp-verifier" as const;
 export const VERIFIER_NAME = "ECZ-ID MCP Verifier" as const;
-export const VERIFIER_VERSION = "0.9.0" as const;
+export const VERIFIER_VERSION = "0.9.1" as const;
 export const SCHEMA_VERSION = 1 as const;
 export const DEFAULT_TIMEOUT_MS = 5000 as const;
+// ---------------------------------------------------------------------------
+// COLD-START RELIABILITY (D6).
+//
+// The machine projection is served by Core, which was measured at 28.7 s on a
+// cold instance and 3.1 s / 1.8 s once warm. A single 5 s attempt therefore
+// reported `unavailable` for a projection that was perfectly good — and the
+// FIRST lookup a new developer ever runs is the one most likely to be cold.
+//
+// The lookup is a pure, side-effect-free GET with no body and no credentials,
+// so re-issuing it carries no side effect: it is not a write and has no
+// idempotency contract to violate. The retry is BOUNDED by all three of a
+// per-attempt timeout, a maximum attempt count, and an overall wall-clock
+// budget that is never exceeded. Raising the timeout alone was rejected: it
+// would make a dead endpoint take just as long to report as a cold one.
+// ---------------------------------------------------------------------------
+/** Per-attempt timeout. Comfortably covers a warm read; never waits out a cold one alone. */
+export const DEFAULT_ATTEMPT_TIMEOUT_MS = 10_000 as const;
+/** Hard wall-clock ceiling across every attempt, including backoff. */
+export const DEFAULT_TOTAL_BUDGET_MS = 32_000 as const;
+/** Maximum attempts, including the first. */
+export const DEFAULT_MAX_ATTEMPTS = 3 as const;
+/** Fixed backoff before attempt n+1 (n * this). Deliberately small and predictable. */
+export const RETRY_BACKOFF_STEP_MS = 500 as const;
+/**
+ * Server answers that are retried. A transient/overload code only. A definite
+ * answer -- 2xx, 404, 410, or a 500 the server chose to return -- is reported
+ * on its first attempt and is never re-requested.
+ */
+export const RETRYABLE_HTTP_STATUS: readonly number[] = [429, 502, 503, 504] as const;
 // Stable capability-profile identifier for the machine-readable capability
 // summary (--capabilities). Bump only when the capability contract changes.
 export const CAPABILITY_PROFILE = "ecz-resolver-posture-v1" as const;

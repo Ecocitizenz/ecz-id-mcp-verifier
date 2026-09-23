@@ -230,3 +230,114 @@ describe("result-state model still supports lifecycle states", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// D6: bounded retry for a cold Core.
+//
+// Core answered in 28.7 s cold and 1.8-3.1 s warm, against a single 5 s attempt,
+// so the first lookup of the day reported `unavailable` for a projection that was
+// perfectly good. These pin BOTH halves: a cold read now recovers, and the retry
+// stays bounded and never re-requests a definite answer.
+// ---------------------------------------------------------------------------
+describe("D6: bounded retry for a cold Core", () => {
+  /** Counts attempts and replies per-attempt. */
+  function mockSequence(steps: Array<() => Response | never>) {
+    let i = 0;
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation((() => {
+      const step = steps[Math.min(i, steps.length - 1)];
+      i += 1;
+      try {
+        return Promise.resolve(step());
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    }) as typeof fetch);
+    return spy;
+  }
+
+  const abort = () => {
+    const e = new Error("The operation was aborted");
+    e.name = "AbortError";
+    throw e;
+  };
+
+  it("COLD: a timed-out first attempt recovers on the retry and yields real proof", async () => {
+    const spy = mockSequence([abort, () => new Response(activeBody(PARENT), { status: 200 })]);
+    const r = await lookup(PARENT, "ecz_id");
+    expect(r.proof_state).toBe("active");
+    expect(r.found).toBe(true);
+    expect(r.machine_json_url).toBe(`${ABASE}/api/p/${PARENT}.json`);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("WARM: a first-attempt answer is returned without any retry", async () => {
+    const spy = mockSequence([() => new Response(activeBody(PARENT), { status: 200 })]);
+    const r = await lookup(PARENT, "ecz_id");
+    expect(r.proof_state).toBe("active");
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("BOUNDED: a persistently dead endpoint stops at the attempt ceiling", async () => {
+    const spy = mockSequence([abort]);
+    const r = await lookup(PARENT, "ecz_id");
+    expect(r.proof_state).toBe("unavailable");
+    expect(r.found).toBe(false);
+    expect(r.network_attempted).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  it("maxAttempts: 1 restores single-shot behaviour exactly", async () => {
+    const spy = mockSequence([abort]);
+    const r = await lookup(PARENT, "ecz_id", { maxAttempts: 1 });
+    expect(r.proof_state).toBe("unavailable");
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("BUDGET: the overall wall-clock ceiling is never exceeded", async () => {
+    mockSequence([abort]);
+    const started = Date.now();
+    const r = await lookup(PARENT, "ecz_id", { totalBudgetMs: 300, timeoutMs: 100 });
+    expect(r.proof_state).toBe("unavailable");
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+
+  it("a DEFINITE answer is never re-requested: 404 and 500 are asked once", async () => {
+    const notFound = mockSequence([() => new Response(JSON.stringify({ error: "x" }), { status: 404 })]);
+    expect((await lookup(PARENT, "ecz_id")).proof_state).toBe("not_found");
+    expect(notFound).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+
+    const boom = mockSequence([() => new Response(JSON.stringify({ error: "boom" }), { status: 500 })]);
+    expect((await lookup(PARENT, "ecz_id")).proof_state).toBe("unavailable");
+    expect(boom).toHaveBeenCalledTimes(1);
+  });
+
+  it("a TRANSIENT server code is retried and can then succeed", async () => {
+    const spy = mockSequence([
+      () => new Response(JSON.stringify({ error: "down" }), { status: 503 }),
+      () => new Response(activeBody(PARENT), { status: 200 })
+    ]);
+    const r = await lookup(PARENT, "ecz_id");
+    expect(r.proof_state).toBe("active");
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("retrying never turns a negative lifecycle into proof", async () => {
+    const spy = mockSequence([
+      abort,
+      () => new Response(JSON.stringify({ ecz_id: PARENT, status: "revoked" }), { status: 200 })
+    ]);
+    const r = await lookup(PARENT, "ecz_id");
+    expect(r.proof_state).toBe("revoked");
+    expect(r.found).toBe(false);
+    expect(r.machine_json_url).toBeUndefined();
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("offline still performs no request at all", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const r = await lookup(PARENT, "ecz_id", { noNetwork: true });
+    expect(r.network_attempted).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});

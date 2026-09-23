@@ -3,7 +3,12 @@ export interface ResolverLookupOptions {
     resolverBase?: string;
     apiBase?: string;
     noNetwork?: boolean;
+    /** Per-ATTEMPT timeout. Back-compatible: `--timeout-ms` still sets this. */
     timeoutMs?: number;
+    /** Hard ceiling across every attempt and backoff. */
+    totalBudgetMs?: number;
+    /** Maximum attempts, including the first. 1 disables retrying. */
+    maxAttempts?: number;
 }
 /**
  * Deterministic interpretation of a Resolver machine response. `active` is the

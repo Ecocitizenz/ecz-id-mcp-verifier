@@ -9,7 +9,7 @@ Thanks for using the ECZ-ID MCP Verifier. Please route your question to the righ
 
 | Topic | Where |
 |---|---|
-| MCP host / server configuration | [Open an issue](https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues/new/choose) (MCP host setup) — or run `npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --print-mcp-config` |
+| MCP host / server configuration | [Open an issue](https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues/new/choose) (MCP host setup) — or run `npx @ecocitizenz/ecz-id-mcp-verifier@0.9.1 --print-mcp-config` |
 | CLI usage | [Issues](https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues) — see `--help` and the README |
 | GitHub Action / CI | [Issues](https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues) — see the Action usage in the README |
 | Node library integration | [Integration question](https://github.com/Ecocitizenz/ecz-id-mcp-verifier/issues/new/choose) or the [Developer Gateway](https://developers.ecocitizenz.com) |
@@ -20,8 +20,8 @@ Thanks for using the ECZ-ID MCP Verifier. Please route your question to the righ
 ## Quick self-help
 
 ```sh
-npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --doctor        # confirm a healthy install
-npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --capabilities  # what it does and does not do
+npx @ecocitizenz/ecz-id-mcp-verifier@0.9.1 --doctor        # confirm a healthy install
+npx @ecocitizenz/ecz-id-mcp-verifier@0.9.1 --capabilities  # what it does and does not do
 ```
 
 The Resolver is the public proof surface; npm, GitHub and Registry listings are discovery,

@@ -14,8 +14,7 @@ import type { OperatorMode } from "./setup-handoff.js";
 import {
   RESOLVER_BASE,
   TRUSTOPS_START,
-  DEVELOPER_GATEWAY,
-  DEFAULT_TIMEOUT_MS
+  DEVELOPER_GATEWAY
 } from "./constants.js";
 
 export interface VerifyOptions {
@@ -53,7 +52,7 @@ export async function verify(opts: VerifyOptions): Promise<VerifyResult> {
   const resolverBase = opts.resolverBase ?? RESOLVER_BASE;
   const trustopsUrl = opts.trustopsUrl ?? TRUSTOPS_START;
   const developerBase = opts.developerBase ?? DEVELOPER_GATEWAY;
-  const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const timeoutMs = opts.timeoutMs;
 
   const target_type = classifyTarget(opts.target, opts.targetType);
 

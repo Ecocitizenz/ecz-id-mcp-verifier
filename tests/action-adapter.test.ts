@@ -121,3 +121,79 @@ describe("action.yml wiring", () => {
     expect(action).not.toMatch(/main:\s*["']dist\/cli\.js["']/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// D6 (second half, distribution channel): a CALLER must not silently re-pin the
+// per-attempt timeout.
+//
+// `verify.ts` used to collapse an absent `--timeout-ms` to the 5 s constant,
+// which would have overridden any new transport default. `action.yml` did the
+// same thing by a different route: a declared input default is ALWAYS
+// materialised into INPUT_TIMEOUT-MS by the runner, so the adapter always
+// passed `--timeout-ms 5000` and every Action user kept a 5 s per-attempt
+// timeout after the fix shipped. Measured against the real 28.7 s cold start
+// that turned one failed attempt into three, and still answered `unavailable`.
+// ---------------------------------------------------------------------------
+describe("D6: the Action does not pin the per-attempt timeout", () => {
+  const actionYml = readFileSync(join(ROOT, "action.yml"), "utf8");
+
+  it("action.yml still declares the timeout-ms input", () => {
+    expect(actionYml).toMatch(/^\s{2}timeout-ms:/m);
+  });
+
+  it("action.yml declares NO default for timeout-ms", () => {
+    // The input block runs to the next top-level input key or the outputs block.
+    const block = actionYml.split(/^\s{2}timeout-ms:/m)[1] ?? "";
+    const untilNextKey = block.split(/^\s{2}\S|^outputs:/m)[0] ?? "";
+    expect(untilNextKey).not.toMatch(/^\s*default:/m);
+  });
+
+  it("omits --timeout-ms entirely when the input is unset", () => {
+    const argv = actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }));
+    expect(argv).not.toContain("--timeout-ms");
+  });
+
+  it("still forwards --timeout-ms when an operator sets it deliberately", () => {
+    const argv = actionArgv(
+      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true", "INPUT_TIMEOUT-MS": "2500" })
+    );
+    expect(argv).toContain("--timeout-ms");
+    expect(argv[argv.indexOf("--timeout-ms") + 1]).toBe("2500");
+  });
+
+  it("treats an empty timeout-ms input as unset, not as zero", () => {
+    const argv = actionArgv(
+      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true", "INPUT_TIMEOUT-MS": "   " })
+    );
+    expect(argv).not.toContain("--timeout-ms");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The published help and README must state the timeout that the client ACTUALLY
+// uses. A stale "default: 5000" is not a cosmetic error: it tells an operator
+// the lookup gives up after 5 s, so a `unavailable` result looks like a settled
+// answer rather than a budget that can be raised.
+// ---------------------------------------------------------------------------
+describe("D6: public copy states the real timeout behaviour", () => {
+  const readmeText = readFileSync(join(ROOT, "README.md"), "utf8");
+
+  it("CLI help no longer advertises a 5000 ms network timeout", async () => {
+    const r = await runCli(["--help"]);
+    expect(r.stdout).not.toMatch(/timeout-ms[\s\S]{0,80}default:\s*5000/);
+    expect(r.stdout).toMatch(/--timeout-ms/);
+    expect(r.stdout).toMatch(/10000/);
+  });
+
+  it("README documents a per-attempt timeout and a bounded retry", () => {
+    expect(readmeText).toMatch(/per-\*\*attempt\*\*|Per-\*\*attempt\*\*/i);
+    expect(readmeText).toMatch(/3 attempts/);
+    expect(readmeText).toMatch(/32 s total budget/);
+  });
+
+  it("no public surface still pins the example timeout to 5000", () => {
+    const example = readFileSync(join(ROOT, "examples", "github-action.yml"), "utf8");
+    expect(example).not.toMatch(/^\s*timeout-ms:\s*"5000"/m);
+    expect(readmeText).not.toMatch(/^\s*timeout-ms:\s*"5000"/m);
+  });
+});

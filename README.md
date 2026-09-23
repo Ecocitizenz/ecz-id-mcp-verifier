@@ -22,7 +22,7 @@ Real output for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative
 {
   "schema_version": 1,
   "verifier": "ECZ-ID MCP Verifier",
-  "verifier_version": "0.9.0",
+  "verifier_version": "0.9.1",
   "target": "ECZ-GB-A93K7Q",
   "target_type": "ecz_id",
   "policy_mode": "OPEN",
@@ -47,7 +47,7 @@ Real output for `--target ECZ-GB-A93K7Q --policy OPEN --offline` (representative
 | Surface | How |
 | --- | --- |
 | **CLI** | `npx @ecocitizenz/ecz-id-mcp-verifier check --target <value>` |
-| **CI / GitHub Action** | `uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.0` |
+| **CI / GitHub Action** | `uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.1` |
 | **MCP host** | run the `ecz-id-mcp-server` stdio binary (three read-only tools) |
 | **Node library** | `import { verify } from "@ecocitizenz/ecz-id-mcp-verifier"` |
 
@@ -219,7 +219,7 @@ Two equivalent command names are installed: `ecz-id-mcp-verifier` and `ecz-mcp-v
 | `--developer-base`  | `https://developers.ecocitizenz.com`   | Override Developer Gateway.              |
 | `--offline`         | off                                    | Offline mode (no network).               |
 | `--no-network`      | off                                    | Same as `--offline`.                     |
-| `--timeout-ms`      | `5000`                                 | Network timeout (ms).                    |
+| `--timeout-ms`      | `10000` per attempt                    | Per-**attempt** lookup timeout (ms). Up to 3 attempts inside a 32 s total budget. Pinning it low can report a good record as unavailable when Core is cold. |
 | `--output <path>`   | stdout                                 | Write output to file.                    |
 | `--sarif <path>`    | off                                    | Also write a minimal SARIF 2.1.0 file.   |
 | `--capabilities`    |                                        | Print the machine-readable capability profile (JSON) and exit. |
@@ -387,14 +387,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.0
+      - uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.1
         with:
           target: "ECZ-CC-ABC123"
           target-type: "ecz_id"
           policy: "PREFER"
           resolver-base: "https://resolver.ecocitizenz.org"
           no-network: "false"
-          timeout-ms: "5000"
+          # timeout-ms: left unset so the bounded-retry defaults apply
 ```
 
 Outputs: `result-state`, `reason-codes`, `action-envelope-json`, `setup-handoff-json`, `mcp-action-envelope-json`, `request-to-resolve-json`, `passport-opportunity-json`, `primary-action`, `trustops-action-url`, `developer-guidance-url`. The Action also writes a concise GitHub **step summary**.
@@ -451,7 +451,7 @@ And the closing reminders: "Re-check before reliance." and "Local policy decides
 - **`UNSUPPORTED_TARGET` (exit 4):** the target is empty, contains whitespace, or is a malformed ECZ-ID. Quote the target and check the supported-shapes table.
 - **`REQUIRE` exits 1 offline:** expected — `REQUIRE` fails closed when no public proof is confirmed; use `OPEN`/`PREFER` for informational runs, or drop `--offline`.
 - **A non-ECZ-ID target shows `resolver_url: null`:** expected — only ECZ-IDs are resolvable; other shapes are classified and routed, not resolved.
-- **Network errors under `REQUIRE`:** exit 5; raise `--timeout-ms` or run `--offline`.
+- **Network errors under `REQUIRE`:** exit 5. The lookup already retries a cold or transient Core up to 3 times within a 32 s budget, so a failure here means it was unavailable for the whole budget. Raise `--timeout-ms` only if your Core is slower than that; or run `--offline`. An unavailable result is never a judgment about the identity.
 
 ## Public routes
 
@@ -552,14 +552,14 @@ Report suspected vulnerabilities privately via the repository's **GitHub Securit
 A plain install uses the current release. Pin the exact release only when reproducibility is required:
 
 ```sh
-npm install @ecocitizenz/ecz-id-mcp-verifier@0.9.0
-npx @ecocitizenz/ecz-id-mcp-verifier@0.9.0 --doctor
+npm install @ecocitizenz/ecz-id-mcp-verifier@0.9.1
+npx @ecocitizenz/ecz-id-mcp-verifier@0.9.1 --doctor
 ```
 
 ## Publication status
 
 - **npm:** `@ecocitizenz/ecz-id-mcp-verifier` is live on the public registry; a plain `npm install` (or `npx`) uses the current release.
-- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.9.0` on the GitHub Actions Marketplace.
+- **GitHub Action:** `Ecocitizenz/ecz-id-mcp-verifier@v0.9.1` on the GitHub Actions Marketplace.
 - **Trusted publishing:** npm releases use protected OIDC trusted publishing with published provenance through a GitHub `npm-release` environment. The canonical Git remote (`https://github.com/Ecocitizenz/ecz-id-mcp-verifier.git`) is configured, and `package.json` `repository`/`bugs` URLs match it exactly.
 - Published package versions and Action release tags are **immutable**.
 

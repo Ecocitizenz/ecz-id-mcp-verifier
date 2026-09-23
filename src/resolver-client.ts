@@ -22,7 +22,15 @@
 // target-mismatched, revoked, suspended, expired, stale, degraded or abuse
 // states are mapped deterministically and are NEVER treated as positive proof.
 
-import { RESOLVER_BASE, RESOLVER_API_BASE, DEFAULT_TIMEOUT_MS } from "./constants.js";
+import {
+  RESOLVER_BASE,
+  RESOLVER_API_BASE,
+  DEFAULT_ATTEMPT_TIMEOUT_MS,
+  DEFAULT_TOTAL_BUDGET_MS,
+  DEFAULT_MAX_ATTEMPTS,
+  RETRY_BACKOFF_STEP_MS,
+  RETRYABLE_HTTP_STATUS
+} from "./constants.js";
 import type { TargetType } from "./classify-target.js";
 import { isValidEczId, parseEczId } from "./ecz-id.js";
 
@@ -30,7 +38,12 @@ export interface ResolverLookupOptions {
   resolverBase?: string;
   apiBase?: string;
   noNetwork?: boolean;
+  /** Per-ATTEMPT timeout. Back-compatible: `--timeout-ms` still sets this. */
   timeoutMs?: number;
+  /** Hard ceiling across every attempt and backoff. */
+  totalBudgetMs?: number;
+  /** Maximum attempts, including the first. 1 disables retrying. */
+  maxAttempts?: number;
 }
 
 /**
@@ -308,49 +321,89 @@ export async function lookup(
     };
   }
 
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
-  try {
-    const res = await fetch(urls.machine, {
-      method: "GET",
-      signal: ac.signal,
-      // Honour no-store freshness: never serve a cached projection as proof.
-      headers: { Accept: "application/json", "Cache-Control": "no-store" },
-      cache: "no-store",
-      redirect: "follow"
-    });
+  // -------------------------------------------------------------------------
+  // D6: bounded retry for a cold Core (see constants.ts).
+  //
+  // Retried: transport failure (including this client's own per-attempt
+  // timeout) and the transient server codes. NOT retried: any definite answer,
+  // so 2xx, 404/410 and 500 each return on their first attempt exactly as
+  // before. Proof interpretation is untouched -- only the transport changed.
+  // -------------------------------------------------------------------------
+  const attemptTimeoutMs = options.timeoutMs ?? DEFAULT_ATTEMPT_TIMEOUT_MS;
+  const totalBudgetMs = options.totalBudgetMs ?? DEFAULT_TOTAL_BUDGET_MS;
+  const maxAttempts = Math.max(1, Math.trunc(options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS));
+  const startedAt = Date.now();
+  const msLeft = () => totalBudgetMs - (Date.now() - startedAt);
 
-    let bodyText = "";
+  let lastError = "unknown_error";
+  let lastStatus: number | undefined;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const budgetLeft = msLeft();
+    if (budgetLeft <= 0) break;
+
+    const ac = new AbortController();
+    // An attempt never outlives the overall budget.
+    const timer = setTimeout(() => ac.abort(), Math.min(attemptTimeoutMs, budgetLeft));
+    let retryAfterThisAttempt = false;
     try {
-      bodyText = await res.text();
-    } catch {
-      /* tolerated: interpretation handles an empty/unreadable body */
+      const res = await fetch(urls.machine, {
+        method: "GET",
+        signal: ac.signal,
+        // Honour no-store freshness: never serve a cached projection as proof.
+        headers: { Accept: "application/json", "Cache-Control": "no-store" },
+        cache: "no-store",
+        redirect: "follow"
+      });
+
+      let bodyText = "";
+      try {
+        bodyText = await res.text();
+      } catch {
+        /* tolerated: interpretation handles an empty/unreadable body */
+      }
+
+      lastStatus = res.status;
+      if (RETRYABLE_HTTP_STATUS.includes(res.status) && attempt < maxAttempts) {
+        lastError = `http_${res.status}`;
+        retryAfterThisAttempt = true;
+      } else {
+        const proof_state = interpretResolverResponse(res.status, bodyText, target);
+        return {
+          found: isPositiveProofState(proof_state),
+          applicable: true,
+          proof_state,
+          resolver_base,
+          resolver_url: urls.human,
+          // Only advertise the machine URL as proof when the projection is active.
+          machine_json_url: proof_state === "active" ? urls.machine : undefined,
+          http_status: res.status,
+          network_attempted: true
+        };
+      }
+    } catch (e) {
+      lastError = e instanceof Error ? e.name : "unknown_error";
+      lastStatus = undefined;
+      retryAfterThisAttempt = attempt < maxAttempts;
+    } finally {
+      clearTimeout(timer);
     }
 
-    const proof_state = interpretResolverResponse(res.status, bodyText, target);
-
-    return {
-      found: isPositiveProofState(proof_state),
-      applicable: true,
-      proof_state,
-      resolver_base,
-      resolver_url: urls.human,
-      // Only advertise the machine URL as proof when the projection is active.
-      machine_json_url: proof_state === "active" ? urls.machine : undefined,
-      http_status: res.status,
-      network_attempted: true
-    };
-  } catch (e) {
-    return {
-      found: false,
-      applicable: true,
-      proof_state: "unavailable",
-      resolver_base,
-      resolver_url: urls.human,
-      network_attempted: true,
-      network_error: e instanceof Error ? e.name : "unknown_error"
-    };
-  } finally {
-    clearTimeout(timer);
+    if (!retryAfterThisAttempt) break;
+    const backoff = Math.min(attempt * RETRY_BACKOFF_STEP_MS, Math.max(0, msLeft()));
+    if (backoff > 0) await new Promise((r) => setTimeout(r, backoff));
   }
+
+  // Every attempt failed transiently. `unavailable` is the truthful state: the
+  // projection was never read, so no proof is claimed either way.
+  return {
+    found: false,
+    applicable: true,
+    proof_state: "unavailable",
+    resolver_base,
+    resolver_url: urls.human,
+    http_status: lastStatus,
+    network_attempted: true,
+    network_error: lastError
+  };
 }
