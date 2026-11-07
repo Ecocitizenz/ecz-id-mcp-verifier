@@ -26,7 +26,7 @@ jobs:
       - name: Run ECZ-ID MCP Verifier
         id: ecz_verify
         # Pin the immutable release tag (canonical owner casing).
-        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.9.1
+        uses: Ecocitizenz/ecz-id-mcp-verifier@v0.10.0
         with:
           target: "ECZ-GB-A93K7Q"
           target-type: "ecz_id"
