@@ -14,6 +14,13 @@ export interface JsonOutputCore {
     verifier_version: string;
     target: string;
     target_type: string;
+    passport_family: string | null;
+    passport_family_source: string;
+    passport_type_code: string | null;
+    passport_contract_token: string | null;
+    passport_guidance_url: string;
+    passport_acquisition_url: string;
+    passport_subject_note: string | null;
     policy_mode: string;
     operator: string;
     result_state: string;

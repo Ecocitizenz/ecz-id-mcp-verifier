@@ -29,7 +29,7 @@ import {
   DEFAULT_TOTAL_BUDGET_MS,
   DEFAULT_MAX_ATTEMPTS,
   RETRY_BACKOFF_STEP_MS,
-  RETRYABLE_HTTP_STATUS
+  RETRYABLE_HTTP_STATUS,
 } from "./constants.js";
 import type { TargetType } from "./classify-target.js";
 import { isValidEczId, parseEczId } from "./ecz-id.js";
@@ -53,7 +53,6 @@ export interface ResolverLookupOptions {
  */
 export type ResolverProofState =
   | "active" // 2xx + recognised projection + usable, non-degraded current proof
-  | "child_machine_unproven" // child ID: no documented/proven machine endpoint
   | "not_found" // 404 / 410 — no public proof projection for this ECZ-ID
   | "unavailable" // 5xx / 429 / other non-2xx / network error / timeout
   | "malformed" // 2xx but the body is not parseable JSON
@@ -96,53 +95,34 @@ export function isAcceptedEczId(value: string): boolean {
 
 export interface ResolverUrls {
   human: string;
-  /**
-   * Machine proof JSON URL. Present ONLY for a parent ECZ-ID (the proven
-   * `/api/p/{parent}.json` endpoint). Omitted for a child, because no child
-   * machine projection endpoint is documented/proven.
-   */
-  machine?: string;
+  machine: string;
   kind: "parent" | "child";
 }
 
 /**
- * Derive the canonical Resolver URLs for a target.
- *
- * Returns URLs ONLY when the target maps deterministically to a VALID ECZ-ID
- * (parent or child). For any other shape — URL, repository, package, container
- * image, MCP server URL, free text, or a malformed ECZ-ID — returns `undefined`.
- * The client never invents a Resolver path.
- *
- * Routes (locked):
- *   - Parent human:   {base}/p/{parent}
- *   - Parent machine: {api}/api/p/{parent}.json  (proven)
- *   - Child human:    {base}/p/{parent}/{passport_code}/{instance_suffix}
- *     (decomposed external form — NEVER a percent-encoded internal child ID)
- *   - Child machine:  none (no documented/proven child machine endpoint)
+ * Derive the canonical Resolver URLs for a valid parent or current seven-family
+ * child ECZ-ID. One route serves the parent and every family.
  */
 export function deriveResolverUrls(
   target: string,
   targetType: TargetType,
   resolverBase: string = RESOLVER_BASE,
-  apiBase: string = RESOLVER_API_BASE
+  apiBase: string = RESOLVER_API_BASE,
 ): ResolverUrls | undefined {
   if (targetType !== "ecz_id") return undefined;
   const parsed = parseEczId(target);
   if (!parsed.valid || !parsed.parent) return undefined;
+  const canonical =
+    parsed.kind === "child"
+      ? `${parsed.parent}::${parsed.passportCode}-${parsed.instanceSuffix}`
+      : parsed.parent;
   const base = resolverBase.replace(/\/+$/, "");
   const api = apiBase.replace(/\/+$/, "");
-
-  if (parsed.kind === "child") {
-    // Decomposed external URL. The parser restricts each segment to [A-Z0-9-],
-    // so no percent-encoding is applied (and the internal `::` form is never
-    // used as a path).
-    const human = `${base}/p/${parsed.parent}/${parsed.passportCode}/${parsed.instanceSuffix}`;
-    return { human, kind: "child" }; // child machine endpoint is unproven -> omitted
-  }
-
-  const human = `${base}/p/${parsed.parent}`;
-  const machine = `${api}/api/p/${parsed.parent}.json`;
-  return { human, machine, kind: "parent" };
+  return {
+    human: `${base}/p/${canonical}`,
+    machine: `${api}/api/p/${canonical}.json`,
+    kind: parsed.kind === "child" ? "child" : "parent",
+  };
 }
 
 /**
@@ -152,7 +132,7 @@ export function deriveResolverUrls(
 export function deriveResolverUrl(
   target: string,
   targetType: TargetType,
-  resolverBase: string = RESOLVER_BASE
+  resolverBase: string = RESOLVER_BASE,
 ): string | undefined {
   return deriveResolverUrls(target, targetType, resolverBase)?.human;
 }
@@ -180,7 +160,7 @@ function asString(v: unknown): string {
 export function interpretResolverResponse(
   httpStatus: number,
   bodyText: string,
-  requested: string
+  requested: string,
 ): ResolverProofState {
   // Non-2xx mapping. 404/410 -> no proof; everything else -> unavailable.
   if (httpStatus === 404 || httpStatus === 410) return "not_found";
@@ -205,7 +185,8 @@ export function interpretResolverResponse(
 
   // Subject must match the requested ECZ-ID (case-insensitive: the backend
   // upper-cases). A projection for a different subject is a mismatch.
-  if (subject.toUpperCase() !== requested.toUpperCase()) return "target_mismatch";
+  if (subject.toUpperCase() !== requested.toUpperCase())
+    return "target_mismatch";
 
   const status = asString(obj.status).toLowerCase();
   const lifecycle = asString(obj.lifecycle_state).toUpperCase();
@@ -213,21 +194,38 @@ export function interpretResolverResponse(
   const abuse = asString(obj.abuse_state).toUpperCase();
   const ta = obj.trust_assertion;
   const taRevoked =
-    typeof ta === "object" && ta !== null && (ta as Record<string, unknown>).revoked === true;
+    typeof ta === "object" &&
+    ta !== null &&
+    (ta as Record<string, unknown>).revoked === true;
   const pulse =
     typeof obj.pulseguard === "object" && obj.pulseguard !== null
-      ? asString((obj.pulseguard as Record<string, unknown>).overall_validity).toUpperCase()
+      ? asString(
+          (obj.pulseguard as Record<string, unknown>).overall_validity,
+        ).toUpperCase()
       : "";
 
   // Negative / lifecycle signals dominate over any "active" claim, in a fixed
   // precedence so the mapping is deterministic. None of these is positive proof.
-  if (taRevoked || status === "revoked" || lifecycle === "REVOKED" || verification === "REVOKED") {
+  if (
+    taRevoked ||
+    status === "revoked" ||
+    lifecycle === "REVOKED" ||
+    verification === "REVOKED"
+  ) {
     return "revoked";
   }
-  if (status === "suspended" || lifecycle === "SUSPENDED" || verification === "SUSPENDED") {
+  if (
+    status === "suspended" ||
+    lifecycle === "SUSPENDED" ||
+    verification === "SUSPENDED"
+  ) {
     return "suspended";
   }
-  if (status === "expired" || lifecycle === "EXPIRED" || verification === "EXPIRED") {
+  if (
+    status === "expired" ||
+    lifecycle === "EXPIRED" ||
+    verification === "EXPIRED"
+  ) {
     return "expired";
   }
   if (
@@ -238,13 +236,20 @@ export function interpretResolverResponse(
   ) {
     return "abuse";
   }
-  if (verification === "PROOF_INVALID" || verification === "SIGNATURE_INVALID") {
+  if (
+    verification === "PROOF_INVALID" ||
+    verification === "SIGNATURE_INVALID"
+  ) {
     return "proof_invalid";
   }
   if (status === "stale" || lifecycle === "STALE" || pulse === "STALE") {
     return "stale";
   }
-  if (status === "degraded" || lifecycle === "DEGRADED" || verification === "DEGRADED") {
+  if (
+    status === "degraded" ||
+    lifecycle === "DEGRADED" ||
+    verification === "DEGRADED"
+  ) {
     return "degraded";
   }
 
@@ -252,7 +257,9 @@ export function interpretResolverResponse(
   // alone, and never merely the presence of a trust_assertion block (which the
   // backend always includes).
   const activeSignal =
-    status === "active" || lifecycle === "ACTIVE" || verification === "VERIFIED";
+    status === "active" ||
+    lifecycle === "ACTIVE" ||
+    verification === "VERIFIED";
   if (activeSignal) return "active";
 
   // Recognised projection, but no understood lifecycle signal -> not proof.
@@ -270,33 +277,23 @@ export function interpretResolverResponse(
 export async function lookup(
   target: string,
   targetType: TargetType,
-  options: ResolverLookupOptions = {}
+  options: ResolverLookupOptions = {},
 ): Promise<ResolverLookupResult> {
   const resolver_base = options.resolverBase ?? RESOLVER_BASE;
   const urls = deriveResolverUrls(
     target,
     targetType,
     resolver_base,
-    options.apiBase ?? RESOLVER_API_BASE
+    options.apiBase ?? RESOLVER_API_BASE,
   );
 
   // Non-ECZ-ID / invalid target: not directly resolvable. No request, no path.
   if (!urls) {
-    return { found: false, applicable: false, resolver_base, network_attempted: false };
-  }
-
-  // Child identifier: the decomposed human URL is retained, but there is no
-  // documented/proven child machine projection endpoint. Do NOT fetch and do
-  // NOT reuse the parent machine endpoint. machine_json_url stays null and no
-  // proof is claimed (child machine projection unavailable/unproven).
-  if (urls.kind === "child" || !urls.machine) {
     return {
       found: false,
-      applicable: true,
-      proof_state: "child_machine_unproven",
+      applicable: false,
       resolver_base,
-      resolver_url: urls.human,
-      network_attempted: false
+      network_attempted: false,
     };
   }
 
@@ -306,7 +303,7 @@ export async function lookup(
       applicable: true,
       resolver_base,
       resolver_url: urls.human,
-      network_attempted: false
+      network_attempted: false,
     };
   }
 
@@ -317,7 +314,7 @@ export async function lookup(
       resolver_base,
       resolver_url: urls.human,
       network_attempted: false,
-      network_error: "non_https_blocked"
+      network_error: "non_https_blocked",
     };
   }
 
@@ -331,7 +328,10 @@ export async function lookup(
   // -------------------------------------------------------------------------
   const attemptTimeoutMs = options.timeoutMs ?? DEFAULT_ATTEMPT_TIMEOUT_MS;
   const totalBudgetMs = options.totalBudgetMs ?? DEFAULT_TOTAL_BUDGET_MS;
-  const maxAttempts = Math.max(1, Math.trunc(options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS));
+  const maxAttempts = Math.max(
+    1,
+    Math.trunc(options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS),
+  );
   const startedAt = Date.now();
   const msLeft = () => totalBudgetMs - (Date.now() - startedAt);
 
@@ -344,7 +344,10 @@ export async function lookup(
 
     const ac = new AbortController();
     // An attempt never outlives the overall budget.
-    const timer = setTimeout(() => ac.abort(), Math.min(attemptTimeoutMs, budgetLeft));
+    const timer = setTimeout(
+      () => ac.abort(),
+      Math.min(attemptTimeoutMs, budgetLeft),
+    );
     let retryAfterThisAttempt = false;
     try {
       const res = await fetch(urls.machine, {
@@ -353,7 +356,7 @@ export async function lookup(
         // Honour no-store freshness: never serve a cached projection as proof.
         headers: { Accept: "application/json", "Cache-Control": "no-store" },
         cache: "no-store",
-        redirect: "follow"
+        redirect: "follow",
       });
 
       let bodyText = "";
@@ -368,7 +371,11 @@ export async function lookup(
         lastError = `http_${res.status}`;
         retryAfterThisAttempt = true;
       } else {
-        const proof_state = interpretResolverResponse(res.status, bodyText, target);
+        const proof_state = interpretResolverResponse(
+          res.status,
+          bodyText,
+          target,
+        );
         return {
           found: isPositiveProofState(proof_state),
           applicable: true,
@@ -378,7 +385,7 @@ export async function lookup(
           // Only advertise the machine URL as proof when the projection is active.
           machine_json_url: proof_state === "active" ? urls.machine : undefined,
           http_status: res.status,
-          network_attempted: true
+          network_attempted: true,
         };
       }
     } catch (e) {
@@ -390,7 +397,10 @@ export async function lookup(
     }
 
     if (!retryAfterThisAttempt) break;
-    const backoff = Math.min(attempt * RETRY_BACKOFF_STEP_MS, Math.max(0, msLeft()));
+    const backoff = Math.min(
+      attempt * RETRY_BACKOFF_STEP_MS,
+      Math.max(0, msLeft()),
+    );
     if (backoff > 0) await new Promise((r) => setTimeout(r, backoff));
   }
 
@@ -404,6 +414,6 @@ export async function lookup(
     resolver_url: urls.human,
     http_status: lastStatus,
     network_attempted: true,
-    network_error: lastError
+    network_error: lastError,
   };
 }

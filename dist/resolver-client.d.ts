@@ -15,7 +15,7 @@ export interface ResolverLookupOptions {
  * ONLY state that represents usable public proof. Everything else is a
  * non-positive state that local policy must weigh.
  */
-export type ResolverProofState = "active" | "child_machine_unproven" | "not_found" | "unavailable" | "malformed" | "schema_mismatch" | "target_mismatch" | "revoked" | "suspended" | "expired" | "stale" | "degraded" | "abuse" | "proof_invalid" | "unknown";
+export type ResolverProofState = "active" | "not_found" | "unavailable" | "malformed" | "schema_mismatch" | "target_mismatch" | "revoked" | "suspended" | "expired" | "stale" | "degraded" | "abuse" | "proof_invalid" | "unknown";
 /** True only for a state that represents usable public proof. */
 export declare function isPositiveProofState(s: ResolverProofState): boolean;
 export interface ResolverLookupResult {
@@ -37,28 +37,12 @@ export interface ResolverLookupResult {
 export declare function isAcceptedEczId(value: string): boolean;
 export interface ResolverUrls {
     human: string;
-    /**
-     * Machine proof JSON URL. Present ONLY for a parent ECZ-ID (the proven
-     * `/api/p/{parent}.json` endpoint). Omitted for a child, because no child
-     * machine projection endpoint is documented/proven.
-     */
-    machine?: string;
+    machine: string;
     kind: "parent" | "child";
 }
 /**
- * Derive the canonical Resolver URLs for a target.
- *
- * Returns URLs ONLY when the target maps deterministically to a VALID ECZ-ID
- * (parent or child). For any other shape — URL, repository, package, container
- * image, MCP server URL, free text, or a malformed ECZ-ID — returns `undefined`.
- * The client never invents a Resolver path.
- *
- * Routes (locked):
- *   - Parent human:   {base}/p/{parent}
- *   - Parent machine: {api}/api/p/{parent}.json  (proven)
- *   - Child human:    {base}/p/{parent}/{passport_code}/{instance_suffix}
- *     (decomposed external form — NEVER a percent-encoded internal child ID)
- *   - Child machine:  none (no documented/proven child machine endpoint)
+ * Derive the canonical Resolver URLs for a valid parent or current seven-family
+ * child ECZ-ID. One route serves the parent and every family.
  */
 export declare function deriveResolverUrls(target: string, targetType: TargetType, resolverBase?: string, apiBase?: string): ResolverUrls | undefined;
 /**

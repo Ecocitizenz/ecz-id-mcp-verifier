@@ -14,7 +14,7 @@ afterEach(() => {
 function mockFetch(status: number, body: unknown, asText = false) {
   vi.spyOn(globalThis, "fetch").mockImplementation((() =>
     Promise.resolve(
-      new Response(asText ? String(body) : JSON.stringify(body), { status })
+      new Response(asText ? String(body) : JSON.stringify(body), { status }),
     )) as typeof fetch);
 }
 
@@ -34,11 +34,15 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
     {
       label: "200 active",
       status: 200,
-      body: { ecz_id: PARENT, status: "active", trust_assertion: { revoked: false } },
+      body: {
+        ecz_id: PARENT,
+        status: "active",
+        trust_assertion: { revoked: false },
+      },
       result_state: "RESOLVER_VERIFIABLE",
       contains: [],
       exitOpen: 0,
-      exitRequire: 0
+      exitRequire: 0,
     },
     {
       label: "200 revoked",
@@ -47,7 +51,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "REVOKED",
       contains: ["REVOKED_PARENT"],
       exitOpen: 3,
-      exitRequire: 3
+      exitRequire: 3,
     },
     {
       label: "200 suspended",
@@ -56,7 +60,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "SUSPENDED",
       contains: ["LOCAL_POLICY_DECIDES"],
       exitOpen: 3,
-      exitRequire: 3
+      exitRequire: 3,
     },
     {
       label: "200 expired",
@@ -65,16 +69,20 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "EXPIRED",
       contains: ["LOCAL_POLICY_DECIDES"],
       exitOpen: 3,
-      exitRequire: 3
+      exitRequire: 3,
     },
     {
       label: "200 stale",
       status: 200,
-      body: { ecz_id: PARENT, status: "active", pulseguard: { overall_validity: "STALE" } },
+      body: {
+        ecz_id: PARENT,
+        status: "active",
+        pulseguard: { overall_validity: "STALE" },
+      },
       result_state: "DEGRADED",
       contains: ["PULSEGUARD_STALE"],
       exitOpen: 0,
-      exitRequire: 1
+      exitRequire: 1,
     },
     {
       label: "200 target mismatch",
@@ -83,7 +91,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "MISMATCH",
       contains: ["RESOLVER_RESPONSE_UNVERIFIABLE"],
       exitOpen: 2,
-      exitRequire: 2
+      exitRequire: 2,
     },
     {
       label: "200 abuse",
@@ -92,7 +100,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "MISMATCH",
       contains: ["AGENT_CREDENTIAL_REUSED"],
       exitOpen: 2,
-      exitRequire: 2
+      exitRequire: 2,
     },
     {
       label: "200 malformed body",
@@ -102,7 +110,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       contains: ["RESOLVER_RESPONSE_UNVERIFIABLE"],
       exitOpen: 0,
-      exitRequire: 1
+      exitRequire: 1,
     },
     {
       label: "200 unknown schema",
@@ -111,7 +119,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       contains: ["RESOLVER_RESPONSE_UNVERIFIABLE"],
       exitOpen: 0,
-      exitRequire: 1
+      exitRequire: 1,
     },
     {
       label: "404",
@@ -120,7 +128,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       contains: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
       exitOpen: 0,
-      exitRequire: 1
+      exitRequire: 1,
     },
     {
       label: "410 gone",
@@ -129,7 +137,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       contains: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
       exitOpen: 0,
-      exitRequire: 1
+      exitRequire: 1,
     },
     {
       label: "429",
@@ -138,7 +146,7 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       contains: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
       exitOpen: 0,
-      exitRequire: 1
+      exitRequire: 1,
     },
     {
       label: "503",
@@ -147,8 +155,8 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       contains: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
       exitOpen: 0,
-      exitRequire: 1
-    }
+      exitRequire: 1,
+    },
   ];
 
   for (const c of cases) {
@@ -166,8 +174,16 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
         expect(res.machine_json_url).not.toBeNull();
       }
       const failed = res.network_attempted && Boolean(res.network_error);
-      expect(computeExitCode(res.result_state, "OPEN", { network_attempted_and_failed: failed })).toBe(c.exitOpen);
-      expect(computeExitCode(res.result_state, "REQUIRE", { network_attempted_and_failed: failed })).toBe(c.exitRequire);
+      expect(
+        computeExitCode(res.result_state, "OPEN", {
+          network_attempted_and_failed: failed,
+        }),
+      ).toBe(c.exitOpen);
+      expect(
+        computeExitCode(res.result_state, "REQUIRE", {
+          network_attempted_and_failed: failed,
+        }),
+      ).toBe(c.exitRequire);
     });
   }
 
@@ -182,7 +198,11 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
     expect(res.network_attempted).toBe(true);
     expect(typeof res.network_error).toBe("string");
     const failed = res.network_attempted && Boolean(res.network_error);
-    expect(computeExitCode(res.result_state, "REQUIRE", { network_attempted_and_failed: failed })).toBe(5);
+    expect(
+      computeExitCode(res.result_state, "REQUIRE", {
+        network_attempted_and_failed: failed,
+      }),
+    ).toBe(5);
   });
 
   it("invalid ECZ-ID target is unsupported and never triggers a fetch", async () => {
@@ -193,19 +213,32 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
     expect(res.resolver_url).toBeNull();
   });
 
-  it("child ID: decomposed human URL retained, machine null, no fetch, missing proof", async () => {
-    const spy = vi.spyOn(globalThis, "fetch");
-    const res = await verify({ target: "ECZ-GB-A93K7Q::AGENT-4F9Q2A", policy: "OPEN" });
+  it("current child ID uses the canonical human + machine Resolver routes", async () => {
+    const child = "ECZ-GB-A93K7Q::AGENT_PASSPORT-4F9Q2A";
+    mockFetch(200, {
+      ecz_id: child,
+      status: "active",
+      trust_assertion: { revoked: false },
+    });
+    const res = await verify({ target: child, policy: "OPEN" });
     expect(res.target_type).toBe("ecz_id");
-    expect(res.result_state).toBe("NO_PUBLIC_RESOLVER_PROOF_FOUND");
-    expect(res.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/AGENT/4F9Q2A");
-    expect(res.machine_json_url).toBeNull(); // no proven child machine endpoint
-    expect(spy).not.toHaveBeenCalled();
+    expect(res.passport_family).toBe("agent");
+    expect(res.result_state).toBe("RESOLVER_VERIFIABLE");
+    expect(res.resolver_url).toBe(
+      `https://resolver.ecocitizenz.org/p/${child}`,
+    );
+    expect(res.machine_json_url).toBe(
+      `https://api.ecocitizenz.com/api/p/${child}.json`,
+    );
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("child backend-key ID is unsupported (not a public code), no fetch", async () => {
     const spy = vi.spyOn(globalThis, "fetch");
-    const res = await verify({ target: "ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A", policy: "OPEN" });
+    const res = await verify({
+      target: "ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A",
+      policy: "OPEN",
+    });
     expect(res.result_state).toBe("UNSUPPORTED_TARGET");
     expect(spy).not.toHaveBeenCalled();
   });
@@ -213,9 +246,20 @@ describe("verify(): Resolver lifecycle mapping (mocked network)", () => {
 
 describe("mapProofState: total + safe mapping", () => {
   const states: ResolverProofState[] = [
-    "active", "child_machine_unproven", "not_found", "unavailable", "malformed",
-    "schema_mismatch", "target_mismatch", "revoked", "suspended", "expired",
-    "stale", "degraded", "abuse", "proof_invalid", "unknown"
+    "active",
+    "not_found",
+    "unavailable",
+    "malformed",
+    "schema_mismatch",
+    "target_mismatch",
+    "revoked",
+    "suspended",
+    "expired",
+    "stale",
+    "degraded",
+    "abuse",
+    "proof_invalid",
+    "unknown",
   ];
   it("maps every proof state to a canonical ResultState and canonical ReasonCodes", () => {
     for (const s of states) {
@@ -233,6 +277,8 @@ describe("mapProofState: total + safe mapping", () => {
     }
   });
   it("undefined (offline / no lookup) maps to missing proof, never proof", () => {
-    expect(mapProofState(undefined).result_state).toBe("NO_PUBLIC_RESOLVER_PROOF_FOUND");
+    expect(mapProofState(undefined).result_state).toBe(
+      "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+    );
   });
 });

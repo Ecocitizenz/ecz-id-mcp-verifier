@@ -14,6 +14,10 @@ inputs:
     description: "Optional explicit target type hint."
     required: false
     default: ""
+  passport-family:
+    description: "Optional routing hint only: auto, agent, mcp, plugin, api, iot, sdk, or service_workload. Never proves ownership."
+    required: false
+    default: "auto"
   policy:
     description: "Local policy mode: OPEN, PREFER, or REQUIRE."
     required: false
@@ -68,6 +72,16 @@ outputs:
     description: "Request-to-Resolve local guidance packet JSON. signed_request=false; not created server-side."
   primary-action:
     description: "Single deterministic next action verb."
+  passport-family:
+    description: "Resolved guidance family, or empty when not safely inferred."
+  passport-family-source:
+    description: "How family guidance was selected: explicit, child_ecz_id, target_shape, or none."
+  passport-type-code:
+    description: "Current Core child type code for the selected family, or empty."
+  next-step-label:
+    description: "Human label for the single contextual next step."
+  next-step-url:
+    description: "URL for the single contextual next step."
   trustops-action-url:
     description: "Deterministic TrustOps action URL (no secrets, allow-list params)."
   developer-guidance-url:

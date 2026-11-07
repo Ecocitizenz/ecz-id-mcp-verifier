@@ -9,7 +9,7 @@ import { PRIVACY } from "../src/privacy.js";
 import {
   RESOLVER_BASE,
   TRUSTOPS_START,
-  DEVELOPER_GATEWAY
+  DEVELOPER_GATEWAY,
 } from "../src/constants.js";
 
 const ROOT = resolve(__dirname, "..");
@@ -21,7 +21,8 @@ function readAllSourceFiles(): { path: string; content: string }[] {
       const p = join(dir, entry);
       const s = statSync(p);
       if (s.isDirectory()) walk(p);
-      else if (p.endsWith(".ts")) out.push({ path: p, content: readFileSync(p, "utf8") });
+      else if (p.endsWith(".ts"))
+        out.push({ path: p, content: readFileSync(p, "utf8") });
     }
   };
   walk(join(ROOT, "src"));
@@ -48,7 +49,9 @@ describe("scaffold: ResultStates", () => {
   });
 
   it("does not contain FAILED_VERIFICATION", () => {
-    expect((RESULT_STATES as readonly string[]).includes("FAILED_VERIFICATION")).toBe(false);
+    expect(
+      (RESULT_STATES as readonly string[]).includes("FAILED_VERIFICATION"),
+    ).toBe(false);
   });
 });
 
@@ -96,14 +99,19 @@ describe("scaffold: forbidden imports", () => {
     "crewai",
     "llamaindex",
     "@sentry",
-    "posthog"
+    "posthog",
   ];
 
   for (const f of forbidden) {
     it(`no source imports ${f}`, () => {
       for (const { path, content } of sources) {
-        const importRe = new RegExp(`(from|require)\\s*\\(?['"\`][^'"\`]*${f}[^'"\`]*['"\`]`, "i");
-        expect(importRe.test(content), `forbidden import ${f} in ${path}`).toBe(false);
+        const importRe = new RegExp(
+          `(from|require)\\s*\\(?['"\`][^'"\`]*${f}[^'"\`]*['"\`]`,
+          "i",
+        );
+        expect(importRe.test(content), `forbidden import ${f} in ${path}`).toBe(
+          false,
+        );
       }
     });
   }
@@ -118,7 +126,10 @@ describe("scaffold: forbidden telemetry tokens", () => {
       for (const { path, content } of sources) {
         // Allow the word inside privacy.ts (boundary statement file).
         if (path.endsWith("privacy.ts")) continue;
-        expect(content.toLowerCase().includes(token), `${token} found in ${path}`).toBe(false);
+        expect(
+          content.toLowerCase().includes(token),
+          `${token} found in ${path}`,
+        ).toBe(false);
       }
     });
   }
@@ -132,24 +143,28 @@ describe("scaffold: forbidden operations", () => {
     "activate_proof",
     "activateProof",
     "mark_bound",
-    "markBound"
+    "markBound",
   ];
 
   for (const token of forbidden) {
     it(`no source contains ${token}`, () => {
       for (const { path, content } of sources) {
-        expect(content.includes(token), `${token} found in ${path}`).toBe(false);
+        expect(content.includes(token), `${token} found in ${path}`).toBe(
+          false,
+        );
       }
     });
   }
 });
 
-describe("scaffold: no passport concepts", () => {
+describe("scaffold: Passport vocabulary remains bounded", () => {
   const sources = readAllSourceFiles();
-  it("does not introduce MCP Passport or Reciprocity Passport", () => {
+  it("does not invent a Reciprocity Passport", () => {
     for (const { path, content } of sources) {
-      expect(/MCP[_ ]?Passport/i.test(content), `MCP Passport in ${path}`).toBe(false);
-      expect(/Reciprocity[_ ]?Passport/i.test(content), `Reciprocity Passport in ${path}`).toBe(false);
+      expect(
+        /Reciprocity[_ ]?Passport/i.test(content),
+        `Reciprocity Passport in ${path}`,
+      ).toBe(false);
     }
   });
 });
@@ -159,7 +174,10 @@ describe("scaffold: no mojibake", () => {
   it("source contains no mojibake replacement characters", () => {
     for (const { path, content } of sources) {
       expect(content.includes("\uFFFD"), `mojibake in ${path}`).toBe(false);
-      expect(/Ã.|â€™|â€œ|â€\u009d/.test(content), `mojibake-like sequence in ${path}`).toBe(false);
+      expect(
+        /Ã.|â€™|â€œ|â€\u009d/.test(content),
+        `mojibake-like sequence in ${path}`,
+      ).toBe(false);
     }
   });
 });
@@ -179,12 +197,23 @@ describe("scaffold: README role split", () => {
 describe("scaffold: action.yml", () => {
   const action = readFileSync(join(ROOT, "action.yml"), "utf8");
   it("declares required inputs", () => {
-    for (const input of ["target", "target-type", "policy", "resolver-base", "no-network", "timeout-ms"]) {
+    for (const input of [
+      "target",
+      "target-type",
+      "policy",
+      "resolver-base",
+      "no-network",
+      "timeout-ms",
+    ]) {
       expect(action).toMatch(new RegExp(`^\\s{2}${input}:`, "m"));
     }
   });
   it("declares required outputs", () => {
-    for (const out of ["result-state", "reason-codes", "action-envelope-json"]) {
+    for (const out of [
+      "result-state",
+      "reason-codes",
+      "action-envelope-json",
+    ]) {
       expect(action).toMatch(new RegExp(`^\\s{2}${out}:`, "m"));
     }
   });

@@ -3,8 +3,8 @@
 // has to spell out token names that would look like runtime call sites.
 import { buildSetupHandoff } from "./setup-handoff.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
-import { buildMcpActionEnvelope, buildAgentActionEnvelope, buildRequestToResolve, buildReciprocalRelianceEnvelope } from "./result-actions.js";
-import { SCHEMA_VERSION, VERIFIER_NAME, VERIFIER_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
+import { buildMcpActionEnvelope, buildAgentActionEnvelope, buildRequestToResolve, buildReciprocalRelianceEnvelope, } from "./result-actions.js";
+import { SCHEMA_VERSION, VERIFIER_NAME, VERIFIER_VERSION, DEVELOPER_GATEWAY, } from "./constants.js";
 export function buildJsonOutput(result, opts) {
     const flow = buildSetupHandoff({
         target: result.target,
@@ -16,7 +16,8 @@ export function buildJsonOutput(result, opts) {
         resolver_url: result.resolver_url,
         machine_json_url: result.machine_json_url,
         trustops_base_url: result.trustops_base_url,
-        developer_base_url: result.developer_base_url
+        developer_base_url: result.developer_base_url,
+        passport_family: result.passport_family,
     });
     return {
         schema_version: SCHEMA_VERSION,
@@ -24,6 +25,13 @@ export function buildJsonOutput(result, opts) {
         verifier_version: VERIFIER_VERSION,
         target: result.target,
         target_type: result.target_type,
+        passport_family: result.passport_family,
+        passport_family_source: result.passport_family_source,
+        passport_type_code: result.passport_type_code,
+        passport_contract_token: result.passport_contract_token,
+        passport_guidance_url: result.passport_guidance_url,
+        passport_acquisition_url: flow.trustops_action_url,
+        passport_subject_note: result.passport_subject_note,
         policy_mode: result.policy_mode,
         operator: result.operator,
         result_state: result.result_state,
@@ -46,7 +54,7 @@ export function buildJsonOutput(result, opts) {
         ...OUTPUT_PRIVACY_FIELDS,
         timestamp: opts.timestamp ?? new Date().toISOString(),
         exit_code: opts.exit_code,
-        action_envelope: opts.action_envelope ?? null
+        action_envelope: opts.action_envelope ?? null,
     };
 }
 export function toJson(value) {
@@ -62,32 +70,32 @@ export function buildSarif(result, exit_code) {
                     driver: {
                         name: VERIFIER_NAME,
                         version: VERIFIER_VERSION,
-                        informationUri: DEVELOPER_GATEWAY
-                    }
+                        informationUri: DEVELOPER_GATEWAY,
+                    },
                 },
                 results: [
                     {
                         ruleId: result.result_state,
                         level: exit_code === 0 ? "note" : "warning",
                         message: {
-                            text: `result_state=${result.result_state} reason_codes=${result.reason_codes.join(",")}`
+                            text: `result_state=${result.result_state} reason_codes=${result.reason_codes.join(",")}`,
                         },
                         locations: [
                             {
                                 physicalLocation: {
-                                    artifactLocation: { uri: result.target }
-                                }
-                            }
+                                    artifactLocation: { uri: result.target },
+                                },
+                            },
                         ],
                         properties: {
                             reason_codes: result.reason_codes,
                             policy_mode: result.policy_mode,
-                            target_type: result.target_type
-                        }
-                    }
-                ]
-            }
-        ]
+                            target_type: result.target_type,
+                        },
+                    },
+                ],
+            },
+        ],
     };
 }
 /**

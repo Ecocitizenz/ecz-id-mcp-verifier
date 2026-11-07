@@ -12,6 +12,7 @@
 // actions, and deterministic role-targeted URLs (TrustOps, Developer
 // Gateway, Resolver) built from a fixed allow-list of query params.
 import { TRUSTOPS_START, DEVELOPER_GATEWAY } from "./constants.js";
+import { passportQuickstartUrl, freePassportUrl, resolveEczIdGuideUrl, } from "./passport-family.js";
 export const HANDOFF_NAME = "Deterministic Setup Handoff";
 export const HANDOFF_VERSION = "1.0.0";
 export const OPERATOR_MODES = ["self", "third_party", "unknown"];
@@ -20,7 +21,7 @@ export const SETUP_INTENTS = [
     "repair",
     "view_proof",
     "guidance",
-    "none"
+    "none",
 ];
 // Role-safe action verbs only. Nothing implies purchase / approval / safety.
 export const NEXT_ACTIONS = [
@@ -33,25 +34,37 @@ export const NEXT_ACTIONS = [
     "VIEW_RESOLVER_PROOF",
     "REQUEST_RESOLVER_POSTURE",
     "RECHECK_BEFORE_RELIANCE",
-    "CHOOSE_OPERATOR_PATH"
+    "CHOOSE_OPERATOR_PATH",
 ];
 // ---------------------------------------------------------------------------
 // Developer Gateway URL mapping per target_type.
 // ---------------------------------------------------------------------------
 const DEVELOPER_PATH_BY_TYPE = {
-    mcp_server: "/mcp",
-    agent_manifest: "/agents",
-    api_url: "/bindings/openapi-x-ecz-id",
-    github_repo: "/mcp/share-resolver-guidance",
-    npm_package: "/mcp/share-resolver-guidance",
-    pypi_package: "/mcp/share-resolver-guidance",
-    container_image: "/mcp/share-resolver-guidance",
-    ecz_id: "/action-envelope",
-    unsupported_target: "/mcp"
+    mcp_server: "/quickstarts/mcp/",
+    agent_manifest: "/quickstarts/agent/",
+    api_url: "/quickstarts/api/",
+    github_repo: "/get-started/free-passport/",
+    npm_package: "/get-started/free-passport/",
+    pypi_package: "/get-started/free-passport/",
+    container_image: "/quickstarts/service-workload/",
+    ecz_id: "/get-started/resolve-an-ecz-id/",
+    unsupported_target: "/get-started/free-passport/",
 };
-export function developerGuidanceUrlFor(targetType, developerBase = DEVELOPER_GATEWAY) {
+export function developerGuidanceUrlFor(targetType, developerBase = DEVELOPER_GATEWAY, passportFamily) {
+    if (passportFamily)
+        return passportQuickstartUrl(passportFamily, developerBase);
+    if (targetType === "ecz_id")
+        return resolveEczIdGuideUrl(developerBase);
+    if ([
+        "github_repo",
+        "npm_package",
+        "pypi_package",
+        "unsupported_target",
+    ].includes(targetType)) {
+        return freePassportUrl(developerBase);
+    }
     const base = developerBase.replace(/\/+$/, "");
-    return base + (DEVELOPER_PATH_BY_TYPE[targetType] ?? "/mcp");
+    return base + DEVELOPER_PATH_BY_TYPE[targetType];
 }
 const ALLOWED_TRUSTOPS_PARAMS = [
     "source",
@@ -63,7 +76,7 @@ const ALLOWED_TRUSTOPS_PARAMS = [
     "reason_codes",
     "return_to",
     "verifier",
-    "v"
+    "v",
 ];
 export function allowedTrustopsParams() {
     return ALLOWED_TRUSTOPS_PARAMS;
@@ -73,7 +86,7 @@ export function allowedTrustopsParams() {
 export const ALLOWED_RETURN_TO_HOSTS = [
     "developers.ecocitizenz.com",
     "resolver.ecocitizenz.org",
-    "trustops.ecocitizenz.com"
+    "trustops.ecocitizenz.com",
 ];
 // Substrings that, if present anywhere in the URL, force rejection.
 // This guards against accidental forwarding of secrets, billing data,
@@ -107,7 +120,7 @@ const RETURN_TO_BANNED_SUBSTRINGS = [
     "envvar",
     "x-api-",
     "x-auth-",
-    "x-private-"
+    "x-private-",
 ];
 export function isAllowedReturnToUrl(value) {
     if (typeof value !== "string" || value.length === 0)
@@ -165,14 +178,14 @@ const MISSING_PROOF_STATES = new Set([
     "PARTIAL_PUBLIC_PROOF_FOUND",
     "SETUP_REQUIRED",
     "CHALLENGE_ISSUED",
-    "OBSERVED"
+    "OBSERVED",
 ]);
 const DEGRADED_STATES = new Set([
     "DEGRADED",
     "MISMATCH",
     "EXPIRED",
     "SUSPENDED",
-    "REVOKED"
+    "REVOKED",
 ]);
 const NOT_ROUTABLE_AS_ACTIVE_STATES = new Set([
     "UNSUPPORTED_TARGET",
@@ -180,7 +193,7 @@ const NOT_ROUTABLE_AS_ACTIVE_STATES = new Set([
     "REJECTED_PRODUCT_NOT_SELLABLE",
     "DEFERRED_PRODUCT_NOT_SELLABLE",
     "PARENT_UPGRADE_REQUIRED",
-    "UNKNOWN_PHASE1_SKU"
+    "UNKNOWN_PHASE1_SKU",
 ]);
 function postureFor(state) {
     if (state === "RESOLVER_VERIFIABLE")
@@ -200,7 +213,7 @@ function planFor(state, operator) {
         return {
             intent: "view_proof",
             primary_action: "VIEW_RESOLVER_PROOF",
-            secondary_actions: ["RECHECK_BEFORE_RELIANCE"]
+            secondary_actions: ["RECHECK_BEFORE_RELIANCE"],
         };
     }
     if (posture === "MISSING_PROOF") {
@@ -208,14 +221,17 @@ function planFor(state, operator) {
             return {
                 intent: "setup",
                 primary_action: "START_TRUSTOPS_SETUP",
-                secondary_actions: ["RECHECK_BEFORE_RELIANCE"]
+                secondary_actions: ["RECHECK_BEFORE_RELIANCE"],
             };
         }
         if (operator === "third_party") {
             return {
                 intent: "guidance",
                 primary_action: "SHARE_DEVELOPER_GUIDANCE",
-                secondary_actions: ["REQUEST_RESOLVER_POSTURE", "RECHECK_BEFORE_RELIANCE"]
+                secondary_actions: [
+                    "REQUEST_RESOLVER_POSTURE",
+                    "RECHECK_BEFORE_RELIANCE",
+                ],
             };
         }
         // unknown: present both paths without inferring operator status.
@@ -225,8 +241,8 @@ function planFor(state, operator) {
             secondary_actions: [
                 "START_TRUSTOPS_SETUP",
                 "SHARE_DEVELOPER_GUIDANCE",
-                "RECHECK_BEFORE_RELIANCE"
-            ]
+                "RECHECK_BEFORE_RELIANCE",
+            ],
         };
     }
     if (posture === "DEGRADED") {
@@ -234,20 +250,20 @@ function planFor(state, operator) {
             return {
                 intent: "repair",
                 primary_action: "START_TRUSTOPS_REPAIR",
-                secondary_actions: ["RECHECK_BEFORE_RELIANCE"]
+                secondary_actions: ["RECHECK_BEFORE_RELIANCE"],
             };
         }
         if (operator === "third_party") {
             return {
                 intent: "guidance",
                 primary_action: "RECHECK_BEFORE_RELIANCE",
-                secondary_actions: ["SHARE_REPAIR_GUIDANCE"]
+                secondary_actions: ["SHARE_REPAIR_GUIDANCE"],
             };
         }
         return {
             intent: "guidance",
             primary_action: "RECHECK_BEFORE_RELIANCE",
-            secondary_actions: ["START_TRUSTOPS_REPAIR", "SHARE_REPAIR_GUIDANCE"]
+            secondary_actions: ["START_TRUSTOPS_REPAIR", "SHARE_REPAIR_GUIDANCE"],
         };
     }
     if (posture === "NOT_ROUTABLE_AS_ACTIVE") {
@@ -261,14 +277,14 @@ function planFor(state, operator) {
         return {
             intent: "guidance",
             primary_action: "VIEW_DEVELOPER_GUIDANCE",
-            secondary_actions: secondary
+            secondary_actions: secondary,
         };
     }
     // INFORMATIONAL (NOT_APPLICABLE and any future additive state).
     return {
         intent: "none",
         primary_action: "RECHECK_BEFORE_RELIANCE",
-        secondary_actions: []
+        secondary_actions: [],
     };
 }
 // ---------------------------------------------------------------------------
@@ -277,7 +293,7 @@ function planFor(state, operator) {
 export function buildSetupHandoff(input) {
     const plan = planFor(input.result_state, input.operator);
     const posture = postureFor(input.result_state);
-    const developerUrl = developerGuidanceUrlFor(input.target_type, input.developer_base_url);
+    const developerUrl = developerGuidanceUrlFor(input.target_type, input.developer_base_url, input.passport_family);
     const trustopsUrl = buildTrustopsUrl({
         trustopsBase: input.trustops_base_url,
         intent: plan.intent,
@@ -285,7 +301,7 @@ export function buildSetupHandoff(input) {
         policy_mode: input.policy_mode,
         operator: input.operator,
         result_state: input.result_state,
-        reason_codes: input.reason_codes
+        reason_codes: input.reason_codes,
     });
     return {
         handoff_name: HANDOFF_NAME,
@@ -305,6 +321,6 @@ export function buildSetupHandoff(input) {
         backend_remains_final_authority: true,
         verifier_writes_truth: false,
         verifier_activates_proof: false,
-        verifier_marks_bound: false
+        verifier_marks_bound: false,
     };
 }

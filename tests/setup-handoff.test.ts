@@ -12,13 +12,13 @@ import {
   developerGuidanceUrlFor,
   isAllowedReturnToUrl,
   sanitizeReturnToUrl,
-  type BuildSetupHandoffInput
+  type BuildSetupHandoffInput,
 } from "../src/setup-handoff.js";
 import type { ReasonCode } from "../src/reason-codes.js";
 import {
   RESOLVER_BASE,
   TRUSTOPS_START,
-  DEVELOPER_GATEWAY
+  DEVELOPER_GATEWAY,
 } from "../src/constants.js";
 
 const baseInput: BuildSetupHandoffInput = {
@@ -29,7 +29,7 @@ const baseInput: BuildSetupHandoffInput = {
   policy_mode: "OPEN",
   operator: "unknown",
   resolver_url: null,
-  machine_json_url: null
+  machine_json_url: null,
 };
 
 describe("setup-handoff: constants", () => {
@@ -46,7 +46,7 @@ describe("setup-handoff: constants", () => {
       "repair",
       "view_proof",
       "guidance",
-      "none"
+      "none",
     ]);
   });
   it("next-action vocabulary contains role-safe verbs only", () => {
@@ -67,7 +67,7 @@ describe("setup-handoff: routing matrix", () => {
         ...baseInput,
         result_state: "RESOLVER_VERIFIABLE",
         reason_codes: [],
-        operator
+        operator,
       });
       expect(f.primary_action).toBe("VIEW_RESOLVER_PROOF");
       expect(f.intent).toBe("view_proof");
@@ -79,7 +79,7 @@ describe("setup-handoff: routing matrix", () => {
     const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      operator: "self"
+      operator: "self",
     });
     expect(f.primary_action).toBe("START_TRUSTOPS_SETUP");
     expect(f.intent).toBe("setup");
@@ -89,7 +89,7 @@ describe("setup-handoff: routing matrix", () => {
     const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      operator: "third_party"
+      operator: "third_party",
     });
     expect(f.primary_action).toBe("SHARE_DEVELOPER_GUIDANCE");
     expect(f.intent).toBe("guidance");
@@ -99,7 +99,7 @@ describe("setup-handoff: routing matrix", () => {
     const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      operator: "unknown"
+      operator: "unknown",
     });
     expect(f.primary_action).toBe("CHOOSE_OPERATOR_PATH");
     expect(f.secondary_actions).toContain("START_TRUSTOPS_SETUP");
@@ -111,7 +111,7 @@ describe("setup-handoff: routing matrix", () => {
       ...baseInput,
       result_state: "DEGRADED",
       reason_codes: ["KEYSET_HASH_MISMATCH"],
-      operator: "self"
+      operator: "self",
     });
     expect(f.primary_action).toBe("START_TRUSTOPS_REPAIR");
     expect(f.intent).toBe("repair");
@@ -122,7 +122,7 @@ describe("setup-handoff: routing matrix", () => {
       ...baseInput,
       result_state: "MISMATCH",
       reason_codes: ["MANIFEST_HASH_MISMATCH"],
-      operator: "third_party"
+      operator: "third_party",
     });
     expect(f.primary_action).toBe("RECHECK_BEFORE_RELIANCE");
   });
@@ -132,12 +132,12 @@ describe("setup-handoff: routing matrix", () => {
       "LEGACY_ALIAS_NOT_ACTIVE_SKU",
       "REJECTED_PRODUCT_NOT_SELLABLE",
       "DEFERRED_PRODUCT_NOT_SELLABLE",
-      "UNKNOWN_PHASE1_SKU"
+      "UNKNOWN_PHASE1_SKU",
     ] as const) {
       const f = buildSetupHandoff({
         ...baseInput,
         result_state: state,
-        operator: "self"
+        operator: "self",
       });
       expect(f.primary_action).toBe("VIEW_DEVELOPER_GUIDANCE");
       expect(/PURCHASE|CHECKOUT|PAYMENT/.test(f.primary_action)).toBe(false);
@@ -148,7 +148,7 @@ describe("setup-handoff: routing matrix", () => {
     const f = buildSetupHandoff({
       ...baseInput,
       result_state: "PARENT_UPGRADE_REQUIRED",
-      operator: "self"
+      operator: "self",
     });
     expect(f.primary_action).toBe("VIEW_DEVELOPER_GUIDANCE");
     expect(f.secondary_actions).toContain("CONTACT_TRUSTOPS_SETUP");
@@ -159,7 +159,7 @@ describe("setup-handoff: routing matrix", () => {
       ...baseInput,
       target_type: "unsupported_target",
       result_state: "UNSUPPORTED_TARGET",
-      operator: "unknown"
+      operator: "unknown",
     });
     expect(f.primary_action).toBe("VIEW_DEVELOPER_GUIDANCE");
   });
@@ -168,7 +168,7 @@ describe("setup-handoff: routing matrix", () => {
     const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NOT_APPLICABLE",
-      operator: "unknown"
+      operator: "unknown",
     });
     expect(f.primary_action).toBe("RECHECK_BEFORE_RELIANCE");
     expect(f.intent).toBe("none");
@@ -183,7 +183,7 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       policy_mode: "OPEN",
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"]
+      reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
     });
     expect(url.startsWith(TRUSTOPS_START)).toBe(true);
   });
@@ -197,7 +197,7 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
-      return_to: "https://developers.ecocitizenz.com/mcp"
+      return_to: "https://developers.ecocitizenz.com/mcp",
     });
     const u = new URL(url);
     for (const [k] of u.searchParams) {
@@ -213,7 +213,7 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       policy_mode: "OPEN",
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      reason_codes: []
+      reason_codes: [],
     });
     const u = new URL(url);
     expect(u.searchParams.has("target")).toBe(false);
@@ -227,7 +227,7 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       policy_mode: "OPEN",
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"]
+      reason_codes: ["NO_PUBLIC_RESOLVER_PROOF_FOUND"],
     }).toLowerCase();
     for (const banned of [
       "secret",
@@ -241,7 +241,7 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       "checkout",
       "card",
       "wallet",
-      "cookie"
+      "cookie",
     ]) {
       expect(url.includes(banned), `URL leaks ${banned}`).toBe(false);
     }
@@ -255,7 +255,7 @@ describe("setup-handoff: TrustOps URL allow-list", () => {
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       reason_codes: [],
-      return_to: "javascript:alert(1)"
+      return_to: "javascript:alert(1)",
     });
     const u = new URL(url);
     expect(u.searchParams.has("return_to")).toBe(false);
@@ -267,27 +267,33 @@ describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
     expect([...ALLOWED_RETURN_TO_HOSTS]).toEqual([
       "developers.ecocitizenz.com",
       "resolver.ecocitizenz.org",
-      "trustops.ecocitizenz.com"
+      "trustops.ecocitizenz.com",
     ]);
   });
 
   it("accepts https Developer Gateway URL", () => {
-    expect(isAllowedReturnToUrl("https://developers.ecocitizenz.com/mcp")).toBe(true);
+    expect(isAllowedReturnToUrl("https://developers.ecocitizenz.com/mcp")).toBe(
+      true,
+    );
   });
   it("accepts https Resolver URL", () => {
     expect(
-      isAllowedReturnToUrl("https://resolver.ecocitizenz.org/p/ECZ-GB-123ABC")
+      isAllowedReturnToUrl("https://resolver.ecocitizenz.org/p/ECZ-GB-123ABC"),
     ).toBe(true);
   });
   it("accepts https TrustOps URL", () => {
-    expect(isAllowedReturnToUrl("https://trustops.ecocitizenz.com/start")).toBe(true);
+    expect(isAllowedReturnToUrl("https://trustops.ecocitizenz.com/start")).toBe(
+      true,
+    );
   });
 
   it("rejects unrelated https host", () => {
     expect(isAllowedReturnToUrl("https://evil.example/mcp")).toBe(false);
   });
   it("rejects http on an allowed host", () => {
-    expect(isAllowedReturnToUrl("http://developers.ecocitizenz.com/mcp")).toBe(false);
+    expect(isAllowedReturnToUrl("http://developers.ecocitizenz.com/mcp")).toBe(
+      false,
+    );
   });
   it("rejects javascript: scheme", () => {
     expect(isAllowedReturnToUrl("javascript:alert(1)")).toBe(false);
@@ -320,7 +326,7 @@ describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
       "https://developers.ecocitizenz.com/x?source=raw",
       "https://developers.ecocitizenz.com/x?prompt=hi",
       "https://developers.ecocitizenz.com/x?env=PROD",
-      "https://developers.ecocitizenz.com/x?x-api-key=abc"
+      "https://developers.ecocitizenz.com/x?x-api-key=abc",
     ];
     for (const v of bad) {
       expect(isAllowedReturnToUrl(v), v).toBe(false);
@@ -329,7 +335,7 @@ describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
 
   it("sanitizeReturnToUrl returns the value when allowed, else null", () => {
     expect(sanitizeReturnToUrl("https://developers.ecocitizenz.com/mcp")).toBe(
-      "https://developers.ecocitizenz.com/mcp"
+      "https://developers.ecocitizenz.com/mcp",
     );
     expect(sanitizeReturnToUrl("https://evil.example/x")).toBe(null);
   });
@@ -342,7 +348,7 @@ describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       reason_codes: [],
-      return_to: "https://evil.example/x"
+      return_to: "https://evil.example/x",
     });
     const u = new URL(url);
     expect(u.searchParams.has("return_to")).toBe(false);
@@ -356,11 +362,11 @@ describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
       operator: "self",
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
       reason_codes: [],
-      return_to: "https://developers.ecocitizenz.com/mcp"
+      return_to: "https://developers.ecocitizenz.com/mcp",
     });
     const u = new URL(url);
     expect(u.searchParams.get("return_to")).toBe(
-      "https://developers.ecocitizenz.com/mcp"
+      "https://developers.ecocitizenz.com/mcp",
     );
   });
 });
@@ -368,15 +374,15 @@ describe("setup-handoff: return_to host allow-list (Phase 8A-B)", () => {
 describe("setup-handoff: Developer Gateway URL mapping", () => {
   it("maps every target_type to a deterministic Developer Gateway path", () => {
     const cases: Record<string, string> = {
-      mcp_server: "/mcp",
-      agent_manifest: "/agents",
-      api_url: "/bindings/openapi-x-ecz-id",
-      github_repo: "/mcp/share-resolver-guidance",
-      npm_package: "/mcp/share-resolver-guidance",
-      pypi_package: "/mcp/share-resolver-guidance",
-      container_image: "/mcp/share-resolver-guidance",
-      ecz_id: "/action-envelope",
-      unsupported_target: "/mcp"
+      mcp_server: "/quickstarts/mcp/",
+      agent_manifest: "/quickstarts/agent/",
+      api_url: "/quickstarts/api/",
+      github_repo: "/get-started/free-passport/",
+      npm_package: "/get-started/free-passport/",
+      pypi_package: "/get-started/free-passport/",
+      container_image: "/quickstarts/service-workload/",
+      ecz_id: "/get-started/resolve-an-ecz-id/",
+      unsupported_target: "/get-started/free-passport/",
     };
     for (const [t, path] of Object.entries(cases)) {
       const u = developerGuidanceUrlFor(t as any);
@@ -391,7 +397,7 @@ describe("setup-handoff: invariants in returned envelope", () => {
       ...baseInput,
       result_state: "RESOLVER_VERIFIABLE",
       reason_codes: [],
-      operator: "self"
+      operator: "self",
     });
     expect(f.verifier_writes_truth).toBe(false);
     expect(f.verifier_activates_proof).toBe(false);
@@ -404,7 +410,7 @@ describe("setup-handoff: invariants in returned envelope", () => {
     const f = buildSetupHandoff({
       ...baseInput,
       result_state: "NO_PUBLIC_RESOLVER_PROOF_FOUND",
-      operator: "self"
+      operator: "self",
     });
     expect(f.developer_guidance_url.startsWith(DEVELOPER_GATEWAY)).toBe(true);
     expect(f.trustops_action_url.startsWith(TRUSTOPS_START)).toBe(true);

@@ -10,11 +10,17 @@ import type { VerifyResult } from "./verify.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import { SCHEMA_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
 import {
+  passportFamilyDefinition,
+  freePassportUrl,
+  type PassportFamily,
+  type PassportFamilySource,
+} from "./passport-family.js";
+import {
   buildSetupHandoff,
   developerGuidanceUrlFor,
   type SetupHandoff,
   type NextAction,
-  type OperatorMode
+  type OperatorMode,
 } from "./setup-handoff.js";
 
 export type EnvelopeType = "MCP" | "AGENT" | "RESOLVER" | "RECIPROCAL_RELIANCE";
@@ -24,6 +30,11 @@ export interface ActionEnvelope {
   envelope_type: EnvelopeType;
   target_type: TargetType;
   target_value: string;
+  passport_family: PassportFamily | null;
+  passport_family_source: PassportFamilySource;
+  passport_type_code: string | null;
+  next_step_label: string;
+  next_step_url: string;
   result_state: ResultState;
   reason_codes: ReasonCode[];
   resolver_url: string | null;
@@ -52,6 +63,60 @@ function chooseEnvelopeType(t: TargetType): EnvelopeType {
   return "RECIPROCAL_RELIANCE";
 }
 
+function oneNextStep(
+  result: VerifyResult,
+  flow: SetupHandoff,
+): { label: string; url: string } {
+  if (result.result_state === "RESOLVER_VERIFIABLE" && result.resolver_url) {
+    return { label: "View current Resolver record", url: result.resolver_url };
+  }
+  const familyName = result.passport_family
+    ? passportFamilyDefinition(result.passport_family).displayName
+    : null;
+  const missing = [
+    "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+    "PARTIAL_PUBLIC_PROOF_FOUND",
+    "SETUP_REQUIRED",
+    "CHALLENGE_ISSUED",
+    "OBSERVED",
+  ].includes(result.result_state);
+  if (missing && result.operator === "self") {
+    return {
+      label: familyName
+        ? `Start free ${familyName} Passport`
+        : "Choose a free Passport family",
+      url: flow.trustops_action_url,
+    };
+  }
+  if (missing) {
+    return {
+      label: familyName
+        ? `Open ${familyName} quickstart`
+        : "Choose a free Passport family",
+      url:
+        result.passport_guidance_url ||
+        freePassportUrl(result.developer_base_url),
+    };
+  }
+  if (
+    ["DEGRADED", "MISMATCH", "REVOKED", "SUSPENDED", "EXPIRED"].includes(
+      result.result_state,
+    ) &&
+    result.resolver_url
+  ) {
+    return {
+      label: "Re-check current Resolver record",
+      url: result.resolver_url,
+    };
+  }
+  return {
+    label: familyName
+      ? `Open ${familyName} quickstart`
+      : "Open ECZ-ID developer guidance",
+    url: result.passport_guidance_url,
+  };
+}
+
 function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
   const steps: string[] = [];
   switch (result.result_state) {
@@ -59,7 +124,7 @@ function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
       steps.push(
         "Public Resolver proof was found.",
         "Re-check before reliance.",
-        "Backend remains final authority."
+        "Backend remains final authority.",
       );
       break;
     case "NO_PUBLIC_RESOLVER_PROOF_FOUND":
@@ -72,12 +137,12 @@ function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
         steps.push("If you operate this target, start setup in TrustOps.");
       } else if (result.operator === "third_party") {
         steps.push(
-          "If you do not operate this target, share developer guidance with the operator."
+          "If you do not operate this target, share developer guidance with the operator.",
         );
       } else {
         steps.push(
           "If you operate this target, start setup in TrustOps.",
-          "If you do not, share developer guidance with the operator."
+          "If you do not, share developer guidance with the operator.",
         );
       }
       steps.push("Local policy decides.");
@@ -90,7 +155,7 @@ function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
     case "UNKNOWN_PHASE1_SKU":
       steps.push(
         "This target shape or state is not routable as an active product.",
-        "See Developer Gateway for guidance."
+        "See Developer Gateway for guidance.",
       );
       break;
     case "MISMATCH":
@@ -98,7 +163,7 @@ function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
       steps.push(
         "A deterministic mismatch was reported.",
         "Re-check before reliance.",
-        "Local policy decides."
+        "Local policy decides.",
       );
       break;
     case "REVOKED":
@@ -106,7 +171,7 @@ function buildSteps(result: VerifyResult, flow: SetupHandoff): string[] {
     case "EXPIRED":
       steps.push(
         `Lifecycle state: ${result.result_state}.`,
-        "Local policy decides."
+        "Local policy decides.",
       );
       break;
     default:
@@ -127,14 +192,21 @@ export function buildEnvelope(result: VerifyResult): ActionEnvelope {
     resolver_url: result.resolver_url,
     machine_json_url: result.machine_json_url,
     trustops_base_url: result.trustops_base_url,
-    developer_base_url: result.developer_base_url
+    developer_base_url: result.developer_base_url,
+    passport_family: result.passport_family,
   });
+  const next = oneNextStep(result, flow);
 
   return {
     schema_version: SCHEMA_VERSION,
     envelope_type: chooseEnvelopeType(result.target_type),
     target_type: result.target_type,
     target_value: result.target,
+    passport_family: result.passport_family,
+    passport_family_source: result.passport_family_source,
+    passport_type_code: result.passport_type_code,
+    next_step_label: next.label,
+    next_step_url: next.url,
     result_state: result.result_state,
     reason_codes: result.reason_codes,
     resolver_url: result.resolver_url,
@@ -154,7 +226,7 @@ export function buildEnvelope(result: VerifyResult): ActionEnvelope {
     backend_remains_final_authority: true,
     verifier_writes_truth: false,
     verifier_activates_proof: false,
-    verifier_marks_bound: false
+    verifier_marks_bound: false,
   };
 }
 
@@ -167,13 +239,18 @@ export function emptyEnvelope(): ActionEnvelope {
     policy_mode: "OPEN",
     operator: "unknown",
     resolver_url: null,
-    machine_json_url: null
+    machine_json_url: null,
   });
   return {
     schema_version: SCHEMA_VERSION,
     envelope_type: "RECIPROCAL_RELIANCE",
     target_type: "unsupported_target",
     target_value: "",
+    passport_family: null,
+    passport_family_source: "none",
+    passport_type_code: null,
+    next_step_label: "Choose a free Passport family",
+    next_step_url: freePassportUrl(DEVELOPER_GATEWAY),
     result_state: "NOT_APPLICABLE",
     reason_codes: [],
     resolver_url: null,
@@ -182,7 +259,7 @@ export function emptyEnvelope(): ActionEnvelope {
     trustops_action_url: baseFlow.trustops_action_url,
     developer_guidance_url: developerGuidanceUrlFor(
       "unsupported_target",
-      DEVELOPER_GATEWAY
+      DEVELOPER_GATEWAY,
     ),
     policy_mode: "OPEN",
     operator: "unknown",
@@ -195,6 +272,6 @@ export function emptyEnvelope(): ActionEnvelope {
     backend_remains_final_authority: true,
     verifier_writes_truth: false,
     verifier_activates_proof: false,
-    verifier_marks_bound: false
+    verifier_marks_bound: false,
   };
 }

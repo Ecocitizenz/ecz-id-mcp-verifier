@@ -2,6 +2,7 @@ import type { TargetType } from "./classify-target.js";
 import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
+import { type PassportFamily } from "./passport-family.js";
 export declare const HANDOFF_NAME: "Deterministic Setup Handoff";
 export declare const HANDOFF_VERSION: "1.0.0";
 export declare const OPERATOR_MODES: readonly ["self", "third_party", "unknown"];
@@ -22,6 +23,7 @@ export interface BuildSetupHandoffInput {
     machine_json_url: string | null;
     trustops_base_url?: string;
     developer_base_url?: string;
+    passport_family?: PassportFamily | null;
 }
 export interface SetupHandoff {
     handoff_name: typeof HANDOFF_NAME;
@@ -43,7 +45,7 @@ export interface SetupHandoff {
     verifier_activates_proof: false;
     verifier_marks_bound: false;
 }
-export declare function developerGuidanceUrlFor(targetType: TargetType, developerBase?: string): string;
+export declare function developerGuidanceUrlFor(targetType: TargetType, developerBase?: string, passportFamily?: PassportFamily | null): string;
 export interface BuildTrustopsUrlInput {
     trustopsBase?: string;
     intent: SetupIntent;
