@@ -4,9 +4,9 @@
 
 | Version | Supported |
 |---|---|
-| 0.9.1 | ✅ |
+| 0.10.0 | ✅ |
 
-The current supported release is `0.9.1`.
+The current supported release is `0.10.0`.
 
 ## Reporting a vulnerability
 
