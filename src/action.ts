@@ -26,13 +26,13 @@ import { main } from "./cli.js";
  */
 export function readActionInput(
   name: string,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
   const upper = name.toUpperCase().replace(/ /g, "_");
   const candidates = [
     `INPUT_${upper}`,
     `INPUT_${upper.replace(/-/g, "_")}`,
-    `INPUT_${upper.replace(/_/g, "-")}`
+    `INPUT_${upper.replace(/_/g, "-")}`,
   ];
   for (const key of candidates) {
     const v = env[key];
@@ -60,6 +60,10 @@ export function actionArgv(env: NodeJS.ProcessEnv = process.env): string[] {
   const targetType = readActionInput("target-type", env);
   if (targetType !== undefined) argv.push("--target-type", targetType);
 
+  const passportFamily = readActionInput("passport-family", env);
+  if (passportFamily !== undefined)
+    argv.push("--passport-family", passportFamily);
+
   const policy = readActionInput("policy", env);
   if (policy !== undefined) argv.push("--policy", policy);
 
@@ -68,7 +72,8 @@ export function actionArgv(env: NodeJS.ProcessEnv = process.env): string[] {
 
   // Accept the canonical `resolver-base` input and a `resolver-url` alias.
   const resolverBase =
-    readActionInput("resolver-base", env) ?? readActionInput("resolver-url", env);
+    readActionInput("resolver-base", env) ??
+    readActionInput("resolver-url", env);
   if (resolverBase !== undefined) argv.push("--resolver-base", resolverBase);
 
   const timeoutMs = readActionInput("timeout-ms", env);

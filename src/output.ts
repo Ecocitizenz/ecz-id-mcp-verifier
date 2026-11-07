@@ -4,10 +4,7 @@
 
 import type { VerifyResult } from "./verify.js";
 import type { ActionEnvelope } from "./action-envelope.js";
-import {
-  buildSetupHandoff,
-  type SetupHandoff
-} from "./setup-handoff.js";
+import { buildSetupHandoff, type SetupHandoff } from "./setup-handoff.js";
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import {
   buildMcpActionEnvelope,
@@ -17,13 +14,13 @@ import {
   type McpActionEnvelope,
   type AgentActionEnvelope,
   type RequestToResolve,
-  type ReciprocalRelianceEnvelope
+  type ReciprocalRelianceEnvelope,
 } from "./result-actions.js";
 import {
   SCHEMA_VERSION,
   VERIFIER_NAME,
   VERIFIER_VERSION,
-  DEVELOPER_GATEWAY
+  DEVELOPER_GATEWAY,
 } from "./constants.js";
 
 export interface JsonOutputOptions {
@@ -38,6 +35,13 @@ export interface JsonOutputCore {
   verifier_version: string;
   target: string;
   target_type: string;
+  passport_family: string | null;
+  passport_family_source: string;
+  passport_type_code: string | null;
+  passport_contract_token: string | null;
+  passport_guidance_url: string;
+  passport_acquisition_url: string;
+  passport_subject_note: string | null;
   policy_mode: string;
   operator: string;
   result_state: string;
@@ -69,7 +73,7 @@ export type JsonOutput = JsonOutputCore & typeof OUTPUT_PRIVACY_FIELDS;
 
 export function buildJsonOutput(
   result: VerifyResult,
-  opts: JsonOutputOptions
+  opts: JsonOutputOptions,
 ): JsonOutput {
   const flow = buildSetupHandoff({
     target: result.target,
@@ -81,7 +85,8 @@ export function buildJsonOutput(
     resolver_url: result.resolver_url,
     machine_json_url: result.machine_json_url,
     trustops_base_url: result.trustops_base_url,
-    developer_base_url: result.developer_base_url
+    developer_base_url: result.developer_base_url,
+    passport_family: result.passport_family,
   });
   return {
     schema_version: SCHEMA_VERSION,
@@ -89,6 +94,13 @@ export function buildJsonOutput(
     verifier_version: VERIFIER_VERSION,
     target: result.target,
     target_type: result.target_type,
+    passport_family: result.passport_family,
+    passport_family_source: result.passport_family_source,
+    passport_type_code: result.passport_type_code,
+    passport_contract_token: result.passport_contract_token,
+    passport_guidance_url: result.passport_guidance_url,
+    passport_acquisition_url: flow.trustops_action_url,
+    passport_subject_note: result.passport_subject_note,
     policy_mode: result.policy_mode,
     operator: result.operator,
     result_state: result.result_state,
@@ -111,7 +123,7 @@ export function buildJsonOutput(
     ...OUTPUT_PRIVACY_FIELDS,
     timestamp: opts.timestamp ?? new Date().toISOString(),
     exit_code: opts.exit_code,
-    action_envelope: opts.action_envelope ?? null
+    action_envelope: opts.action_envelope ?? null,
   };
 }
 
@@ -130,32 +142,32 @@ export function buildSarif(result: VerifyResult, exit_code: number): unknown {
           driver: {
             name: VERIFIER_NAME,
             version: VERIFIER_VERSION,
-            informationUri: DEVELOPER_GATEWAY
-          }
+            informationUri: DEVELOPER_GATEWAY,
+          },
         },
         results: [
           {
             ruleId: result.result_state,
             level: exit_code === 0 ? "note" : "warning",
             message: {
-              text: `result_state=${result.result_state} reason_codes=${result.reason_codes.join(",")}`
+              text: `result_state=${result.result_state} reason_codes=${result.reason_codes.join(",")}`,
             },
             locations: [
               {
                 physicalLocation: {
-                  artifactLocation: { uri: result.target }
-                }
-              }
+                  artifactLocation: { uri: result.target },
+                },
+              },
             ],
             properties: {
               reason_codes: result.reason_codes,
               policy_mode: result.policy_mode,
-              target_type: result.target_type
-            }
-          }
-        ]
-      }
-    ]
+              target_type: result.target_type,
+            },
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -163,6 +175,9 @@ export function buildSarif(result: VerifyResult, exit_code: number): unknown {
  * Backwards-compatible scaffold helper used by the inert pre-Phase-7 CLI path.
  * Kept so any consumer of the previous toHuman() signature does not break.
  */
-export function toHuman(envelope: { result_state: string; reason_codes: string[] }): string {
+export function toHuman(envelope: {
+  result_state: string;
+  reason_codes: string[];
+}): string {
   return `result_state=${envelope.result_state} reason_codes=${envelope.reason_codes.join(",")}`;
 }

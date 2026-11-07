@@ -4,9 +4,11 @@ import type { ResultState } from "./result-states.js";
 import type { ReasonCode } from "./reason-codes.js";
 import type { PolicyMode } from "./policy.js";
 import type { OperatorMode } from "./setup-handoff.js";
+import { type PassportFamily, type PassportFamilySource } from "./passport-family.js";
 export interface VerifyOptions {
     target: string;
     targetType?: string;
+    passportFamily?: string;
     policy?: PolicyMode;
     operator?: OperatorMode;
     resolverBase?: string;
@@ -18,6 +20,13 @@ export interface VerifyOptions {
 export interface VerifyResult {
     target: string;
     target_type: TargetType;
+    passport_family: PassportFamily | null;
+    passport_family_source: PassportFamilySource;
+    passport_type_code: string | null;
+    passport_contract_token: string | null;
+    passport_guidance_url: string;
+    passport_acquisition_url: string;
+    passport_subject_note: string | null;
     policy_mode: PolicyMode;
     operator: OperatorMode;
     result_state: ResultState;
@@ -36,11 +45,5 @@ interface MappedState {
     result_state: ResultState;
     reason_codes: ReasonCode[];
 }
-/**
- * Map the strict Resolver proof interpretation onto the canonical 18-state
- * model + reason codes. HTTP 200 alone is NEVER proof; revoked/suspended/
- * expired/stale/mismatch/malformed bodies map to the safest applicable
- * existing ResultState and ReasonCode and are never cached as positive proof.
- */
 export declare function mapProofState(state: ResolverProofState | undefined): MappedState;
 export {};

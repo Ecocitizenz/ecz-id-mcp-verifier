@@ -14,13 +14,20 @@ describe("classifyTarget", () => {
     expect(classifyTarget("ECZ-GB-A93K7Q")).toBe("ecz_id");
   });
 
-  it("recognises a valid child passport-instance ECZ-ID (PUBLIC code, incl. final 11)", () => {
-    expect(classifyTarget("ECZ-GB-A93K7Q::AGENT-4F9Q2A")).toBe("ecz_id");
-    expect(classifyTarget("ECZ-GB-A93K7Q::SSCM-M29F8Q")).toBe("ecz_id");
-    expect(classifyTarget("ECZ-GB-A93K7Q::D1-DRONE-7A9F2Q")).toBe("ecz_id");
-    expect(classifyTarget("ECZ-GB-A93K7Q::CRITICAL-INFRA-4F9Q2A")).toBe("ecz_id");
-    expect(classifyTarget("ECZ-GB-A93K7Q::LIC-INFRA-4F9Q2A")).toBe("ecz_id");
-    expect(classifyTarget("ECZ-GB-A93K7Q::ID-CONTINUITY-4F9Q2A")).toBe("ecz_id");
+  it("recognises all seven current child Passport family ECZ-ID patterns", () => {
+    for (const code of [
+      "AGENT_PASSPORT",
+      "MCP_PASSPORT",
+      "PLUGIN_PASSPORT",
+      "API_PASSPORT",
+      "IOT_DEVICE",
+      "SDK_PASSPORT",
+      "SERVICE_WORKLOAD_PASSPORT",
+    ]) {
+      expect(classifyTarget(`ECZ-GB-A93K7Q::${code}-4F9Q2A`), code).toBe(
+        "ecz_id",
+      );
+    }
   });
 
   it("does NOT classify malformed / backend-key / obsolete ECZ-shaped strings as ecz_id", () => {
@@ -29,25 +36,37 @@ describe("classifyTarget", () => {
     expect(classifyTarget("ECZ-API-AB12")).toBe("unsupported_target");
     expect(classifyTarget("ECZ-gb-ABC123")).toBe("unsupported_target");
     expect(classifyTarget("ECZ-GB-ABC12!")).toBe("unsupported_target");
-    expect(classifyTarget("ECZ-GB-A93K7Q::UNKNOWN-ABC123")).toBe("unsupported_target");
+    expect(classifyTarget("ECZ-GB-A93K7Q::UNKNOWN-ABC123")).toBe(
+      "unsupported_target",
+    );
     // backend semantic keys are NOT public child codes.
-    expect(classifyTarget("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A")).toBe("unsupported_target");
-    expect(classifyTarget("ECZ-GB-A93K7Q::DRONE_D1-7A9F2Q")).toBe("unsupported_target");
-    expect(classifyTarget("ECZ-GB-A93K7Q::LICENSED_OPERATOR-4F9Q2A")).toBe("unsupported_target");
+    expect(classifyTarget("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-4F9Q2A")).toBe(
+      "unsupported_target",
+    );
+    expect(classifyTarget("ECZ-GB-A93K7Q::DRONE_D1-7A9F2Q")).toBe(
+      "unsupported_target",
+    );
+    expect(classifyTarget("ECZ-GB-A93K7Q::LICENSED_OPERATOR-4F9Q2A")).toBe(
+      "unsupported_target",
+    );
     // obsolete earlier-taxonomy codes are rejected for new identifiers.
-    expect(classifyTarget("ECZ-GB-A93K7Q::DATA-EXCHANGE-4F9Q2A")).toBe("unsupported_target");
-    expect(classifyTarget("ECZ-GB-A93K7Q::POLICY-ENFORCE-4F9Q2A")).toBe("unsupported_target");
+    expect(classifyTarget("ECZ-GB-A93K7Q::DATA-EXCHANGE-4F9Q2A")).toBe(
+      "unsupported_target",
+    );
+    expect(classifyTarget("ECZ-GB-A93K7Q::POLICY-ENFORCE-4F9Q2A")).toBe(
+      "unsupported_target",
+    );
   });
 
   it("recognises MCP server well-known manifest URL", () => {
     expect(
-      classifyTarget("https://api.example.com/.well-known/ecz-mcp.json")
+      classifyTarget("https://api.example.com/.well-known/ecz-mcp.json"),
     ).toBe("mcp_server");
   });
 
   it("recognises agent manifest well-known URL", () => {
     expect(
-      classifyTarget("https://api.example.com/.well-known/ecz-agent.json")
+      classifyTarget("https://api.example.com/.well-known/ecz-agent.json"),
     ).toBe("agent_manifest");
   });
 
@@ -58,7 +77,7 @@ describe("classifyTarget", () => {
 
   it("recognises npm package URLs and names", () => {
     expect(classifyTarget("https://www.npmjs.com/package/foo")).toBe(
-      "npm_package"
+      "npm_package",
     );
     expect(classifyTarget("npm:lodash")).toBe("npm_package");
     expect(classifyTarget("lodash")).toBe("npm_package");
@@ -67,7 +86,7 @@ describe("classifyTarget", () => {
 
   it("recognises PyPI package URLs and prefixes", () => {
     expect(classifyTarget("https://pypi.org/project/requests")).toBe(
-      "pypi_package"
+      "pypi_package",
     );
     expect(classifyTarget("pypi:requests")).toBe("pypi_package");
   });
@@ -75,12 +94,12 @@ describe("classifyTarget", () => {
   it("recognises container image references", () => {
     expect(classifyTarget("ghcr.io/org/img:1.0")).toBe("container_image");
     expect(classifyTarget("docker.io/library/nginx:latest")).toBe(
-      "container_image"
+      "container_image",
     );
     expect(
       classifyTarget(
-        "ghcr.io/org/img@sha256:0000000000000000000000000000000000000000000000000000000000000000"
-      )
+        "ghcr.io/org/img@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      ),
     ).toBe("container_image");
   });
 
@@ -92,19 +111,19 @@ describe("classifyTarget", () => {
     expect(classifyTarget("")).toBe("unsupported_target");
     expect(classifyTarget("   ")).toBe("unsupported_target");
     expect(classifyTarget("hello world with spaces")).toBe(
-      "unsupported_target"
+      "unsupported_target",
     );
   });
 
   it("honours an explicit valid type hint over inference", () => {
     expect(classifyTarget("https://github.com/x/y", "npm_package")).toBe(
-      "npm_package"
+      "npm_package",
     );
   });
 
   it("ignores 'auto' / empty hint and infers", () => {
     expect(classifyTarget("https://github.com/x/y", "auto")).toBe(
-      "github_repo"
+      "github_repo",
     );
     expect(classifyTarget("https://github.com/x/y", "")).toBe("github_repo");
   });
@@ -119,10 +138,12 @@ describe("classifyTarget", () => {
       "pypi:foo",
       "ghcr.io/o/i:1",
       "https://api.example.com/v1",
-      ""
+      "",
     ];
     for (const s of samples) {
-      expect((TARGET_TYPES as readonly string[]).includes(classifyTarget(s))).toBe(true);
+      expect(
+        (TARGET_TYPES as readonly string[]).includes(classifyTarget(s)),
+      ).toBe(true);
     }
   });
 });

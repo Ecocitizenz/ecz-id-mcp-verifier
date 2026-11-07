@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Verifier 2.0 currentness
+
+- Align current child ECZ-ID syntax to the exact seven-family Core contract.
+- Use the canonical Resolver route for parent and every child family, including machine JSON.
+- Add neutral family-aware free-Passport guidance and one contextual GitHub Step Summary link.
+- Preserve read-only Resolver, local-policy, no-upload/no-telemetry and exactly-three-tool MCP boundaries.
+
 All notable changes to the ECZ-ID MCP Verifier™ are documented here.
 This project is free-forever under the ECZ-ID Proprietary Limited-Use License
 (`LICENSE.md`); it is **not** open source.
@@ -124,6 +131,7 @@ unified latest-first onboarding. Verifier behaviour, MCP contracts, privacy
 boundaries and local-policy control remain consistent.
 
 ### Changed
+
 - **MCP Registry identity** now uses the canonical GitHub login casing:
   `package.json.mcpName` and `server.json.name` are
   `io.github.Ecocitizenz/ecz-id-mcp-verifier`, matching the GitHub namespace for
@@ -136,6 +144,7 @@ boundaries and local-policy control remain consistent.
   `npx` primary; exact `@0.8.2` pin is secondary reproducibility guidance).
 
 ### Unchanged
+
 - Classifier, target-shape rules, Resolver requests, result states, reason codes,
   policy modes, exit codes, the three read-only MCP tools and their schemas, and
   the GitHub Action behaviour are byte-for-byte preserved. No telemetry; no
@@ -148,6 +157,7 @@ result states, reason codes, policy modes, privacy boundaries and local-policy
 behaviour are unchanged and fully preserved.
 
 ### Added
+
 - **Clear release-channel guidance** across the README and examples: install with
   the package name for the current release, or pin an exact `@<version>` for
   reproducibility.
@@ -167,6 +177,7 @@ behaviour are unchanged and fully preserved.
   Node library.
 
 ### Unchanged
+
 - Verifier engine, classification, Resolver route/semantics, result states,
   reason codes, policy modes, exit codes, MCP tool contracts and package/server
   identity are byte-for-byte preserved. No telemetry; no source/secret/prompt/
@@ -189,6 +200,7 @@ validation. The immutable `v0.7.0` release, its npm package and its published
 bytes are unchanged.
 
 ### Changed
+
 - **Action description shortened** to 114 characters (was 204) to satisfy the
   Marketplace ≤125-character limit. New `action.yml` description:
   "Local-first, privacy-first ECZ-ID verifier for MCP, agents and APIs. No source
@@ -198,6 +210,7 @@ bytes are unchanged.
   examples, Action usage reference `Ecocitizenz/ecz-id-mcp-verifier@v0.7.1`).
 
 ### Not changed
+
 - No functional, identifier (33-code public registry), Resolver route/semantics,
   policy (OPEN/PREFER/REQUIRE), privacy, output, or setup-handoff changes.
 - `v0.7.0` tag/release/npm bytes are immutable and untouched.
@@ -208,6 +221,7 @@ Established the deterministic CLI and the bundled GitHub Action as the stable
 baseline for the ECZ-ID Resolver-posture verifier.
 
 ### Changed
+
 - **Exact ECZ-ID format validation.** A single deterministic parser
   (`src/ecz-id.ts`) is the source of truth for identifier format across target
   classification, Resolver eligibility, URL construction, CLI input and the
@@ -251,11 +265,13 @@ baseline for the ECZ-ID Resolver-posture verifier.
   `release:check` gate.
 
 ### Removed
+
 - Removed the TrustOps product/pricing manifest and its schema from public
   source. Pricing and product catalogues are TrustOps-owned and never ship in
   public packages or source; they were relocated to private internal records.
 
 ### Added
+
 - `RESOLVER_RESPONSE_UNVERIFIABLE` reason code for a 2xx Resolver body that
   cannot be safely interpreted as valid proof (malformed, unknown schema,
   subject mismatch, or unknown lifecycle state). The 18-state ResultState model
@@ -269,6 +285,7 @@ baseline for the ECZ-ID Resolver-posture verifier.
 - GitHub Action step summary; documented minimum permissions (`contents: read`).
 
 ### Security / privacy
+
 - 0 production runtime dependencies; no install/prepare lifecycle hooks.
 - No source maps, secrets, absolute paths, or internal material in the npm
   tarball. No telemetry. No source/secret/prompt/tool-payload upload.

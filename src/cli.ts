@@ -10,31 +10,35 @@ import { writeFileSync, appendFileSync } from "node:fs";
 import { verify, type VerifyOptions } from "./verify.js";
 import { buildJsonOutput, buildSarif, toJson } from "./output.js";
 import { buildEnvelope, type ActionEnvelope } from "./action-envelope.js";
-import { buildMcpActionEnvelope, buildRequestToResolve } from "./result-actions.js";
+import {
+  buildMcpActionEnvelope,
+  buildRequestToResolve,
+} from "./result-actions.js";
 import { toHumanReport } from "./human-report.js";
 import {
   buildCapabilities,
   buildMcpConfig,
   runDoctor,
-  toDoctorHuman
+  toDoctorHuman,
 } from "./capabilities.js";
 import {
   computeExitCode,
   EXIT_INTERNAL,
-  EXIT_UNSUPPORTED_OR_INVALID
+  EXIT_UNSUPPORTED_OR_INVALID,
 } from "./exit-codes.js";
 import { POLICY_MODES, type PolicyMode } from "./policy.js";
 import {
-  OPERATOR_MODES,
-  type OperatorMode
-} from "./setup-handoff.js";
+  PASSPORT_FAMILY_INPUTS,
+  normalizePassportFamilyInput,
+} from "./passport-family.js";
+import { OPERATOR_MODES, type OperatorMode } from "./setup-handoff.js";
 import {
   RESOLVER_BASE,
   TRUSTOPS_START,
   DEVELOPER_GATEWAY,
   VERIFIER_NAME,
   VERIFIER_VERSION,
-  PACKAGE_NAME
+  PACKAGE_NAME,
 } from "./constants.js";
 
 export interface CliResult {
@@ -56,6 +60,8 @@ Options:
   --target-type <type>       Optional type hint: mcp_server | agent_manifest |
                              api_url | github_repo | npm_package | pypi_package |
                              container_image | ecz_id | auto (default: auto)
+  --passport-family <name>  Routing hint only: auto | agent | mcp | plugin | api |
+                             iot | sdk | service_workload (default: auto)
   --policy <mode>            Local policy: OPEN | PREFER | REQUIRE (default: OPEN)
   --operator <who>           Operator role: self | third_party | unknown
                              (default: unknown). Not auto-inferred.
@@ -135,7 +141,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
   return { flags };
 }
 
-function strFlag(flags: Record<string, string | boolean>, k: string): string | undefined {
+function strFlag(
+  flags: Record<string, string | boolean>,
+  k: string,
+): string | undefined {
   const v = flags[k];
   return typeof v === "string" ? v : undefined;
 }
@@ -160,22 +169,32 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     return {
       exit_code: 0,
       stdout: `${VERIFIER_NAME} v${VERIFIER_VERSION}\n`,
-      stderr: ""
+      stderr: "",
     };
   }
 
   // Convenience surfaces — deterministic, local, no network, no secret, no
   // truth-writing. Each prints and exits before any target is required.
   if (flags.capabilities === true) {
-    return { exit_code: 0, stdout: toJson(buildCapabilities()) + "\n", stderr: "" };
+    return {
+      exit_code: 0,
+      stdout: toJson(buildCapabilities()) + "\n",
+      stderr: "",
+    };
   }
   if (flags["print-mcp-config"] === true) {
-    return { exit_code: 0, stdout: toJson(buildMcpConfig()) + "\n", stderr: "" };
+    return {
+      exit_code: 0,
+      stdout: toJson(buildMcpConfig()) + "\n",
+      stderr: "",
+    };
   }
   if (flags.doctor === true) {
     const report = await runDoctor();
     const wantJson = flags.json === true || flags.report !== true;
-    const stdout = wantJson ? toJson(report) + "\n" : toDoctorHuman(report) + "\n";
+    const stdout = wantJson
+      ? toJson(report) + "\n"
+      : toDoctorHuman(report) + "\n";
     return { exit_code: report.ok ? 0 : EXIT_INTERNAL, stdout, stderr: "" };
   }
 
@@ -184,7 +203,17 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     return {
       exit_code: EXIT_UNSUPPORTED_OR_INVALID,
       stdout: "",
-      stderr: "Error: --target is required. Use --help."
+      stderr: "Error: --target is required. Use --help.",
+    };
+  }
+
+  const passportFamilyRaw = strFlag(flags, "passport-family") ?? "auto";
+  const passportFamily = normalizePassportFamilyInput(passportFamilyRaw);
+  if (!passportFamily) {
+    return {
+      exit_code: EXIT_UNSUPPORTED_OR_INVALID,
+      stdout: "",
+      stderr: `Error: invalid --passport-family. Use one of: ${PASSPORT_FAMILY_INPUTS.join(", ")}`,
     };
   }
 
@@ -193,7 +222,7 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     return {
       exit_code: EXIT_UNSUPPORTED_OR_INVALID,
       stdout: "",
-      stderr: `Error: invalid --policy. Use one of: ${POLICY_MODES.join(", ")}`
+      stderr: `Error: invalid --policy. Use one of: ${POLICY_MODES.join(", ")}`,
     };
   }
   const policy = policyRaw as PolicyMode;
@@ -203,13 +232,12 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     return {
       exit_code: EXIT_UNSUPPORTED_OR_INVALID,
       stdout: "",
-      stderr: `Error: invalid --operator. Use one of: ${OPERATOR_MODES.join(", ")}`
+      stderr: `Error: invalid --operator. Use one of: ${OPERATOR_MODES.join(", ")}`,
     };
   }
   const operator = operatorRaw as OperatorMode;
 
-  const noNetwork =
-    boolFlag(flags, "offline") || boolFlag(flags, "no-network");
+  const noNetwork = boolFlag(flags, "offline") || boolFlag(flags, "no-network");
 
   const timeoutRaw = strFlag(flags, "timeout-ms");
   const timeoutMs = timeoutRaw ? Number(timeoutRaw) : undefined;
@@ -217,20 +245,21 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     return {
       exit_code: EXIT_UNSUPPORTED_OR_INVALID,
       stdout: "",
-      stderr: "Error: --timeout-ms must be a number."
+      stderr: "Error: --timeout-ms must be a number.",
     };
   }
 
   const verifyOpts: VerifyOptions = {
     target,
     targetType: strFlag(flags, "target-type"),
+    passportFamily,
     policy,
     operator,
     resolverBase: strFlag(flags, "resolver-base"),
     trustopsUrl: strFlag(flags, "trustops-url"),
     developerBase: strFlag(flags, "developer-base"),
     noNetwork,
-    timeoutMs: timeoutMs as number | undefined
+    timeoutMs: timeoutMs as number | undefined,
   };
 
   try {
@@ -238,7 +267,7 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     const networkAttemptedAndFailed =
       result.network_attempted && Boolean(result.network_error);
     const exit_code = computeExitCode(result.result_state, policy, {
-      network_attempted_and_failed: networkAttemptedAndFailed
+      network_attempted_and_failed: networkAttemptedAndFailed,
     });
     const envelope = buildEnvelope(result);
 
@@ -256,15 +285,15 @@ export async function runCli(argv: string[]): Promise<CliResult> {
         toJson(
           buildJsonOutput(result, {
             exit_code,
-            action_envelope: wantActions ? envelope : null
-          })
+            action_envelope: wantActions ? envelope : null,
+          }),
         );
     } else {
       primaryOutput = toJson(
         buildJsonOutput(result, {
           exit_code,
-          action_envelope: wantActions ? envelope : null
-        })
+          action_envelope: wantActions ? envelope : null,
+        }),
       );
     }
 
@@ -287,7 +316,7 @@ export async function runCli(argv: string[]): Promise<CliResult> {
       result.result_state === "NO_PUBLIC_RESOLVER_PROOF_FOUND"
     ) {
       stderrParts.push(
-        "Warning: no public resolver proof found yet. Local policy decides."
+        "Warning: no public resolver proof found yet. Local policy decides.",
       );
     }
 
@@ -302,6 +331,11 @@ export async function runCli(argv: string[]): Promise<CliResult> {
       `mcp-action-envelope-json=${JSON.stringify(mcpActionEnvelope)}\n` +
       `request-to-resolve-json=${JSON.stringify(requestToResolve)}\n` +
       `primary-action=${envelope.primary_action}\n` +
+      `passport-family=${envelope.passport_family ?? ""}\n` +
+      `passport-family-source=${envelope.passport_family_source}\n` +
+      `passport-type-code=${envelope.passport_type_code ?? ""}\n` +
+      `next-step-label=${envelope.next_step_label}\n` +
+      `next-step-url=${envelope.next_step_url}\n` +
       `trustops-action-url=${envelope.trustops_action_url}\n` +
       `developer-guidance-url=${envelope.developer_guidance_url}\n`;
 
@@ -310,22 +344,30 @@ export async function runCli(argv: string[]): Promise<CliResult> {
       stdout: stdoutParts.join("\n"),
       stderr: stderrParts.join("\n"),
       gh_outputs,
-      action_envelope: envelope
+      action_envelope: envelope,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return {
       exit_code: EXIT_INTERNAL,
       stdout: "",
-      stderr: `Internal verifier error: ${msg}`
+      stderr: `Internal verifier error: ${msg}`,
     };
   }
 }
 
-export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
+export async function main(
+  argv: string[] = process.argv.slice(2),
+): Promise<number> {
   const result = await runCli(argv);
-  if (result.stdout) process.stdout.write(result.stdout + (result.stdout.endsWith("\n") ? "" : "\n"));
-  if (result.stderr) process.stderr.write(result.stderr + (result.stderr.endsWith("\n") ? "" : "\n"));
+  if (result.stdout)
+    process.stdout.write(
+      result.stdout + (result.stdout.endsWith("\n") ? "" : "\n"),
+    );
+  if (result.stderr)
+    process.stderr.write(
+      result.stderr + (result.stderr.endsWith("\n") ? "" : "\n"),
+    );
 
   const ghOutPath = process.env.GITHUB_OUTPUT;
   if (ghOutPath && result.gh_outputs) {
@@ -342,17 +384,23 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   if (summaryPath && result.action_envelope) {
     try {
       const env = result.action_envelope;
-      const reasons = env.reason_codes.length ? "`" + env.reason_codes.join("`, `") + "`" : "_none_";
+      const reasons = env.reason_codes.length
+        ? "`" + env.reason_codes.join("`, `") + "`"
+        : "_none_";
+      const family = env.passport_family
+        ? "`" + env.passport_family + "`"
+        : "_not inferred_";
       const md =
         `### ECZ-ID MCP Verifier\n\n` +
         `| Field | Value |\n| --- | --- |\n` +
         `| Result state | \`${env.result_state}\` |\n` +
         `| Reason codes | ${reasons} |\n` +
-        `| Primary action | \`${env.primary_action}\` |\n` +
+        `| Passport family | ${family} |\n` +
         `| Policy mode | \`${env.policy_mode}\` |\n` +
         `| Exit code | \`${result.exit_code}\` |\n\n` +
-        `Reports only. Does not write truth, activate proof, or mark BOUND. ` +
-        `Local policy decides. Re-check before reliance.\n`;
+        `**Next step:** [${env.next_step_label}](${env.next_step_url})\n\n` +
+        `Reports only. A missing Passport is not unsafe, untrusted, non-compliant, uncertified, or a failed trust check. ` +
+        `Does not write truth, activate proof, or mark BOUND. Local policy decides. Re-check before reliance.\n`;
       appendFileSync(summaryPath, md, "utf8");
     } catch {
       /* never crash on step-summary write */

@@ -14,7 +14,9 @@ function env(o: Record<string, string>): NodeJS.ProcessEnv {
 
 describe("GitHub Action input adapter: mapping", () => {
   it("maps INPUT_TARGET to the verifier target", async () => {
-    const argv = actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }));
+    const argv = actionArgv(
+      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }),
+    );
     expect(argv).toContain("--target");
     expect(argv[argv.indexOf("--target") + 1]).toBe("ECZ-CC-ABC123");
 
@@ -24,9 +26,28 @@ describe("GitHub Action input adapter: mapping", () => {
     expect(out.target_type).toBe("ecz_id");
   });
 
+  it("maps optional passport-family routing hint", async () => {
+    const argv = actionArgv(
+      env({
+        INPUT_TARGET: "@example/tool",
+        "INPUT_PASSPORT-FAMILY": "sdk",
+        INPUT_OFFLINE: "true",
+      }),
+    );
+    expect(argv[argv.indexOf("--passport-family") + 1]).toBe("sdk");
+    const r = await runCli(argv);
+    const out = JSON.parse(r.stdout);
+    expect(out.passport_family).toBe("sdk");
+    expect(out.passport_family_source).toBe("explicit");
+  });
+
   it("maps INPUT_POLICY to the policy mode", async () => {
     const argv = actionArgv(
-      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_POLICY: "require", INPUT_OFFLINE: "true" })
+      env({
+        INPUT_TARGET: "ECZ-CC-ABC123",
+        INPUT_POLICY: "require",
+        INPUT_OFFLINE: "true",
+      }),
     );
     expect(argv[argv.indexOf("--policy") + 1]).toBe("require");
 
@@ -37,7 +58,11 @@ describe("GitHub Action input adapter: mapping", () => {
 
   it("supports JSON output", async () => {
     const argv = actionArgv(
-      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true", INPUT_JSON: "true" })
+      env({
+        INPUT_TARGET: "ECZ-CC-ABC123",
+        INPUT_OFFLINE: "true",
+        INPUT_JSON: "true",
+      }),
     );
     const r = await runCli(argv);
     const out = JSON.parse(r.stdout);
@@ -45,16 +70,26 @@ describe("GitHub Action input adapter: mapping", () => {
   });
 
   it("accepts both resolver-base and resolver-url, mapping to --resolver-base", () => {
-    const a = actionArgv(env({ INPUT_TARGET: "X", INPUT_RESOLVER_URL: "https://r.example.test" }));
+    const a = actionArgv(
+      env({ INPUT_TARGET: "X", INPUT_RESOLVER_URL: "https://r.example.test" }),
+    );
     expect(a[a.indexOf("--resolver-base") + 1]).toBe("https://r.example.test");
 
-    const b = actionArgv(env({ INPUT_TARGET: "X", "INPUT_RESOLVER-BASE": "https://b.example.test" }));
+    const b = actionArgv(
+      env({
+        INPUT_TARGET: "X",
+        "INPUT_RESOLVER-BASE": "https://b.example.test",
+      }),
+    );
     expect(b[b.indexOf("--resolver-base") + 1]).toBe("https://b.example.test");
   });
 
   it("only reads INPUT_-prefixed env, never arbitrary secrets", () => {
     expect(
-      readActionInput("target", env({ SECRET_TOKEN: "x", GITHUB_TOKEN: "y", TRUSTOPS_KEY: "z" }))
+      readActionInput(
+        "target",
+        env({ SECRET_TOKEN: "x", GITHUB_TOKEN: "y", TRUSTOPS_KEY: "z" }),
+      ),
     ).toBeUndefined();
     expect(readActionInput("target", env({ INPUT_TARGET: "ok" }))).toBe("ok");
   });
@@ -69,7 +104,13 @@ describe("GitHub Action input adapter: behaviour / exit codes", () => {
 
   it("unresolved target under REQUIRE returns non-zero", async () => {
     const r = await runCli(
-      actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_POLICY: "require", INPUT_OFFLINE: "true" }))
+      actionArgv(
+        env({
+          INPUT_TARGET: "ECZ-CC-ABC123",
+          INPUT_POLICY: "require",
+          INPUT_OFFLINE: "true",
+        }),
+      ),
     );
     expect(r.exit_code).not.toBe(0);
     expect(r.exit_code).toBe(1);
@@ -78,14 +119,22 @@ describe("GitHub Action input adapter: behaviour / exit codes", () => {
   it("unresolved target under OPEN/PREFER does not hard-fail", async () => {
     for (const policy of ["open", "prefer"]) {
       const r = await runCli(
-        actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_POLICY: policy, INPUT_OFFLINE: "true" }))
+        actionArgv(
+          env({
+            INPUT_TARGET: "ECZ-CC-ABC123",
+            INPUT_POLICY: policy,
+            INPUT_OFFLINE: "true",
+          }),
+        ),
       );
       expect(r.exit_code).toBe(0);
     }
   });
 
   it("preserves no-telemetry and no-upload invariants in output", async () => {
-    const r = await runCli(actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" })));
+    const r = await runCli(
+      actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" })),
+    );
     const out = JSON.parse(r.stdout);
     expect(out.no_telemetry).toBe(true);
     expect(out.no_source_uploaded).toBe(true);
@@ -99,12 +148,16 @@ describe("GitHub Action input adapter: behaviour / exit codes", () => {
     process.env.GITHUB_OUTPUT = outFile;
     try {
       const code = await main(
-        actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }))
+        actionArgv(
+          env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }),
+        ),
       );
       expect(code).toBe(0);
       const written = readFileSync(outFile, "utf8");
       expect(written).toMatch(/result-state=/m);
       expect(written).toMatch(/primary-action=/m);
+      expect(written).toMatch(/passport-family=/m);
+      expect(written).toMatch(/next-step-url=/m);
       expect(written).toMatch(/trustops-action-url=/m);
     } finally {
       if (prev === undefined) delete process.env.GITHUB_OUTPUT;
@@ -149,13 +202,19 @@ describe("D6: the Action does not pin the per-attempt timeout", () => {
   });
 
   it("omits --timeout-ms entirely when the input is unset", () => {
-    const argv = actionArgv(env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }));
+    const argv = actionArgv(
+      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true" }),
+    );
     expect(argv).not.toContain("--timeout-ms");
   });
 
   it("still forwards --timeout-ms when an operator sets it deliberately", () => {
     const argv = actionArgv(
-      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true", "INPUT_TIMEOUT-MS": "2500" })
+      env({
+        INPUT_TARGET: "ECZ-CC-ABC123",
+        INPUT_OFFLINE: "true",
+        "INPUT_TIMEOUT-MS": "2500",
+      }),
     );
     expect(argv).toContain("--timeout-ms");
     expect(argv[argv.indexOf("--timeout-ms") + 1]).toBe("2500");
@@ -163,7 +222,11 @@ describe("D6: the Action does not pin the per-attempt timeout", () => {
 
   it("treats an empty timeout-ms input as unset, not as zero", () => {
     const argv = actionArgv(
-      env({ INPUT_TARGET: "ECZ-CC-ABC123", INPUT_OFFLINE: "true", "INPUT_TIMEOUT-MS": "   " })
+      env({
+        INPUT_TARGET: "ECZ-CC-ABC123",
+        INPUT_OFFLINE: "true",
+        "INPUT_TIMEOUT-MS": "   ",
+      }),
     );
     expect(argv).not.toContain("--timeout-ms");
   });
@@ -192,7 +255,10 @@ describe("D6: public copy states the real timeout behaviour", () => {
   });
 
   it("no public surface still pins the example timeout to 5000", () => {
-    const example = readFileSync(join(ROOT, "examples", "github-action.yml"), "utf8");
+    const example = readFileSync(
+      join(ROOT, "examples", "github-action.yml"),
+      "utf8",
+    );
     expect(example).not.toMatch(/^\s*timeout-ms:\s*"5000"/m);
     expect(readmeText).not.toMatch(/^\s*timeout-ms:\s*"5000"/m);
   });

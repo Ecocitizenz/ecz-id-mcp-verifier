@@ -8,7 +8,7 @@ describe("JSON output schema", () => {
     const result = await verify({
       target: "ECZ-CC-ABC123",
       policy: "OPEN",
-      noNetwork: true
+      noNetwork: true,
     });
     const out = buildJsonOutput(result, { exit_code: 0 });
     const required = [
@@ -17,6 +17,13 @@ describe("JSON output schema", () => {
       "verifier_version",
       "target",
       "target_type",
+      "passport_family",
+      "passport_family_source",
+      "passport_type_code",
+      "passport_contract_token",
+      "passport_guidance_url",
+      "passport_acquisition_url",
+      "passport_subject_note",
       "policy_mode",
       "operator",
       "result_state",
@@ -40,7 +47,7 @@ describe("JSON output schema", () => {
       "no_telemetry",
       "timestamp",
       "exit_code",
-      "action_envelope"
+      "action_envelope",
     ];
     for (const k of required) expect(out).toHaveProperty(k);
     expect(out.verifier).toBe("ECZ-ID MCP Verifier");
@@ -55,8 +62,16 @@ describe("JSON output schema", () => {
     expect(out.verifier_writes_truth).toBe(false);
     expect(out.verifier_activates_proof).toBe(false);
     expect(out.verifier_marks_bound).toBe(false);
-    expect(out.trustops_action_url.startsWith("https://trustops.ecocitizenz.com/start")).toBe(true);
-    expect(out.developer_guidance_url.startsWith("https://developers.ecocitizenz.com")).toBe(true);
+    expect(
+      out.trustops_action_url.startsWith(
+        "https://trustops.ecocitizenz.com/start",
+      ),
+    ).toBe(true);
+    expect(
+      out.developer_guidance_url.startsWith(
+        "https://developers.ecocitizenz.com",
+      ),
+    ).toBe(true);
     expect(out.setup_handoff.handoff_name).toBe("Deterministic Setup Handoff");
   });
 
@@ -64,7 +79,7 @@ describe("JSON output schema", () => {
     const result = await verify({
       target: "ECZ-CC-ABC123",
       policy: "OPEN",
-      noNetwork: true
+      noNetwork: true,
     });
     expect(result.result_state).toBe("NO_PUBLIC_RESOLVER_PROOF_FOUND");
     expect(result.reason_codes).toContain("NO_PUBLIC_RESOLVER_PROOF_FOUND");
@@ -80,7 +95,7 @@ describe("Action envelope shape", () => {
     const result = await verify({
       target: "https://api.example.com/.well-known/ecz-mcp.json",
       policy: "PREFER",
-      noNetwork: true
+      noNetwork: true,
     });
     const env = buildEnvelope(result);
     const required = [
@@ -88,6 +103,11 @@ describe("Action envelope shape", () => {
       "envelope_type",
       "target_type",
       "target_value",
+      "passport_family",
+      "passport_family_source",
+      "passport_type_code",
+      "next_step_label",
+      "next_step_url",
       "result_state",
       "reason_codes",
       "resolver_url",
@@ -106,10 +126,12 @@ describe("Action envelope shape", () => {
       "verifier_marks_bound",
       "local_policy_decides",
       "recheck_before_reliance",
-      "no_safety_or_approval_inference"
+      "no_safety_or_approval_inference",
     ];
     for (const k of required) expect(env).toHaveProperty(k);
     expect(env.envelope_type).toBe("MCP");
+    expect(env.passport_family).toBe("mcp");
+    expect(env.next_step_url.startsWith("https://")).toBe(true);
     expect(env.operator).toBe("unknown");
     expect(env.local_policy_decides).toBe(true);
     expect(env.recheck_before_reliance).toBe(true);
@@ -135,7 +157,7 @@ describe("SARIF output", () => {
     const result = await verify({
       target: "ECZ-CC-ABC123",
       policy: "OPEN",
-      noNetwork: true
+      noNetwork: true,
     });
     const sarif = buildSarif(result, 0) as {
       version: string;

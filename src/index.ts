@@ -7,6 +7,7 @@ export * from "./reason-codes.js";
 export * from "./policy.js";
 export * from "./privacy.js";
 export * from "./ecz-id.js";
+export * from "./passport-family.js";
 export * from "./classify-target.js";
 export * from "./resolver-client.js";
 export * from "./setup-handoff.js";

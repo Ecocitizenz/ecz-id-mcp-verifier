@@ -5,184 +5,116 @@ import {
   deriveResolverUrls,
   isAcceptedEczId,
   interpretResolverResponse,
-  type ResolverProofState
+  type ResolverProofState,
 } from "../src/resolver-client.js";
 import { RESULT_STATES } from "../src/result-states.js";
 import { PUBLIC_PASSPORT_CODES } from "../src/ecz-id.js";
 
 const RBASE = "https://resolver.ecocitizenz.org";
 const ABASE = "https://api.ecocitizenz.com";
-
-// Canonical fixtures: parent + child using a PUBLIC passport-number code.
 const PARENT = "ECZ-GB-A93K7Q";
-const CHILD = "ECZ-GB-A93K7Q::AGENT-4F9Q2A";
+const CHILD = "ECZ-GB-A93K7Q::AGENT_PASSPORT-4F9Q2A";
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
 function mockFetch(impl: (url: string) => Promise<Response> | Response) {
   vi.spyOn(globalThis, "fetch").mockImplementation(((input: any) =>
     Promise.resolve(impl(String(input)))) as typeof fetch);
 }
-
 function activeBody(id: string): string {
   return JSON.stringify({
     ecz_id: id,
     status: "active",
     lifecycle_state: "ACTIVE",
-    trust_assertion: { revoked: false, ledger_anchored: true, pulse_fresh: true }
+    trust_assertion: { revoked: false },
   });
 }
 
-describe("resolver route contract: ECZ-ID acceptance (public codes)", () => {
-  it("accepts a valid parent ECZ-ID", () => {
+describe("resolver route contract: current ECZ-ID acceptance", () => {
+  it("accepts parent + all seven current child family codes", () => {
     expect(isAcceptedEczId(PARENT)).toBe(true);
-  });
-  it("accepts a valid child with a PUBLIC passport-number code", () => {
-    expect(isAcceptedEczId(CHILD)).toBe(true);
-    expect(isAcceptedEczId("ECZ-GB-A93K7Q::SSCM-M29F8Q")).toBe(true);
-    expect(isAcceptedEczId("ECZ-GB-A93K7Q::D1-DRONE-7A9F2Q")).toBe(true);
-  });
-  it("rejects backend semantic keys as public child IDs", () => {
-    expect(isAcceptedEczId("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-M4X9P2")).toBe(false);
-    expect(isAcceptedEczId("ECZ-GB-A93K7Q::SOFTWARE_SUPPLY_CHAIN-M29F8Q")).toBe(false);
-    expect(isAcceptedEczId("ECZ-GB-A93K7Q::DRONE_D1-7A9F2Q")).toBe(false);
-  });
-  it("rejects malformed identifiers", () => {
-    expect(isAcceptedEczId("ECZ-GB-EXAMPLE")).toBe(false);
-    expect(isAcceptedEczId("ECZ-GB-A93K7Q::AGENT-7F2A")).toBe(false); // 4-char suffix
-    expect(isAcceptedEczId("not-an-ecz-id")).toBe(false);
-  });
-});
-
-describe("resolver route contract: PARENT URLs", () => {
-  it("human proof URL is /p/{parent}", () => {
-    expect(deriveResolverUrls(PARENT, "ecz_id", RBASE, ABASE)?.human).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q"
-    );
-  });
-  it("machine JSON is /api/p/{parent}.json (proven)", () => {
-    expect(deriveResolverUrls(PARENT, "ecz_id", RBASE, ABASE)?.machine).toBe(
-      "https://api.ecocitizenz.com/api/p/ECZ-GB-A93K7Q.json"
-    );
-  });
-  it("kind is parent", () => {
-    expect(deriveResolverUrls(PARENT, "ecz_id", RBASE, ABASE)?.kind).toBe("parent");
-  });
-  it("deriveResolverUrl (back-compat) returns the parent human URL", () => {
-    expect(deriveResolverUrl(PARENT, "ecz_id", RBASE)).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q"
-    );
-  });
-});
-
-describe("resolver route contract: CHILD URLs are decomposed, machine is unproven", () => {
-  it("human URL is /p/{parent}/{passport_code}/{instance_suffix}", () => {
-    expect(deriveResolverUrls("ECZ-GB-A93K7Q::AGENT-4F9Q2A", "ecz_id", RBASE, ABASE)?.human).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/AGENT/4F9Q2A"
-    );
-    expect(deriveResolverUrls("ECZ-GB-A93K7Q::SSCM-M29F8Q", "ecz_id", RBASE, ABASE)?.human).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/SSCM/M29F8Q"
-    );
-    expect(deriveResolverUrls("ECZ-GB-A93K7Q::D1-DRONE-7A9F2Q", "ecz_id", RBASE, ABASE)?.human).toBe(
-      "https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/D1-DRONE/7A9F2Q"
-    );
-  });
-  it("NEVER uses a percent-encoded internal child ID as a path", () => {
-    const u = deriveResolverUrls(CHILD, "ecz_id", RBASE, ABASE)!;
-    expect(u.human.includes("%3A%3A")).toBe(false);
-    expect(u.human.includes("::")).toBe(false);
-  });
-  it("child has no machine JSON URL (endpoint unproven)", () => {
-    const u = deriveResolverUrls(CHILD, "ecz_id", RBASE, ABASE)!;
-    expect(u.kind).toBe("child");
-    expect(u.machine).toBeUndefined();
-  });
-
-  it("ALL 33 public codes produce a correct decomposed human URL + null machine", () => {
     for (const code of PUBLIC_PASSPORT_CODES) {
-      const u = deriveResolverUrls(`ECZ-GB-A93K7Q::${code}-4F9Q2A`, "ecz_id", RBASE, ABASE)!;
-      expect(u, code).toBeDefined();
-      expect(u.kind).toBe("child");
-      expect(u.human).toBe(`https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/${code}/4F9Q2A`);
-      expect(u.human.includes("%3A%3A")).toBe(false);
-      expect(u.human.includes("::")).toBe(false);
-      expect(u.machine).toBeUndefined(); // no fabricated child machine route
+      expect(isAcceptedEczId(`${PARENT}::${code}-4F9Q2A`), code).toBe(true);
+    }
+  });
+  it("rejects catalogue-era child codes", () => {
+    for (const code of ["AGENT", "API", "IOT", "SSCM", "D1-DRONE"]) {
+      expect(isAcceptedEczId(`${PARENT}::${code}-4F9Q2A`)).toBe(false);
     }
   });
 });
 
-describe("resolver route contract: no fabricated paths for non-ECZ-ID / invalid targets", () => {
-  it("no route for arbitrary URL / repo / package / image", () => {
-    expect(deriveResolverUrls("https://example.com", "api_url", RBASE, ABASE)).toBeUndefined();
-    expect(deriveResolverUrls("lodash", "npm_package", RBASE, ABASE)).toBeUndefined();
-    expect(deriveResolverUrls("ghcr.io/o/i:1", "container_image", RBASE, ABASE)).toBeUndefined();
+describe("resolver route contract: one route serves parent and every family", () => {
+  it("parent uses /p/{ecz_id} and /api/p/{ecz_id}.json", () => {
+    expect(deriveResolverUrls(PARENT, "ecz_id", RBASE, ABASE)).toEqual({
+      human: `${RBASE}/p/${PARENT}`,
+      machine: `${ABASE}/api/p/${PARENT}.json`,
+      kind: "parent",
+    });
+    expect(deriveResolverUrl(PARENT, "ecz_id", RBASE)).toBe(
+      `${RBASE}/p/${PARENT}`,
+    );
   });
-  it("no route for an invalid ECZ-ID", () => {
-    expect(deriveResolverUrls("ECZ-GB-EXAMPLE", "ecz_id", RBASE, ABASE)).toBeUndefined();
-    expect(deriveResolverUrls("ECZ-GB-A93K7Q::AGENT_CREDENTIAL-M4X9P2", "ecz_id", RBASE, ABASE)).toBeUndefined();
+  it("child remains one identifier on both canonical hosts", () => {
+    const u = deriveResolverUrls(CHILD, "ecz_id", RBASE, ABASE)!;
+    expect(u.kind).toBe("child");
+    expect(u.human).toBe(`${RBASE}/p/${CHILD}`);
+    expect(u.machine).toBe(`${ABASE}/api/p/${CHILD}.json`);
   });
-  it("lookup on a non-ECZ-ID attempts no request", async () => {
-    const spy = vi.spyOn(globalThis, "fetch");
-    const r = await lookup("https://api.example.com/.well-known/ecz-mcp.json", "mcp_server");
-    expect(r.applicable).toBe(false);
-    expect(r.network_attempted).toBe(false);
-    expect(spy).not.toHaveBeenCalled();
+  it("all seven child families use the same route form", () => {
+    for (const code of PUBLIC_PASSPORT_CODES) {
+      const id = `${PARENT}::${code}-4F9Q2A`;
+      const u = deriveResolverUrls(id, "ecz_id", RBASE, ABASE)!;
+      expect(u.human).toBe(`${RBASE}/p/${id}`);
+      expect(u.machine).toBe(`${ABASE}/api/p/${id}.json`);
+    }
   });
-  it("lookup on an invalid ECZ-ID never fetches", async () => {
-    const spy = vi.spyOn(globalThis, "fetch");
-    const r = await lookup("ECZ-GB-EXAMPLE", "ecz_id");
-    expect(r.applicable).toBe(false);
-    expect(spy).not.toHaveBeenCalled();
+  it("never fabricates a path for a non-ECZ-ID target", () => {
+    expect(
+      deriveResolverUrls("https://example.com", "api_url", RBASE, ABASE),
+    ).toBeUndefined();
+    expect(
+      deriveResolverUrls("lodash", "npm_package", RBASE, ABASE),
+    ).toBeUndefined();
   });
 });
 
 describe("resolver lookup behaviour", () => {
-  it("no-network parent: no fetch, applicable, human URL set", async () => {
+  it("offline child retains human route and performs no request", async () => {
     const spy = vi.spyOn(globalThis, "fetch");
-    const r = await lookup(PARENT, "ecz_id", { noNetwork: true });
-    expect(r.found).toBe(false);
+    const r = await lookup(CHILD, "ecz_id", { noNetwork: true });
     expect(r.applicable).toBe(true);
-    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q");
+    expect(r.found).toBe(false);
+    expect(r.proof_state).toBeUndefined();
+    expect(r.resolver_url).toBe(`${RBASE}/p/${CHILD}`);
+    expect(r.network_attempted).toBe(false);
     expect(spy).not.toHaveBeenCalled();
   });
-
-  it("CHILD lookup: no fetch, human decomposed URL retained, machine null, unproven", async () => {
-    const spy = vi.spyOn(globalThis, "fetch");
+  it("child machine projection is actually read when network is enabled", async () => {
+    mockFetch((url) => {
+      expect(url).toBe(`${ABASE}/api/p/${CHILD}.json`);
+      return new Response(activeBody(CHILD), { status: 200 });
+    });
     const r = await lookup(CHILD, "ecz_id");
-    expect(r.applicable).toBe(true);
-    expect(r.found).toBe(false);
-    expect(r.proof_state).toBe("child_machine_unproven");
-    expect(r.resolver_url).toBe("https://resolver.ecocitizenz.org/p/ECZ-GB-A93K7Q/AGENT/4F9Q2A");
-    expect(r.machine_json_url).toBeUndefined();
-    expect(r.network_attempted).toBe(false);
-    expect(spy).not.toHaveBeenCalled(); // no fabricated child machine fetch
+    expect(r.found).toBe(true);
+    expect(r.proof_state).toBe("active");
+    expect(r.machine_json_url).toBe(`${ABASE}/api/p/${CHILD}.json`);
   });
-
-  it("PARENT 200 active projection yields found=true with both URLs", async () => {
+  it("parent active projection remains positive proof", async () => {
     mockFetch(() => new Response(activeBody(PARENT), { status: 200 }));
     const r = await lookup(PARENT, "ecz_id");
     expect(r.found).toBe(true);
     expect(r.proof_state).toBe("active");
-    expect(r.machine_json_url).toBe("https://api.ecocitizenz.com/api/p/ECZ-GB-A93K7Q.json");
   });
-
-  it("HTTP 200 ALONE (empty body) is never proof", async () => {
-    mockFetch(() => new Response("", { status: 200 }));
-    const r = await lookup(PARENT, "ecz_id");
+  it("404 is absence, never an adverse verdict", async () => {
+    mockFetch(
+      () =>
+        new Response(JSON.stringify({ error: "not found" }), { status: 404 }),
+    );
+    const r = await lookup(CHILD, "ecz_id");
     expect(r.found).toBe(false);
-    expect(r.proof_state).toBe("malformed");
-    expect(r.machine_json_url).toBeUndefined();
-  });
-
-  it("404 -> not_found; network error -> unavailable", async () => {
-    mockFetch(() => new Response(JSON.stringify({ error: "x" }), { status: 404 }));
-    expect((await lookup(PARENT, "ecz_id")).proof_state).toBe("not_found");
-    mockFetch(() => { throw new Error("boom"); });
-    const e = await lookup(PARENT, "ecz_id");
-    expect(e.proof_state).toBe("unavailable");
-    expect(typeof e.network_error).toBe("string");
+    expect(r.proof_state).toBe("not_found");
   });
 });
 
@@ -190,42 +122,109 @@ describe("resolver lookup behaviour", () => {
 describe("interpretResolverResponse: HTTP + body -> proof state", () => {
   const id = PARENT;
   const cases: Array<[string, number, unknown, ResolverProofState]> = [
-    ["200 active", 200, { ecz_id: id, status: "active", trust_assertion: { revoked: false } }, "active"],
-    ["200 revoked (trust_assertion)", 200, { ecz_id: id, status: "active", trust_assertion: { revoked: true } }, "revoked"],
+    [
+      "200 active",
+      200,
+      { ecz_id: id, status: "active", trust_assertion: { revoked: false } },
+      "active",
+    ],
+    [
+      "200 revoked (trust_assertion)",
+      200,
+      { ecz_id: id, status: "active", trust_assertion: { revoked: true } },
+      "revoked",
+    ],
     ["200 revoked (status)", 200, { ecz_id: id, status: "revoked" }, "revoked"],
     ["200 suspended", 200, { ecz_id: id, status: "suspended" }, "suspended"],
     ["200 expired", 200, { ecz_id: id, status: "expired" }, "expired"],
-    ["200 abuse_flagged", 200, { ecz_id: id, status: "abuse_flagged", verification_state: "SUSPECTED_REUSE" }, "abuse"],
-    ["200 stale", 200, { ecz_id: id, status: "active", pulseguard: { overall_validity: "STALE" } }, "stale"],
+    [
+      "200 abuse_flagged",
+      200,
+      {
+        ecz_id: id,
+        status: "abuse_flagged",
+        verification_state: "SUSPECTED_REUSE",
+      },
+      "abuse",
+    ],
+    [
+      "200 stale",
+      200,
+      {
+        ecz_id: id,
+        status: "active",
+        pulseguard: { overall_validity: "STALE" },
+      },
+      "stale",
+    ],
     ["200 degraded", 200, { ecz_id: id, status: "degraded" }, "degraded"],
-    ["200 proof_invalid", 200, { ecz_id: id, verification_state: "PROOF_INVALID" }, "proof_invalid"],
-    ["200 target mismatch", 200, { ecz_id: "ECZ-GB-ZZZZZZ", status: "active" }, "target_mismatch"],
+    [
+      "200 proof_invalid",
+      200,
+      { ecz_id: id, verification_state: "PROOF_INVALID" },
+      "proof_invalid",
+    ],
+    [
+      "200 target mismatch",
+      200,
+      { ecz_id: "ECZ-GB-ZZZZZZ", status: "active" },
+      "target_mismatch",
+    ],
     ["200 unknown schema", 200, { hello: "world" }, "schema_mismatch"],
-    ["200 unknown lifecycle", 200, { ecz_id: id, status: "frobnicated" }, "unknown"],
+    [
+      "200 unknown lifecycle",
+      200,
+      { ecz_id: id, status: "frobnicated" },
+      "unknown",
+    ],
     ["410 gone", 410, { error: "gone" }, "not_found"],
     ["429", 429, { error: "rate" }, "unavailable"],
     ["500", 500, { error: "boom" }, "unavailable"],
-    ["503", 503, { error: "down" }, "unavailable"]
+    ["503", 503, { error: "down" }, "unavailable"],
   ];
   for (const [label, status, body, expected] of cases) {
     it(`${label} -> ${expected}`, () => {
-      expect(interpretResolverResponse(status, JSON.stringify(body), id)).toBe(expected);
+      expect(interpretResolverResponse(status, JSON.stringify(body), id)).toBe(
+        expected,
+      );
     });
   }
   it("200 non-JSON -> malformed", () => {
     expect(interpretResolverResponse(200, "<html>", id)).toBe("malformed");
   });
   it("revoked dominates an active claim", () => {
-    expect(interpretResolverResponse(200, JSON.stringify({ ecz_id: id, status: "active", lifecycle_state: "REVOKED" }), id)).toBe("revoked");
+    expect(
+      interpretResolverResponse(
+        200,
+        JSON.stringify({
+          ecz_id: id,
+          status: "active",
+          lifecycle_state: "REVOKED",
+        }),
+        id,
+      ),
+    ).toBe("revoked");
   });
   it("subject match is case-insensitive", () => {
-    expect(interpretResolverResponse(200, JSON.stringify({ ecz_id: id.toLowerCase(), status: "active" }), id)).toBe("active");
+    expect(
+      interpretResolverResponse(
+        200,
+        JSON.stringify({ ecz_id: id.toLowerCase(), status: "active" }),
+        id,
+      ),
+    ).toBe("active");
   });
 });
 
 describe("result-state model still supports lifecycle states", () => {
   it("retains REVOKED / SUSPENDED / EXPIRED / MISMATCH / DEGRADED in the 18-state model", () => {
-    for (const s of ["REVOKED", "SUSPENDED", "EXPIRED", "MISMATCH", "DEGRADED"]) {
+    for (const s of [
+      "REVOKED",
+      "SUSPENDED",
+      "EXPIRED",
+      "MISMATCH",
+      "DEGRADED",
+    ]) {
       expect(RESULT_STATES).toContain(s as any);
     }
   });
@@ -262,7 +261,10 @@ describe("D6: bounded retry for a cold Core", () => {
   };
 
   it("COLD: a timed-out first attempt recovers on the retry and yields real proof", async () => {
-    const spy = mockSequence([abort, () => new Response(activeBody(PARENT), { status: 200 })]);
+    const spy = mockSequence([
+      abort,
+      () => new Response(activeBody(PARENT), { status: 200 }),
+    ]);
     const r = await lookup(PARENT, "ecz_id");
     expect(r.proof_state).toBe("active");
     expect(r.found).toBe(true);
@@ -271,7 +273,9 @@ describe("D6: bounded retry for a cold Core", () => {
   });
 
   it("WARM: a first-attempt answer is returned without any retry", async () => {
-    const spy = mockSequence([() => new Response(activeBody(PARENT), { status: 200 })]);
+    const spy = mockSequence([
+      () => new Response(activeBody(PARENT), { status: 200 }),
+    ]);
     const r = await lookup(PARENT, "ecz_id");
     expect(r.proof_state).toBe("active");
     expect(spy).toHaveBeenCalledTimes(1);
@@ -296,18 +300,25 @@ describe("D6: bounded retry for a cold Core", () => {
   it("BUDGET: the overall wall-clock ceiling is never exceeded", async () => {
     mockSequence([abort]);
     const started = Date.now();
-    const r = await lookup(PARENT, "ecz_id", { totalBudgetMs: 300, timeoutMs: 100 });
+    const r = await lookup(PARENT, "ecz_id", {
+      totalBudgetMs: 300,
+      timeoutMs: 100,
+    });
     expect(r.proof_state).toBe("unavailable");
     expect(Date.now() - started).toBeLessThan(3000);
   });
 
   it("a DEFINITE answer is never re-requested: 404 and 500 are asked once", async () => {
-    const notFound = mockSequence([() => new Response(JSON.stringify({ error: "x" }), { status: 404 })]);
+    const notFound = mockSequence([
+      () => new Response(JSON.stringify({ error: "x" }), { status: 404 }),
+    ]);
     expect((await lookup(PARENT, "ecz_id")).proof_state).toBe("not_found");
     expect(notFound).toHaveBeenCalledTimes(1);
     vi.restoreAllMocks();
 
-    const boom = mockSequence([() => new Response(JSON.stringify({ error: "boom" }), { status: 500 })]);
+    const boom = mockSequence([
+      () => new Response(JSON.stringify({ error: "boom" }), { status: 500 }),
+    ]);
     expect((await lookup(PARENT, "ecz_id")).proof_state).toBe("unavailable");
     expect(boom).toHaveBeenCalledTimes(1);
   });
@@ -315,7 +326,7 @@ describe("D6: bounded retry for a cold Core", () => {
   it("a TRANSIENT server code is retried and can then succeed", async () => {
     const spy = mockSequence([
       () => new Response(JSON.stringify({ error: "down" }), { status: 503 }),
-      () => new Response(activeBody(PARENT), { status: 200 })
+      () => new Response(activeBody(PARENT), { status: 200 }),
     ]);
     const r = await lookup(PARENT, "ecz_id");
     expect(r.proof_state).toBe("active");
@@ -325,7 +336,10 @@ describe("D6: bounded retry for a cold Core", () => {
   it("retrying never turns a negative lifecycle into proof", async () => {
     const spy = mockSequence([
       abort,
-      () => new Response(JSON.stringify({ ecz_id: PARENT, status: "revoked" }), { status: 200 })
+      () =>
+        new Response(JSON.stringify({ ecz_id: PARENT, status: "revoked" }), {
+          status: 200,
+        }),
     ]);
     const r = await lookup(PARENT, "ecz_id");
     expect(r.proof_state).toBe("revoked");

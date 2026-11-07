@@ -3,7 +3,8 @@
 // It never writes truth, never activates proof, never marks BOUND.
 import { OUTPUT_PRIVACY_FIELDS } from "./privacy.js";
 import { SCHEMA_VERSION, DEVELOPER_GATEWAY } from "./constants.js";
-import { buildSetupHandoff, developerGuidanceUrlFor } from "./setup-handoff.js";
+import { passportFamilyDefinition, freePassportUrl, } from "./passport-family.js";
+import { buildSetupHandoff, developerGuidanceUrlFor, } from "./setup-handoff.js";
 function chooseEnvelopeType(t) {
     if (t === "mcp_server")
         return "MCP";
@@ -12,6 +13,51 @@ function chooseEnvelopeType(t) {
     if (t === "ecz_id")
         return "RESOLVER";
     return "RECIPROCAL_RELIANCE";
+}
+function oneNextStep(result, flow) {
+    if (result.result_state === "RESOLVER_VERIFIABLE" && result.resolver_url) {
+        return { label: "View current Resolver record", url: result.resolver_url };
+    }
+    const familyName = result.passport_family
+        ? passportFamilyDefinition(result.passport_family).displayName
+        : null;
+    const missing = [
+        "NO_PUBLIC_RESOLVER_PROOF_FOUND",
+        "PARTIAL_PUBLIC_PROOF_FOUND",
+        "SETUP_REQUIRED",
+        "CHALLENGE_ISSUED",
+        "OBSERVED",
+    ].includes(result.result_state);
+    if (missing && result.operator === "self") {
+        return {
+            label: familyName
+                ? `Start free ${familyName} Passport`
+                : "Choose a free Passport family",
+            url: flow.trustops_action_url,
+        };
+    }
+    if (missing) {
+        return {
+            label: familyName
+                ? `Open ${familyName} quickstart`
+                : "Choose a free Passport family",
+            url: result.passport_guidance_url ||
+                freePassportUrl(result.developer_base_url),
+        };
+    }
+    if (["DEGRADED", "MISMATCH", "REVOKED", "SUSPENDED", "EXPIRED"].includes(result.result_state) &&
+        result.resolver_url) {
+        return {
+            label: "Re-check current Resolver record",
+            url: result.resolver_url,
+        };
+    }
+    return {
+        label: familyName
+            ? `Open ${familyName} quickstart`
+            : "Open ECZ-ID developer guidance",
+        url: result.passport_guidance_url,
+    };
 }
 function buildSteps(result, flow) {
     const steps = [];
@@ -70,13 +116,20 @@ export function buildEnvelope(result) {
         resolver_url: result.resolver_url,
         machine_json_url: result.machine_json_url,
         trustops_base_url: result.trustops_base_url,
-        developer_base_url: result.developer_base_url
+        developer_base_url: result.developer_base_url,
+        passport_family: result.passport_family,
     });
+    const next = oneNextStep(result, flow);
     return {
         schema_version: SCHEMA_VERSION,
         envelope_type: chooseEnvelopeType(result.target_type),
         target_type: result.target_type,
         target_value: result.target,
+        passport_family: result.passport_family,
+        passport_family_source: result.passport_family_source,
+        passport_type_code: result.passport_type_code,
+        next_step_label: next.label,
+        next_step_url: next.url,
         result_state: result.result_state,
         reason_codes: result.reason_codes,
         resolver_url: result.resolver_url,
@@ -95,7 +148,7 @@ export function buildEnvelope(result) {
         backend_remains_final_authority: true,
         verifier_writes_truth: false,
         verifier_activates_proof: false,
-        verifier_marks_bound: false
+        verifier_marks_bound: false,
     };
 }
 export function emptyEnvelope() {
@@ -107,13 +160,18 @@ export function emptyEnvelope() {
         policy_mode: "OPEN",
         operator: "unknown",
         resolver_url: null,
-        machine_json_url: null
+        machine_json_url: null,
     });
     return {
         schema_version: SCHEMA_VERSION,
         envelope_type: "RECIPROCAL_RELIANCE",
         target_type: "unsupported_target",
         target_value: "",
+        passport_family: null,
+        passport_family_source: "none",
+        passport_type_code: null,
+        next_step_label: "Choose a free Passport family",
+        next_step_url: freePassportUrl(DEVELOPER_GATEWAY),
         result_state: "NOT_APPLICABLE",
         reason_codes: [],
         resolver_url: null,
@@ -132,6 +190,6 @@ export function emptyEnvelope() {
         backend_remains_final_authority: true,
         verifier_writes_truth: false,
         verifier_activates_proof: false,
-        verifier_marks_bound: false
+        verifier_marks_bound: false,
     };
 }
