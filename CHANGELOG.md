@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Verifier 2.0 currentness
+## [0.10.0] — Seven Passport families and Resolver routes (7 November 2026)
 
 - Align current child ECZ-ID syntax to the exact seven-family Core contract.
 - Use the canonical Resolver route for parent and every child family, including machine JSON.
